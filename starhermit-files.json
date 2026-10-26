@@ -1,5 +1,7 @@
 {
   "files": {
+    "assets/banner.jpg": {"sha256": "acb013e5e75e5a85503c3ed1df6a03b97c93d834c7e2d6b68da67bed8aad296a", "size": 636050},
+    "assets/cover.jpg": {"sha256": "67718d07d659c011fe917960c9493b3394806839f692d4ca0b9d11b78b13f881", "size": 538793},
     "assets/grain.png": {"sha256": "a66226b274b6547e0befb6258db0e8126fc9bdc4eba07db232cc8236cd6e8d2f", "size": 27394},
     "assets/rock0.png": {"sha256": "b1f0cbc17d2eb4e9c076d2d2a85b0dc200c44cba334bbc29bd1dca08e8958367", "size": 16879},
     "assets/rock1.png": {"sha256": "ca22243651602872b3405007bc559968ca74290e91c538dd36c269b29d7bb270", "size": 17099},
@@ -12,10 +14,12 @@
     "assets/rock8.png": {"sha256": "bd74f355e5da2c58b0f640469ef559fe1eee765d7481c59239820977559c0413", "size": 17110},
     "assets/rock9.png": {"sha256": "8164e919b56fbbb0011a6dfc70fe627cd0d7903757b45b17e4872b424b1f6ac6", "size": 17111},
     "assets/station.png": {"sha256": "53e63b668c3e35e65c6875da233705fdcf89844c5a16404fc74b9a27e0de418a", "size": 78908},
-    "index.html": {"sha256": "cbae9c59daa846f63bf5cef78b320ff9faa1dd3542720f1b771a819078b10c4e", "size": 1756},
-    "src/main.ts": {"sha256": "4901416a913dcc236619b09ad7e1533e653cda30a9dca56ff8202d734a24f195", "size": 15649},
-    "src/sim.js": {"sha256": "9310ac1c72bcb29cf84f0a5cf801a683db963ea63dc27d0dc10ac1f698bfc1a2", "size": 7458},
-    "starhermit.txt": {"sha256": "6007689456c3b36fbc3dadc405711cf1ace90f11bc620041825b0fc0de3647fb", "size": 1126}
+    "index.html": {"sha256": "2cc5018a2803724b3e204cbe23b90bbfc1091277c502bfaa7bf643e783fb29ab", "size": 1766},
+    "server.js": {"sha256": "3584f7bc9759f382c2ff78afd57a93c40c5c6b9c45a8cd0a8c606527c93aa9ea", "size": 7234},
+    "src/main.ts": {"sha256": "a3232f08e11436fb7c7bb8e8e4089a55984d6f0655a77d42308d7acbf5d8a8c3", "size": 22897},
+    "src/online.ts": {"sha256": "e7cab3755bc0e79731e0ab8e215f850dcc96aa26252f0cf00299647ef9fa4ceb", "size": 6516},
+    "src/sim.js": {"sha256": "6cc7ef6d8f4c43d9745ea9fbc04585953b3f138d56b8f92d1e47ef6b2944a5c0", "size": 19421},
+    "starhermit.txt": {"sha256": "09e983d42e9b72f23fa12e48c02a28c3b724c25cb64254941588658dfdd21048", "size": 1763}
   },
   "format": 1
 }
