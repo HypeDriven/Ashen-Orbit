@@ -1,0 +1,21 @@
+{
+  "files": {
+    "assets/grain.png": {"sha256": "a66226b274b6547e0befb6258db0e8126fc9bdc4eba07db232cc8236cd6e8d2f", "size": 27394},
+    "assets/rock0.png": {"sha256": "b1f0cbc17d2eb4e9c076d2d2a85b0dc200c44cba334bbc29bd1dca08e8958367", "size": 16879},
+    "assets/rock1.png": {"sha256": "ca22243651602872b3405007bc559968ca74290e91c538dd36c269b29d7bb270", "size": 17099},
+    "assets/rock2.png": {"sha256": "f4acc812bd125709aa0d1e4dfa2bcba7092d3e19c6561ff5fb0ce26c2e79729e", "size": 17257},
+    "assets/rock3.png": {"sha256": "9df00d99d59645eeb3ecfd7ac63c27164f1cd7ce23c785ab951ed7ac0e46e2c0", "size": 16958},
+    "assets/rock4.png": {"sha256": "10e5b49563d012d2d18176ffb1c46d99b7f30acfa5ad0434928a9a676a2c6922", "size": 16916},
+    "assets/rock5.png": {"sha256": "42620a03a812934507e991a0e55af6cf21dba078588f345105659d8515d4d843", "size": 17133},
+    "assets/rock6.png": {"sha256": "7ec485f0cf5865ff7c1d174f428307e6c4e14a7c33e2fce7de0b8ca5216dc9e9", "size": 16892},
+    "assets/rock7.png": {"sha256": "6f5f787e62fd46ce40443608d9fff9987f7e616edd44b7c094d30c482aa986d2", "size": 17147},
+    "assets/rock8.png": {"sha256": "bd74f355e5da2c58b0f640469ef559fe1eee765d7481c59239820977559c0413", "size": 17110},
+    "assets/rock9.png": {"sha256": "8164e919b56fbbb0011a6dfc70fe627cd0d7903757b45b17e4872b424b1f6ac6", "size": 17111},
+    "assets/station.png": {"sha256": "53e63b668c3e35e65c6875da233705fdcf89844c5a16404fc74b9a27e0de418a", "size": 78908},
+    "index.html": {"sha256": "cbae9c59daa846f63bf5cef78b320ff9faa1dd3542720f1b771a819078b10c4e", "size": 1756},
+    "src/main.ts": {"sha256": "4901416a913dcc236619b09ad7e1533e653cda30a9dca56ff8202d734a24f195", "size": 15649},
+    "src/sim.js": {"sha256": "9310ac1c72bcb29cf84f0a5cf801a683db963ea63dc27d0dc10ac1f698bfc1a2", "size": 7458},
+    "starhermit.txt": {"sha256": "6007689456c3b36fbc3dadc405711cf1ace90f11bc620041825b0fc0de3647fb", "size": 1126}
+  },
+  "format": 1
+}

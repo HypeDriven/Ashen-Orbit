@@ -1,0 +1,11 @@
+import assert from 'node:assert/strict';
+import {createGame,update,emp,upgrade,jump,checkpoint,clear} from '../game/src/sim.js';
+let s=createGame();assert.equal(s.ships.filter(e=>!e.team).length,3);assert.equal(s.nests.length,3);
+for(let i=0;i<180;i++)update(s,1/60,{x:1,y:0,fire:true});assert.ok(s.player.x>450);assert.ok(s.bullets.length>0);
+s.scrap=1000;let gun=s.gun;assert.ok(upgrade(s,1));assert.equal(s.gun,gun+1);let old=s.scrap;s.scrap=0;assert.equal(upgrade(s,2),false);s.scrap=old;
+let enemy=s.ships.find(e=>e.team);enemy.x=s.player.x+100;enemy.y=s.player.y;let hp=enemy.hp;emp(s);assert.ok(enemy.hp<hp);assert.equal(s.pulse,14);emp(s);assert.equal(s.pulse,14);
+assert.equal(jump(s),false);for(let n of s.nests)n.hp=0;assert.ok(clear(s));assert.ok(jump(s));assert.equal(s.sector,1);assert.equal(s.nests.length,3);
+let reloaded=createGame(checkpoint(s));assert.equal(reloaded.gun,s.gun);assert.equal(reloaded.sector,1);
+for(let i=0;i<2;i++){for(let n of s.nests)n.hp=0;assert.ok(jump(s));}assert.equal(s.sector,3);for(let n of s.nests)n.hp=0;assert.equal(clear(s),false);for(let e of s.ships)if(e.kind===2)e.hp=0;assert.ok(jump(s));assert.ok(s.won);
+s=createGame();s.rocks=[];s.nests=[];s.ships=[s.player];s.loot=[{x:s.player.x,y:s.player.y,v:8}];old=s.scrap;update(s,1/60,{});assert.equal(s.scrap,old+8);s.player.hp=-1;update(s,1/60,{});assert.ok(s.dead);
+console.log('PASS: flight, firing, upgrades, affordability, EMP cooldown, sector gates, final boss, checkpoint, salvage and defeat');
