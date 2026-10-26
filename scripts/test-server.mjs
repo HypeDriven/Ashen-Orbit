@@ -1,0 +1,18 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';import vm from 'node:vm';
+const code=fs.readFileSync(new URL('../game/server.js',import.meta.url),'utf8');
+const id1='00000000-0000-4000-8000-000000000001',id2='00000000-0000-4000-8000-000000000002';
+let ctx;function invoke(hook){const scope=vm.createContext({});vm.runInContext('Math.random=()=>{throw new Error("Ambient RNG forbidden")};Date=undefined;',scope);vm.runInContext(code,scope);return JSON.parse(JSON.stringify(scope.game[hook](ctx)));}
+function begin(mission='salvage',two=true){ctx={now:1761436800000,random:.3,players:two?[{id:id1,name:'Alpha'},{id:id2,name:'Beta'}]:[{id:id1,name:'Alpha'},{id:'ai',ai:true}],room:{metadata:{mission}},sessionState:null,playerStates:{}};let r=invoke('createSession');assert.ok(r.ok);ctx.sessionState=r.sessionState;return r;}
+function step(inputs=[]){ctx.now+=50;ctx.inputs=inputs;let r=invoke('onTick');if(r.sessionState)ctx.sessionState=r.sessionState;return r;}
+begin();assert.equal(ctx.sessionState.pilots.length,2);ctx.message={from:id1,data:{type:'collect',scrap:999999}};assert.equal(invoke('onPlayerMessage').ok,false);assert.equal(ctx.sessionState.pilots[0].scrap,0);ctx.message={from:'spoof',data:{type:'input',x:1}};assert.equal(invoke('onPlayerMessage').ok,false);
+let p=ctx.sessionState.pilots[0],x=p.x;step([{from:id1,data:{x:9999,y:0,aim:NaN,fire:true}}]);assert.ok(ctx.sessionState.pilots[0].x-x<=215*.05+.01);assert.equal(ctx.sessionState.pilots[0].a,-Math.PI/2);
+ctx.sessionState.spawn=10000;ctx.sessionState.loot=[{x:ctx.sessionState.pilots[0].x,y:120,v:12}];let r=step();assert.equal(ctx.sessionState.pilots[0].scrap,12);ctx.sessionState.tick=99;r=step();assert.equal(r.scores['daily-scrap'][id1],12);
+ctx.sessionState.pilots[0].hp=0;ctx.sessionState.pilots[1].x=ctx.sessionState.pilots[0].x;for(let i=0;i<85;i++)step([{from:id2,data:{tractor:true}}]);assert.equal(ctx.sessionState.pilots[0].hp,130);
+begin('relay');ctx.sessionState.spawn=10000;ctx.sessionState.pilots.forEach((p,i)=>Object.assign(p,ctx.sessionState.beacons[i]));for(let i=0;i<242&&!ctx.sessionState.ended;i++)r=step();assert.equal(r.result.kind,'coop-victory');
+begin('salvage');ctx.sessionState.pilots[0].scrap=600;r=step();assert.equal(r.result.kind,'coop-victory');
+begin('convoy');ctx.sessionState.spawn=10000;ctx.sessionState.time=89.98;r=step();assert.equal(r.result.kind,'coop-victory');
+begin('daily',false);assert.equal(ctx.sessionState.pilots.length,1);ctx.sessionState.time=119.98;ctx.sessionState.pilots[0].dayScrap=156;r=step();assert.equal(r.scores['daily-scrap'][id1],156);assert.equal(r.result.kind,'coop-victory');
+begin('daily',false);ctx.sessionState.day--;ctx.sessionState.pilots[0].dayScrap=900;ctx.sessionState.tick=99;r=step();assert.equal(r.scores['daily-scrap'][id1],0);
+begin();ctx.sessionState.core.hp=0;r=step();assert.equal(r.result.kind,'defeat');
+console.log('PASS: two-player authoritative sessions, forged score/identity rejection, input clamping, scrap accounting, partner revival, three PvE win conditions, daily solo/UTC rollover and defeat.');

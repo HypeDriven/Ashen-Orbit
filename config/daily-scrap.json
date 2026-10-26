@@ -1,0 +1,9 @@
+{
+  "key": "daily-scrap",
+  "name": "Daily Scrap Collected",
+  "scoreType": "integer",
+  "sortDirection": "desc",
+  "resetSchedule": "daily",
+  "minScore": 0,
+  "maxScore": 1000000
+}
