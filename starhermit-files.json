@@ -14,12 +14,13 @@
     "assets/rock8.png": {"sha256": "bd74f355e5da2c58b0f640469ef559fe1eee765d7481c59239820977559c0413", "size": 17110},
     "assets/rock9.png": {"sha256": "8164e919b56fbbb0011a6dfc70fe627cd0d7903757b45b17e4872b424b1f6ac6", "size": 17111},
     "assets/station.png": {"sha256": "53e63b668c3e35e65c6875da233705fdcf89844c5a16404fc74b9a27e0de418a", "size": 78908},
-    "index.html": {"sha256": "2cc5018a2803724b3e204cbe23b90bbfc1091277c502bfaa7bf643e783fb29ab", "size": 1766},
-    "server.js": {"sha256": "3584f7bc9759f382c2ff78afd57a93c40c5c6b9c45a8cd0a8c606527c93aa9ea", "size": 7234},
-    "src/main.ts": {"sha256": "a3232f08e11436fb7c7bb8e8e4089a55984d6f0655a77d42308d7acbf5d8a8c3", "size": 22897},
-    "src/online.ts": {"sha256": "e7cab3755bc0e79731e0ab8e215f850dcc96aa26252f0cf00299647ef9fa4ceb", "size": 6516},
-    "src/sim.js": {"sha256": "6cc7ef6d8f4c43d9745ea9fbc04585953b3f138d56b8f92d1e47ef6b2944a5c0", "size": 19421},
-    "starhermit.txt": {"sha256": "09e983d42e9b72f23fa12e48c02a28c3b724c25cb64254941588658dfdd21048", "size": 1763}
+    "index.html": {"sha256": "5b820b4de0773c8265dbb986288066d815fdde0031dc53a7b00cfa96280e96b2", "size": 1766},
+    "server.js": {"sha256": "5264e0fa8a86856ecd80c2f652998eef5a396fa616e24b9c11703c9e2255f7cb", "size": 7659},
+    "src/arsenal.js": {"sha256": "eb5f382b74af87bc46a6942fa0ea238da4bf52f8a7a5475723411e9ece64eea0", "size": 7002},
+    "src/main.ts": {"sha256": "2853c1a4dc314fea96c35ef361a15ffa1add53e6dcf768529e33518afce2ba33", "size": 28526},
+    "src/online.ts": {"sha256": "12b0f95a84988fa000bdb5f998b5eb50585aea6a530a334ed8f0610146301e02", "size": 6577},
+    "src/sim.js": {"sha256": "e08a7ec379fc6a45d0d3f30b4e21aadf546bdb2264b305fbfa3316b60bd6ff78", "size": 30403},
+    "starhermit.txt": {"sha256": "c997c6182a62b60a42069ddb5eba555529ca18550ff443200985582c176f21cb", "size": 2141}
   },
   "format": 1
 }
