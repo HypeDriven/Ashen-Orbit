@@ -15,4 +15,5 @@ begin('convoy');ctx.sessionState.spawn=10000;ctx.sessionState.time=89.98;r=step(
 begin('daily',false);assert.equal(ctx.sessionState.pilots.length,1);ctx.sessionState.time=119.98;ctx.sessionState.pilots[0].dayScrap=156;r=step();assert.equal(r.scores['daily-scrap'][id1],156);assert.equal(r.result.kind,'coop-victory');
 begin('daily',false);ctx.sessionState.day--;ctx.sessionState.pilots[0].dayScrap=900;ctx.sessionState.tick=99;r=step();assert.equal(r.scores['daily-scrap'][id1],0);
 begin();ctx.sessionState.core.hp=0;r=step();assert.equal(r.result.kind,'defeat');
+begin();ctx.sessionState.spawn=10000;step([{from:id1,data:{steering:true,turn:9999,thrust:9999}}]);p=ctx.sessionState.pilots[0];assert.ok(p.a>-Math.PI/2&&p.a<-1.4);assert.ok(Math.hypot(p.vx,p.vy)<216);let before=Math.hypot(p.vx,p.vy);step([{from:id1,data:{steering:true,brake:true}}]);p=ctx.sessionState.pilots[0];assert.ok(Math.hypot(p.vx,p.vy)<before);
 console.log('PASS: two-player authoritative sessions, forged score/identity rejection, input clamping, scrap accounting, partner revival, three PvE win conditions, daily solo/UTC rollover and defeat.');

@@ -3,7 +3,7 @@
 // All motion, damage, collection and score calculations happen here.
 function clamp(v,a,b){return Number.isFinite(v)?Math.max(a,Math.min(b,v)):0;}
 function distance(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
-function clean(m){return {x:clamp(m.x,-1,1),y:clamp(m.y,-1,1),aim:Number.isFinite(m.aim)?clamp(m.aim,-Math.PI*2,Math.PI*2):null,fire:m.fire===true,tractor:m.tractor===true,boost:m.boost===true};}
+function clean(m){return {steering:m.steering===true,turn:clamp(m.turn,-1,1),thrust:clamp(m.thrust,0,1),brake:m.brake===true,x:clamp(m.x,-1,1),y:clamp(m.y,-1,1),aim:Number.isFinite(m.aim)?clamp(m.aim,-Math.PI*2,Math.PI*2):null,fire:m.fire===true,tractor:m.tractor===true,boost:m.boost===true};}
 function broadcast(s){return [{to:'all',data:{type:'snapshot',world:s}}];}
 function start(ctx){
  var humans=ctx.players.filter(function(p){return !p.ai;});
@@ -30,8 +30,8 @@ function tick(ctx){
  s.pilots.forEach(function(p){
   if(p.hp<=0){var partner=s.pilots.find(function(o){return o.id!==p.id&&o.hp>0&&distance(p,o)<120&&o.input.tractor&&ctx.now-o.lastInput<800;});if(partner){p.revive+=dt;if(p.revive>=4){p.hp=130;p.revive=0;}}else p.revive=0;return;}
   var m=ctx.now-p.lastInput<800?p.input:clean({});var length=Math.max(1,Math.hypot(m.x,m.y)),v=m.boost?310:m.tractor?155:215;
-  p.vx=m.x/length*v;p.vy=m.y/length*v;p.x=clamp(p.x+p.vx*dt,-1400,1400);p.y=clamp(p.y+p.vy*dt,-1000,1000);p.cd-=dt;
-  if(m.aim!==null)p.a=m.aim;else{var target=null,dd=900;s.enemies.forEach(function(e){var d=distance(p,e);if(d<dd){dd=d;target=e;}});if(target)p.a=Math.atan2(target.y-p.y,target.x-p.x);}
+  if(m.steering){p.a+=m.turn*2.8*dt;p.a=Math.atan2(Math.sin(p.a),Math.cos(p.a));p.vx+=((Math.cos(p.a)*m.thrust+m.x/length)*v*2-p.vx*(m.brake?9:.3))*dt;p.vy+=((Math.sin(p.a)*m.thrust+m.y/length)*v*2-p.vy*(m.brake?9:.3))*dt;var speed=Math.max(1,Math.hypot(p.vx,p.vy)/v);p.vx/=speed;p.vy/=speed;}else{p.vx=m.x/length*v;p.vy=m.y/length*v;}p.x=clamp(p.x+p.vx*dt,-1400,1400);p.y=clamp(p.y+p.vy*dt,-1000,1000);p.cd-=dt;
+  if(!m.steering&&m.aim!==null)p.a=m.aim;else if(!m.steering){var target=null,dd=900;s.enemies.forEach(function(e){var d=distance(p,e);if(d<dd){dd=d;target=e;}});if(target)p.a=Math.atan2(target.y-p.y,target.x-p.x);}
   if(m.fire&&p.cd<=0&&s.bullets.length<200){p.cd=.2;s.bullets.push({x:p.x,y:p.y,vx:Math.cos(p.a)*640,vy:Math.sin(p.a)*640,t:1.6,owner:p.id,team:0,dmg:26});}
  });
  s.spawn-=dt;if(s.spawn<=0&&s.enemies.length<24){s.wave++;s.spawn=s.mission==='daily'?2.4:3;var a=(ctx.random||.5)*Math.PI*2;for(var i=0;i<(s.mission==='daily'?2:3);i++){var aa=a+i*.2;s.enemies.push({id:s.wave*10+i,x:Math.cos(aa)*1250,y:Math.sin(aa)*850,hp:i===0&&s.wave%3===0?150:65,max:i===0&&s.wave%3===0?150:65,kind:i===0&&s.wave%3===0?1:s.wave%4===0?3:0,a:aa,cd:1.5});}}

@@ -1,6 +1,6 @@
-# Ashen Orbit — Salvage Routes
+# Ashen Orbit — Arsenal & Command
 
-A monochrome space-salvage and fleet-combat game for **StarHermit engine 1.14.0**.
+A monochrome space-salvage and fleet-combat game for **StarHermit engine 1.16.5**.
 
 - **main** contains only the distributable game, with `index.html` and `starhermit.txt` at its root.
 - **development** contains editable source, tests, setup tools and the generated `dist/` build.
@@ -9,13 +9,23 @@ A monochrome space-salvage and fleet-combat game for **StarHermit engine 1.14.0*
 
 Four upgrade trees contain twelve prerequisite-linked technologies: cannons, multishot, piercing ammunition; hull, shields, nanite repair; engines, tractor range, EMP; hangar capacity, escort weapons and escort armor. Salvage and research fund separate upgrade paths. Escorts must be built after expanding the hangar.
 
-Fly through seven sector profiles. After purging a sector, choose a destination with different jump tolls, salvage multipliers, service prices, thermal or ion hazards, asteroid density and enemy populations. Three cleared sectors unlock Dead Star and its dreadnought. Each sector offers black-box recovery, relay reboot, bounty hunting and a vulnerable freighter escort. Optional objectives pay once; exact world snapshots prevent save/reload reward farming.
+Fly through eleven sector profiles. After purging a sector, choose a destination with different jump tolls, salvage multipliers, service prices, thermal or ion hazards, asteroid density and enemy populations. Dead Star requires eight non-final sector clears, twelve distinct completed contracts, navigation ciphers from the relays in The Hollow, Brood Frontier and The Silent Archive, and a Cruiser or Dreadnought hull. Revisit cleared sectors to finish missed objectives; completed contracts do not repay. The 9,500-hull final dreadnought has shield guards and three reinforcement phases. Each sector offers black-box recovery, relay reboot, bounty hunting and a vulnerable freighter escort. Optional objectives pay once; exact world snapshots prevent save/reload reward farming.
 
 Six enemy classes have distinct combat behavior: raider, armored bulwark, dreadnought, charging lancer, drone-spawning broodmother and close-range leech.
 
+## Weapons and shipyard
+
+Dry Dock → **HULL / OUTFIT** opens the shipyard. Grow from Skiff (4 mounts) through Corvette (6), Frigate (9), Cruiser (10) and Dreadnought (12). Each step needs scrap, research and cleared sectors. Larger hulls gain armor, reactor power and mounts but lose speed and turn rate and have larger collision radii. Existing compatible equipment transfers to the larger hull.
+
+Fixed weapon mounts fire along the hull heading. Turrets rotate independently at a bounded rate toward the selected nearby target and fire once aligned. Touch controls automatically choose nearby targets; desktop pilots use Tab or click. Mounts accept weapons, utilities, engines, reactors or shields according to their type. Fitting obeys the hull's power budget. Purchasing a component unlocks a reusable fitting license. Empty mounts and fit any unlocked compatible component without repurchasing it.
+
+17 weapon families: autocannon, beam laser, pulse laser, disruptor, ion projector, homing missiles, unguided rockets, particle lance, railgun, plasma mortar, flak battery, rotary cannon, arc coil, thermite jet, proximity mines, antimatter torpedo and siphon beam. The catalog displays damage, shot interval, energy and heat, along with tradeoffs. Beams hit instantly but drain energy; disruptors specialize against shields; ion shots jam drives and guns; missiles turn gradually; explosive weapons risk self-damage; rail/particle weapons pierce targets but demand power and cooling; flak and thermite need close range; mines arm after a delay; siphon damage repairs hull. Fast projectiles use swept collision tests.
+
+Weapons share capacitor energy with the tractor and a heat meter. Overheating locks weapons until heat falls below 35%. Utilities offer cooling, tractor reach or armor. Engine choices trade speed for agility, reactor overdrive reduces cooling, and heavy shields reduce speed. Weapon licenses unlock progressively by sector clears. Campaign equipment is separate from the equal, authoritative online mission loadout.
+
 ## Controls
 
-WASD/arrows move; mouse aims; click/Space fires; Shift boosts; **T toggles the tractor beam**; Q fires EMP; R changes escort stance; E docks; M opens the sector chart at Ring 07; P pauses offline play. A powered tractor collects distant scrap, recovers black boxes and reduces thrust while active. Touch devices get movement, fire and boost controls; the tractor and station menus use touchable buttons.
+Left/right arrows turn the hull; up applies forward thrust; down brakes without reversing. WASD provides optional world-space movement. Click selects a nearby enemy and fires; Tab cycles nearby targets; Space fires; Shift boosts; **T toggles the tractor beam**; Q fires EMP; R changes escort stance; E docks; M opens the sector chart at Ring 07; P pauses offline play. A powered tractor collects distant scrap, recovers black boxes and reduces thrust while active. Touch devices get movement, fire and boost controls; the tractor and station menus use touchable buttons.
 
 ## Two-player StarHermit PvE
 
@@ -43,7 +53,7 @@ Supply `STARHERMIT_ACCESS_TOKEN` in your local environment with an owner access 
 
 ## Develop / build
 
-Download the official 1.14.0 runtime from https://wiki.starhermit.com/docs/engine-releases.html, then on **development**:
+Download the official 1.16.5 runtime from https://wiki.starhermit.com/docs/engine-releases.html, then on **development**:
 
 ```
 starhermit types game
@@ -51,6 +61,7 @@ starhermit game
 npx --package typescript tsc -p game
 node scripts/test-sim.mjs
 node scripts/test-server.mjs
+node scripts/test-arsenal.mjs
 node scripts/build.mjs
 ```
 
