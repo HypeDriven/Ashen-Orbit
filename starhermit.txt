@@ -1,9 +1,9 @@
-name=Ashen Orbit
-description=Command a scavenger flotilla through a dying star system. Fit 17 weapon families to five growing hulls with tracking turrets and custom components. Salvage, complete contracts, choose routes through eleven sectors and unlock a three-phase final battle.
-cover=assets/cover.jpg
-banner=assets/banner.jpg
+name=Righteous Republic
+description=Command the Republic fleet against the fictional Left Wing Rebellion. Disable rebel outposts, recover military intelligence, customize modular warships and reclaim eleven contested sectors.
+cover=assets/republic-cover.jpg
+banner=assets/republic-banner.jpg
 tags=Space,Action,Strategy,Singleplayer,Exploration,Co-op
-release_notes=Mouse flight update: cursor is a rotation target constrained by hull turn speed; A/D and Left/Right strafe relative to the ship. W/Up thrusts forward, S/Down reverses, either Shift boosts. Includes Close Contact detailed effects, Ring Guard defenses and the extended campaign.
+release_notes=Righteous Republic rebrand: a Republic fleet campaign against the fictional Left Wing Rebellion. Rebel outposts, carrier squadrons and a fortified Rebel Citadel define the new rebellion campaign. New cover and banner; existing saves, weapon upgrades, controls, co-op missions and daily scrap leaderboard retained.
 link.Source=https://github.com/HypeDriven/Ashen-Orbit/tree/development
 launch=index.html
 engine.api=1

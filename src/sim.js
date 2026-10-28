@@ -2,7 +2,7 @@ import {emitVisual,stepVisuals,rememberTrail} from './effects.js';
 import {createBaseDefense,updateBaseDefense,interceptBaseShot} from './defenses.js';
 import {WEAPONS,COMPONENTS,HULLS,weapon,component,compatible,angleDelta,turnTowards,segmentDistance} from './arsenal.js';
 export {WEAPONS,COMPONENTS,HULLS} from './arsenal.js';
-// Ashen Orbit: fixed-step simulation shared by native and browser runtimes.
+// Righteous Republic: fixed-step simulation shared by native and browser runtimes.
 export const TAU = Math.PI * 2;
 export const SECTOR_INFO = [
   {name:'THE PALE BELT',risk:'LOW',reward:1,hazard:'none',toll:0,repair:35,types:[0,1,5],note:'Quiet salvage lanes. Affordable repairs.',bonus:'Balanced rewards / safe station'},
@@ -10,21 +10,21 @@ export const SECTOR_INFO = [
   {name:'THE HOLLOW',risk:'HIGH',reward:1.45,hazard:'ion',toll:0,repair:55,types:[3,4,5],note:'Ion storms suppress shield regeneration.',bonus:'+45% salvage / unreliable shields'},
   {name:'DRIFTER HAVEN',risk:'LOW',reward:.85,hazard:'none',toll:55,repair:20,types:[0,5],note:'A protected refuge with cheap repairs.',bonus:'-15% salvage / low danger / cheap services'},
   {name:'IRON GRAVEYARD',risk:'MEDIUM',reward:1.8,hazard:'dense',toll:25,repair:55,types:[1,3,4],note:'Rich ore, dense rocks, armored patrols.',bonus:'+80% salvage / 90 asteroids / heavy enemies'},
-  {name:'BROOD FRONTIER',risk:'EXTREME',reward:1.5,hazard:'brood',toll:0,repair:70,types:[4,5,3],note:'Carrier swarms. Every nest yields extra research.',bonus:'+50% salvage / double nest research'},
-  {name:'DEAD STAR',risk:'FINAL',reward:1.8,hazard:'ion',toll:80,repair:60,types:[0,1,3,4,5],note:'Destroy the dreadnought and end the signal.',bonus:'Final battle / requires the completed command campaign'},
+  {name:'REBEL FRONTIER',risk:'EXTREME',reward:1.5,hazard:'reinforcements',toll:0,repair:70,types:[4,5,3],note:'Carrier swarms. Every rebel outpost yields extra intel.',bonus:'+50% salvage / double outpost intel'},
+  {name:'REBEL CITADEL',risk:'FINAL',reward:1.8,hazard:'ion',toll:80,repair:60,types:[0,1,3,4,5],note:'Destroy the rebel flagship and dismantle its command network.',bonus:'Final battle / requires the completed command campaign'},
   {name:'PRISM NEBULA',risk:'HIGH',reward:1.7,hazard:'ion',toll:60,repair:70,types:[1,3,5],note:'Shielded guardians patrol the relay.',bonus:'Disruptors counter shields / +70% salvage'},
   {name:'THE SILENT ARCHIVE',risk:'EXTREME',reward:1.9,hazard:'dense',toll:80,repair:80,types:[1,3,4],note:'Recover an ancient navigation cipher at the relay.',bonus:'Navigation cipher / armored long-range patrols'},
   {name:'EMBER FORGE',risk:'EXTREME',reward:2,hazard:'heat',toll:90,repair:95,types:[1,4,5],note:'Hot salvage fields favor radiators over raw firepower.',bonus:'+100% salvage / heat and carrier swarms'},
-  {name:'OUTER WATCH',risk:'EXTREME',reward:2.1,hazard:'brood',toll:100,repair:100,types:[1,3,4],note:'The last armada stands between you and Dead Star.',bonus:'+110% salvage / elite defenders'}
+  {name:'OUTER WATCH',risk:'EXTREME',reward:2.1,hazard:'reinforcements',toll:100,repair:100,types:[1,3,4],note:'The last armada stands between you and Rebel Citadel.',bonus:'+110% salvage / elite defenders'}
 ];
 export const SECTORS=SECTOR_INFO.map(s=>s.name);
 export const ENEMIES=[
- {name:'RAIDER',hp:75,speed:155,range:300,rate:1.1,radius:17,reward:3},
- {name:'BULWARK',hp:240,speed:78,range:260,rate:.8,radius:29,reward:8},
- {name:'DREADNOUGHT',hp:1800,speed:42,range:450,rate:.5,radius:62,reward:45},
- {name:'LANCER',hp:95,speed:100,range:670,rate:2.6,radius:22,reward:5},
- {name:'BROODMOTHER',hp:310,speed:68,range:580,rate:2.2,radius:38,reward:12},
- {name:'LEECH',hp:32,speed:235,range:15,rate:1.6,radius:12,reward:2}
+ {name:'REBEL RAIDER',hp:75,speed:155,range:300,rate:1.1,radius:17,reward:3},
+ {name:'REBEL BULWARK',hp:240,speed:78,range:260,rate:.8,radius:29,reward:8},
+ {name:'REBEL FLAGSHIP',hp:1800,speed:42,range:450,rate:.5,radius:62,reward:45},
+ {name:'REBEL LANCER',hp:95,speed:100,range:670,rate:2.6,radius:22,reward:5},
+ {name:'DRONE CARRIER',hp:310,speed:68,range:580,rate:2.2,radius:38,reward:12},
+ {name:'BOARDING DRONE',hp:32,speed:235,range:15,rate:1.6,radius:12,reward:2}
 ];
 export const UPGRADES=[
  {id:'gun',tree:0,name:'CANNON COILS',desc:'+7 damage; faster firing each rank.',max:5,base:70,need:'',rank:0,tech:0},
@@ -88,10 +88,10 @@ export function loadSector(s){
  for(let i=0;i<s.wing;i++){const e=makeShip(60+i*55,280);e.max=e.hp=150+level(s,'winghull')*55;s.ships.push(e);}
  for(let i=0;i<3;i++){const a=i*TAU/3-.6,dd=1050+s.depth*90,hp=250+s.depth*75;s.nests.push({id:++serial,x:Math.cos(a)*dd,y:Math.sin(a)*dd,r:60,hp,max:hp,cd:9+i,team:1});for(let j=0;j<2+Math.min(3,s.depth);j++)s.ships.push(makeShip(Math.cos(a)*dd+(r()-.5)*260,Math.sin(a)*dd+(r()-.5)*260,1,cfg.types[(i+j)%cfg.types.length]));}
  const bounty=makeShip(-900,-600,1,s.sector===3?0:1);bounty.max=bounty.hp=380+s.depth*80;bounty.bounty=true;s.ships.push(bounty);
- s.objectives=[{id:'wreck',name:'RECOVER THE BLACK BOX',x:650,y:490,progress:0,total:8,reward:150,tech:0,done:false,failed:false,active:false},
- {id:'relay',name:'REBOOT THE RELAY',x:-650,y:550,progress:0,total:6,reward:70,tech:2,done:false,failed:false,active:false},
- {id:'bounty',name:'HUNT THE MARKED CAPTAIN',x:bounty.x,y:bounty.y,progress:0,total:1,reward:210,tech:1,done:false,failed:false,active:true,target:bounty.id},
- {id:'convoy',name:'ESCORT THE FREIGHTER',x:300,y:-900,progress:0,total:1,reward:240,tech:1,hp:260,done:false,failed:false,active:false}];
+ s.objectives=[{id:'wreck',name:'RECOVER REBEL FLIGHT RECORDER',x:650,y:490,progress:0,total:8,reward:150,tech:0,done:false,failed:false,active:false},
+ {id:'relay',name:'SEIZE REBEL COMMS RELAY',x:-650,y:550,progress:0,total:6,reward:70,tech:2,done:false,failed:false,active:false},
+ {id:'bounty',name:'DEFEAT THE REBEL CAPTAIN',x:bounty.x,y:bounty.y,progress:0,total:1,reward:210,tech:1,done:false,failed:false,active:true,target:bounty.id},
+ {id:'convoy',name:'ESCORT REPUBLIC SUPPLY SHIP',x:300,y:-900,progress:0,total:1,reward:240,tech:1,hp:260,done:false,failed:false,active:false}];
  // Keep contract sites clear of asteroid collisions.
  s.rocks=s.rocks.filter(rock=>s.objectives.every(o=>dist(rock,o)>rock.r+100));
  for(const e of s.ships)if(e.team&&(e.kind===1||e.kind===3)){e.shield=e.maxShield=50+s.depth*12;}
@@ -118,7 +118,7 @@ export function upgrade(s,id){if(typeof id==='number')id=['','gun','armor','esco
  if(id==='winghull')for(const e of s.ships)if(!e.team&&e!==s.player)e.max=e.hp=150+level(s,'winghull')*55;
  notify(s,'UPGRADE INSTALLED');s.events.push('buy');return true;
 }
-export function jump(s,destination){if(s.sector===6&&!campaignStatus(s).ready){notify(s,'COMPLETE THE COMMAND CAMPAIGN FIRST');return false;}if(dist(s.player,{x:0,y:0})>285){notify(s,'DOCK AT RING 07 TO JUMP');return false;}if(!clear(s)){notify(s,'PURGE THE THREE NESTS BEFORE JUMPING');return false;}if(s.sector===6){s.won=true;notify(s,'THE SIGNAL IS SILENT. THE BELT IS FREE.');return true;}
+export function jump(s,destination){if(s.sector===6&&!campaignStatus(s).ready){notify(s,'COMPLETE THE COMMAND CAMPAIGN FIRST');return false;}if(dist(s.player,{x:0,y:0})>285){notify(s,'DOCK AT RING 07 TO JUMP');return false;}if(!clear(s)){notify(s,'DISABLE THE THREE REBEL OUTPOSTS BEFORE JUMPING');return false;}if(s.sector===6){s.won=true;notify(s,'REBEL COMMAND DISMANTLED. REPUBLIC SECURED.');return true;}
  const choice=routes(s).find(r=>r.id===destination);if(!choice){notify(s,'CHOOSE AN AVAILABLE SECTOR ON THE CHART');return false;}if(s.scrap<choice.toll){notify(s,'INSUFFICIENT SALVAGE FOR JUMP TOLL');return false;}s.scrap-=choice.toll;s.sector=destination;s.depth++;loadSector(s);return true;}
 export function tractorRange(s){return 340+level(s,'tractor')*110+stats(s).magnet*140;}
 export function emp(s){if(s.pulse>0||s.dead)return;s.pulse=14-level(s,'emp')*2;const range=420+level(s,'emp')*70,damage=110+level(s,'emp')*40;for(const e of s.ships)if(e.team&&dist(e,s.player)<range){e.hp-=damage;e.cd=3;}for(const n of s.nests)if(n.hp>0&&dist(n,s.player)<range)n.hp-=damage;s.bullets=s.bullets.filter(b=>!b.team||dist(b,s.player)>range);s.fx.push({x:s.player.x,y:s.player.y,vx:0,vy:0,t:.65,max:.65,pulse:true,r:range});s.events.push('pulse');}
@@ -165,7 +165,7 @@ export function update(s,dt,input){
  for(const r of s.rocks){const d=dist(e,r),rr=r.r+(e.team?ENEMIES[e.kind].radius:e===p?HULLS[s.hull].radius:15);if(d<rr){const a=Math.atan2(e.y-r.y,e.x-r.x);e.x=r.x+Math.cos(a)*rr;e.y=r.y+Math.sin(a)*rr;e.vx*=.92;e.vy*=.92;}}
  }
  for(const boss of s.ships.filter(e=>e.team&&e.kind===2)){const phase=boss.hp<boss.max*.33?2:boss.hp<boss.max*.66?1:0;if(phase>(boss.phase||0)){boss.phase=phase;boss.shield=boss.maxShield=350;for(let i=0;i<3;i++)s.ships.push(makeShip(boss.x+(i-1)*100,boss.y+100,1,phase===1?3:4));notify(s,'DREADNOUGHT PHASE '+(phase+1)+' / REINFORCEMENTS');}if(phase===2)boss.cd-=dt*.6;}
- for(const n of s.nests){if(n.hp<=0)continue;n.cd-=dt;if(n.cd<=0&&s.ships.filter(e=>e.team&&e.hp>0).length<28){n.cd=cfg.hazard==='brood'?7:13;s.ships.push(makeShip(n.x+80,n.y,1,cfg.types[Math.floor(s.time)%cfg.types.length]));}}
+ for(const n of s.nests){if(n.hp<=0)continue;n.cd-=dt;if(n.cd<=0&&s.ships.filter(e=>e.team&&e.hp>0).length<28){n.cd=cfg.hazard==='reinforcements'?7:13;s.ships.push(makeShip(n.x+80,n.y,1,cfg.types[Math.floor(s.time)%cfg.types.length]));}}
  updateBaseDefense(s.baseDefense,dt,s.time,s.ships.filter(e=>e.team),s.bullets,(e,amount)=>damage(s,e,amount));
  for(const b of s.bullets){if(b.t<=0)continue;const w=b.weapon?weapon(b.weapon):null;const ax=b.x,ay=b.y;rememberTrail(b,dt);
  if(w?.homing){const target=s.ships.concat(s.nests).find(e=>(e.id||-1)===b.target&&e.hp>0&&e.team);if(target){const a=turnTowards(Math.atan2(b.vy,b.vx),Math.atan2(target.y-b.y,target.x-b.x),w.homing*dt);b.vx=Math.cos(a)*w.speed;b.vy=Math.sin(a)*w.speed;}}
@@ -182,7 +182,7 @@ export function update(s,dt,input){
  }
  s.bullets=s.bullets.filter(b=>b.t>0);s.rocks=s.rocks.filter(r=>r.hp>0);
  for(const e of s.ships)if(e.hp<=0&&!e.destroyed){e.destroyed=true;burst(s,e.x,e.y,e.kind===2?50:18);if(e.team){s.kills++;salvage(s,e.x,e.y,ENEMIES[e.kind].reward);}else if(e!==p){s.wing=Math.max(0,s.wing-1);notify(s,'WINGMAN LOST');}}
- for(const n of s.nests)if(n.hp<=0&&!n.destroyed){n.destroyed=true;burst(s,n.x,n.y,35);salvage(s,n.x,n.y,14);s.tech+=cfg.hazard==='brood'?2:1;notify(s,'NEST DESTROYED / RESEARCH RECOVERED');}
+ for(const n of s.nests)if(n.hp<=0&&!n.destroyed){n.destroyed=true;burst(s,n.x,n.y,35);salvage(s,n.x,n.y,14);s.tech+=cfg.hazard==='reinforcements'?2:1;notify(s,'REBEL OUTPOST DISABLED / INTEL RECOVERED');}
  s.ships=s.ships.filter(e=>e===p||e.hp>0);
  const range=tractorRange(s);let working=false;
  for(const l of s.loot){const d=dist(l,p);if(d<(towing?range:65)){const a=Math.atan2(p.y-l.y,p.x-l.x),v=towing?430+level(s,'tractor')*65:160;l.x+=Math.cos(a)*Math.min(d,v*dt);l.y+=Math.sin(a)*Math.min(d,v*dt);if(towing)working=true;}if(d<25){s.scrap+=l.v;l.v=0;}}
