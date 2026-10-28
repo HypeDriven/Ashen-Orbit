@@ -14,13 +14,14 @@
     "assets/rock8.png": {"sha256": "bd74f355e5da2c58b0f640469ef559fe1eee765d7481c59239820977559c0413", "size": 17110},
     "assets/rock9.png": {"sha256": "8164e919b56fbbb0011a6dfc70fe627cd0d7903757b45b17e4872b424b1f6ac6", "size": 17111},
     "assets/station.png": {"sha256": "53e63b668c3e35e65c6875da233705fdcf89844c5a16404fc74b9a27e0de418a", "size": 78908},
-    "index.html": {"sha256": "5b820b4de0773c8265dbb986288066d815fdde0031dc53a7b00cfa96280e96b2", "size": 1766},
-    "server.js": {"sha256": "5264e0fa8a86856ecd80c2f652998eef5a396fa616e24b9c11703c9e2255f7cb", "size": 7659},
+    "index.html": {"sha256": "a2b4bf2db5030f887b5256606c8af965778289ec24b626c030d9e0dee20c0efb", "size": 1766},
+    "server.js": {"sha256": "bbd432e36cff56af585b30c5f8b15c622c4110325d82fa0017f40b78216e56c2", "size": 12569},
     "src/arsenal.js": {"sha256": "eb5f382b74af87bc46a6942fa0ea238da4bf52f8a7a5475723411e9ece64eea0", "size": 7002},
-    "src/main.ts": {"sha256": "2853c1a4dc314fea96c35ef361a15ffa1add53e6dcf768529e33518afce2ba33", "size": 28526},
-    "src/online.ts": {"sha256": "12b0f95a84988fa000bdb5f998b5eb50585aea6a530a334ed8f0610146301e02", "size": 6577},
-    "src/sim.js": {"sha256": "e08a7ec379fc6a45d0d3f30b4e21aadf546bdb2264b305fbfa3316b60bd6ff78", "size": 30403},
-    "starhermit.txt": {"sha256": "c997c6182a62b60a42069ddb5eba555529ca18550ff443200985582c176f21cb", "size": 2141}
+    "src/defenses.js": {"sha256": "583991d4502cbd05afddcf39bfc2255851bbf65733998d1db1c33a320ade437b", "size": 4437},
+    "src/main.ts": {"sha256": "0983d2b8f9c6ac81664f56836b75bd48cae9633db506611c4c7bbc863bbacdbe", "size": 30043},
+    "src/online.ts": {"sha256": "78969e4446eae7fa342fff542eb01280162d0a001d6cefaaae87b9c2f9edb1e5", "size": 6611},
+    "src/sim.js": {"sha256": "9c0a92a864898ef4411b67f0bde714f55f90706665023cdc8843b29c5ebb3241", "size": 31124},
+    "starhermit.txt": {"sha256": "0d4e2308f02c6071ee01a2d692452967bb724efbb6b15936b899caa71ed21626", "size": 2308}
   },
   "format": 1
 }

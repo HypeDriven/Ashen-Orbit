@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import {createGame,update,checkpoint,fit,fitStatus,expandHull,hullStatus,HULLS,WEAPONS,COMPONENTS,stats,makeShip,selectTarget,selectedTarget,campaignStatus,routes,jump,loadSector} from '../game/src/sim.js';
-function arena(){const s=createGame();s.player.x=0;s.player.y=0;s.player.a=0;s.player.hp=s.player.max=10000;s.rocks=[];s.nests=[];s.objectives=[];s.ships=[s.player];s.scrap=100000;s.tech=100;s.cleared=[0,1,2,3,4,5,7,8,9,10];return s;}
+function arena(){const s=createGame();s.baseDefense={shields:[],turrets:[],fighters:[],fx:[]};s.player.x=0;s.player.y=0;s.player.a=0;s.player.hp=s.player.max=10000;s.rocks=[];s.nests=[];s.objectives=[];s.ships=[s.player];s.scrap=100000;s.tech=100;s.cleared=[0,1,2,3,4,5,7,8,9,10];return s;}
 function frames(s,n,input={}){for(let i=0;i<n;i++)update(s,1/60,{steering:true,...input});}
 assert.equal(WEAPONS.length,17);assert.equal(new Set(WEAPONS.map(w=>w.id)).size,17);
 for(const w of WEAPONS){const s=arena();assert.ok(fit(s,0,w.id));const e=makeShip(w.mine?30:130,0,1,1);e.hp=e.max=5000;e.cd=100;e.shield=0;s.ships.push(e);selectTarget(s);const start=e.hp;frames(s,1,{fire:true});assert.ok(s.energy<100,w.id+' must cost capacitor');assert.ok(s.heat>0,w.id+' must create heat');frames(s,w.mine?109:59,{fire:true});assert.ok(e.hp<start,w.id+' must deal real damage');}

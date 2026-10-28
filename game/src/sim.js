@@ -1,3 +1,4 @@
+import {createBaseDefense,updateBaseDefense,interceptBaseShot} from './defenses.js';
 import {WEAPONS,COMPONENTS,HULLS,weapon,component,compatible,angleDelta,turnTowards,segmentDistance} from './arsenal.js';
 export {WEAPONS,COMPONENTS,HULLS} from './arsenal.js';
 // Ashen Orbit: fixed-step simulation shared by native and browser runtimes.
@@ -46,7 +47,7 @@ export function makeShip(x,y,team=0,kind=0){const def=ENEMIES[kind]||ENEMIES[0];
 function level(s,id){return s.upgrades[id]||0;}
 export function notify(s,message){s.message=message;s.messageTime=4;}
 export function createGame(saved=null){
- const s={schema:3,hull:0,loadout:['cannon',null,'drive','reactor'],owned:['cannon','drive','reactor','barrier'],mountState:[],heat:0,overheated:false,targetId:null,ciphers:[],sector:0,depth:0,scrap:120,tech:0,kills:0,gun:1,armor:0,wing:2,time:0,pulse:0,boost:100,energy:100,tractorOn:false,stance:0,upgrades:{gun:1,armor:0},visited:[],cleared:[],sectorDone:false,ships:[],rocks:[],bullets:[],loot:[],fx:[],nests:[],objectives:[],message:'',messageTime:0,won:false,dead:false,events:[],seed:934,contractLog:[],hazardClock:0};
+ const s={schema:3,baseDefense:createBaseDefense(),hull:0,loadout:['cannon',null,'drive','reactor'],owned:['cannon','drive','reactor','barrier'],mountState:[],heat:0,overheated:false,targetId:null,ciphers:[],sector:0,depth:0,scrap:120,tech:0,kills:0,gun:1,armor:0,wing:2,time:0,pulse:0,boost:100,energy:100,tractorOn:false,stance:0,upgrades:{gun:1,armor:0},visited:[],cleared:[],sectorDone:false,ships:[],rocks:[],bullets:[],loot:[],fx:[],nests:[],objectives:[],message:'',messageTime:0,won:false,dead:false,events:[],seed:934,contractLog:[],hazardClock:0};
  if(saved&&typeof saved==='object'){
   for(const k of ['sector','scrap','kills','tech','depth','wing'])if(Number.isFinite(saved[k]))s[k]=Math.max(0,Math.floor(saved[k]));
   s.sector=Math.min(10,s.sector);s.depth=Math.min(10,s.depth);s.wing=Math.min(5,s.wing);
@@ -69,15 +70,16 @@ export function createGame(saved=null){
    for(const key of ['ships','rocks','nests','loot','objectives','bullets'])if(Array.isArray(w[key]))s[key]=w[key];
    s.player=s.ships[0];for(const e of s.ships)serial=Math.max(serial,e.id||0);
    for(const key of ['time','pulse','boost','energy','hazardClock','heat'])if(Number.isFinite(w[key]))s[key]=w[key];
-   s.overheated=!!w.overheated;s.tractorOn=!!w.tractorOn;s.stance=w.stance===1?1:0;s.sectorDone=!!w.sectorDone;s.won=!!w.won;s.dead=s.player.hp<=0;
+   s.overheated=!!w.overheated;if(w.baseDefense&&Array.isArray(w.baseDefense.shields)&&w.baseDefense.shields.length===3&&Array.isArray(w.baseDefense.turrets)&&w.baseDefense.turrets.length===2&&Array.isArray(w.baseDefense.fighters)&&w.baseDefense.fighters.length===6)s.baseDefense=w.baseDefense;
+   s.tractorOn=!!w.tractorOn;s.stance=w.stance===1?1:0;s.sectorDone=!!w.sectorDone;s.won=!!w.won;s.dead=s.player.hp<=0;
   }
  }
  for(const n of s.nests)if(!n.id)n.id=++serial;
  return s;
 }
-export function checkpoint(s){const world={};for(const k of ['ships','rocks','nests','loot','objectives','bullets','time','pulse','boost','energy','hazardClock','tractorOn','stance','sectorDone','won','heat','overheated'])world[k]=s[k];return {schema:3,hull:s.hull,loadout:s.loadout,owned:s.owned,contractLog:s.contractLog,ciphers:s.ciphers,sector:s.sector,depth:s.depth,scrap:s.scrap,tech:s.tech,kills:s.kills,wing:s.wing,upgrades:s.upgrades,visited:s.visited,cleared:s.cleared,world};}
+export function checkpoint(s){const world={};for(const k of ['ships','rocks','nests','loot','objectives','bullets','time','pulse','boost','energy','hazardClock','tractorOn','stance','sectorDone','won','heat','overheated','baseDefense'])world[k]=s[k];return {schema:3,hull:s.hull,loadout:s.loadout,owned:s.owned,contractLog:s.contractLog,ciphers:s.ciphers,sector:s.sector,depth:s.depth,scrap:s.scrap,tech:s.tech,kills:s.kills,wing:s.wing,upgrades:s.upgrades,visited:s.visited,cleared:s.cleared,world};}
 export function loadSector(s){
- s.ships=[];s.rocks=[];s.bullets=[];s.loot=[];s.fx=[];s.nests=[];s.objectives=[];s.sectorDone=false;s.dead=false;s.pulse=0;s.boost=100;s.energy=100;s.time=0;s.hazardClock=0;
+ s.baseDefense=createBaseDefense();s.ships=[];s.rocks=[];s.bullets=[];s.loot=[];s.fx=[];s.nests=[];s.objectives=[];s.sectorDone=false;s.dead=false;s.pulse=0;s.boost=100;s.energy=100;s.time=0;s.hazardClock=0;
  const p=makeShip(100,180);p.max=p.hp=220+level(s,'armor')*60;p.maxShield=p.shield=level(s,'shield')*45;s.player=p;refit(s,true);s.mountState=[];s.heat=0;s.overheated=false;s.targetId=null;s.ships.push(p);
  if(!s.visited.includes(s.sector))s.visited.push(s.sector);
  const cfg=SECTOR_INFO[s.sector],r=rng(s.seed+s.sector*97+s.depth*7);
@@ -147,7 +149,7 @@ export function update(s,dt,input){
  s.heat=Math.max(0,s.heat-st.cooling*dt);if(s.heat>=100)s.overheated=true;if(s.overheated&&s.heat<35)s.overheated=false;
  fireMounts(s,dt,!!input.fire,target);
  for(const e of s.ships){if(e.hp<=0)continue;e.cd-=dt*(e.jam>0?.15:1);e.hit=Math.max(0,e.hit-dt);if(e!==p){
-  let target=p;if(e.team){const convoy=s.objectives.find(o=>o.id==='convoy'&&o.active&&!o.done&&!o.failed);if(convoy&&dist(e,convoy)<dist(e,p)*.9)target=convoy;}
+  let target=p;if(e.team){const convoy=s.objectives.find(o=>o.id==='convoy'&&o.active&&!o.done&&!o.failed);if(convoy&&dist(e,convoy)<dist(e,p)*.9)target=convoy;for(const f of s.baseDefense.fighters)if(f.hp>0&&dist(e,f)<Math.min(230,dist(e,target)))target=f;}
   else{let dd=s.stance?1400:750;for(const en of s.ships.concat(s.nests)){if(en.hp<=0||!en.team)continue;const d=dist(e,en);if(d<dd){dd=d;target=en;}}}
   if(e.burn>0){e.burn-=dt;damage(s,e,9*dt);}e.jam=Math.max(0,(e.jam||0)-dt);
   const d=dist(e,target),a=Math.atan2(target.y-e.y,target.x-e.x);e.a=a;const def=ENEMIES[e.kind],wanted=e.team?def.range:target===p?130:340,v=(e.team?def.speed:235)*(e.jam>0?.4:1),approach=d>wanted?1:d<wanted*.65?-.55:0,side=e.team&&e.kind===3?0:.22;
@@ -162,9 +164,10 @@ export function update(s,dt,input){
  }
  for(const boss of s.ships.filter(e=>e.team&&e.kind===2)){const phase=boss.hp<boss.max*.33?2:boss.hp<boss.max*.66?1:0;if(phase>(boss.phase||0)){boss.phase=phase;boss.shield=boss.maxShield=350;for(let i=0;i<3;i++)s.ships.push(makeShip(boss.x+(i-1)*100,boss.y+100,1,phase===1?3:4));notify(s,'DREADNOUGHT PHASE '+(phase+1)+' / REINFORCEMENTS');}if(phase===2)boss.cd-=dt*.6;}
  for(const n of s.nests){if(n.hp<=0)continue;n.cd-=dt;if(n.cd<=0&&s.ships.filter(e=>e.team&&e.hp>0).length<28){n.cd=cfg.hazard==='brood'?7:13;s.ships.push(makeShip(n.x+80,n.y,1,cfg.types[Math.floor(s.time)%cfg.types.length]));}}
- for(const b of s.bullets){const w=b.weapon?weapon(b.weapon):null;const ax=b.x,ay=b.y;
+ updateBaseDefense(s.baseDefense,dt,s.time,s.ships.filter(e=>e.team),s.bullets,(e,amount)=>damage(s,e,amount));
+ for(const b of s.bullets){if(b.t<=0)continue;const w=b.weapon?weapon(b.weapon):null;const ax=b.x,ay=b.y;
  if(w?.homing){const target=s.ships.concat(s.nests).find(e=>(e.id||-1)===b.target&&e.hp>0&&e.team);if(target){const a=turnTowards(Math.atan2(b.vy,b.vx),Math.atan2(target.y-b.y,target.x-b.x),w.homing*dt);b.vx=Math.cos(a)*w.speed;b.vy=Math.sin(a)*w.speed;}}
- b.x+=b.vx*dt;b.y+=b.vy*dt;b.t-=dt;
+ b.x+=b.vx*dt;b.y+=b.vy*dt;b.t-=dt;if(interceptBaseShot(s.baseDefense,b,ax,ay,b.x,b.y))continue;
  for(const e of s.ships.concat(b.team?[]:s.nests)){if(e.hp<=0||e.team===b.team||b.hits.includes(e.id||-1))continue;
  const radius=e.r||(e.team?ENEMIES[e.kind].radius:e===p?HULLS[s.hull].radius:16);
  if(w?.mine&&b.t>w.life-1)continue;

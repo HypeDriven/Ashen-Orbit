@@ -1,6 +1,6 @@
 # Ashen Orbit — Arsenal & Command
 
-A monochrome space-salvage and fleet-combat game for **StarHermit engine 1.16.5**.
+A monochrome space-salvage and fleet-combat game for **StarHermit engine 1.20.1**.
 
 - **main** contains only the distributable game, with `index.html` and `starhermit.txt` at its root.
 - **development** contains editable source, tests, setup tools and the generated `dist/` build.
@@ -22,6 +22,16 @@ Fixed weapon mounts fire along the hull heading. Turrets rotate independently at
 17 weapon families: autocannon, beam laser, pulse laser, disruptor, ion projector, homing missiles, unguided rockets, particle lance, railgun, plasma mortar, flak battery, rotary cannon, arc coil, thermite jet, proximity mines, antimatter torpedo and siphon beam. The catalog displays damage, shot interval, energy and heat, along with tradeoffs. Beams hit instantly but drain energy; disruptors specialize against shields; ion shots jam drives and guns; missiles turn gradually; explosive weapons risk self-damage; rail/particle weapons pierce targets but demand power and cooling; flak and thermite need close range; mines arm after a delay; siphon damage repairs hull. Fast projectiles use swept collision tests.
 
 Weapons share capacitor energy with the tractor and a heat meter. Overheating locks weapons until heat falls below 35%. Utilities offer cooling, tractor reach or armor. Engine choices trade speed for agility, reactor overdrive reduces cooling, and heavy shields reduce speed. Weapon licenses unlock progressively by sector clears. Campaign equipment is separate from the equal, authoritative online mission loadout.
+
+## Ring Guard defenses
+
+Ring 07 provides light support, not an invulnerable sanctuary:
+
+- Three 65-point shield pockets sit around the ring. Hide behind one to absorb hostile shots; friendly fire passes through. Damage beyond the remaining shield strength passes through too. Shields recover at 5 points/sec after eight quiet seconds. Ships can breach the screens, so close attackers remain dangerous.
+- Two short-range point-defense lasers prioritize incoming projectiles (0.8s recharge). With no incoming shot, they inflict only 6 damage every 1.2s on nearby attackers. They cannot engage targets outside the station neighborhood.
+- Two squads of three fragile, 28-hull microfighters patrol the base. Their weapons do just 2 damage/sec each. They engage only enemies within 460m of the ring and cannot fly beyond 500m. Lost fighters take 45–55 seconds to replace. They do not occupy player escort slots or collect scrap.
+
+Defenses and their damage/cooldowns persist in campaign checkpoints. Older saves gain the defenses automatically. Stationary online cores (salvage, relay and daily missions) use the same deterministic defense logic on the authoritative server; the moving convoy does not gain a shielded base. Server snapshots include shields, fighters and laser flashes. Score submissions still count only scrap picked up by a pilot.
 
 ## Controls
 
@@ -53,7 +63,7 @@ Supply `STARHERMIT_ACCESS_TOKEN` in your local environment with an owner access 
 
 ## Develop / build
 
-Download the official 1.16.5 runtime from https://wiki.starhermit.com/docs/engine-releases.html, then on **development**:
+Download the official 1.20.1 runtime from https://wiki.starhermit.com/docs/engine-releases.html, then on **development**:
 
 ```
 starhermit types game
@@ -62,10 +72,11 @@ npx --package typescript tsc -p game
 node scripts/test-sim.mjs
 node scripts/test-server.mjs
 node scripts/test-arsenal.mjs
+node scripts/test-defenses.mjs
 node scripts/build.mjs
 ```
 
-Set `STARHERMIT_RUNTIME` to the engine executable path if it is not on PATH. The build validates the engine package and every emitted SHA-256/size in its file index, including manifest cover/banner/server paths. Publish the **contents** of `dist/` to main, not the development tree. No engine binaries are included.
+Set `STARHERMIT_RUNTIME` to the engine executable path if it is not on PATH. The build first inlines the shared defense rules into the sandboxed server script (`node scripts/sync-defenses.mjs --check` verifies parity), then validates the engine package and every emitted SHA-256/size in its file index, including manifest cover/banner/server paths. Publish the **contents** of `dist/` to main, not the development tree. No engine binaries are included.
 
 ## Artwork
 
