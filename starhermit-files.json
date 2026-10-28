@@ -15,15 +15,15 @@
     "assets/rock9.png": {"sha256": "8164e919b56fbbb0011a6dfc70fe627cd0d7903757b45b17e4872b424b1f6ac6", "size": 17111},
     "assets/station.png": {"sha256": "53e63b668c3e35e65c6875da233705fdcf89844c5a16404fc74b9a27e0de418a", "size": 78908},
     "index.html": {"sha256": "a2b4bf2db5030f887b5256606c8af965778289ec24b626c030d9e0dee20c0efb", "size": 1766},
-    "server.js": {"sha256": "967b9d296afedca9310499291927258782f0cdb476aee5ebf95e5e6cfc36f9f4", "size": 13207},
+    "server.js": {"sha256": "9620049904ca0280ae221a54d93e02f82876f8aeaa244f464f1257c27e3d8157", "size": 13468},
     "src/arsenal.js": {"sha256": "eb5f382b74af87bc46a6942fa0ea238da4bf52f8a7a5475723411e9ece64eea0", "size": 7002},
-    "src/controls.js": {"sha256": "7fee2c3aa88681e0c25991842025e8e3133b6aceebb19f259020005bfb0e45b3", "size": 692},
+    "src/controls.js": {"sha256": "d99870ed90d3851eb78fa11bb58609d4eb6d1ad58e505c0868d0bff1e1a7cde3", "size": 1152},
     "src/defenses.js": {"sha256": "8a747088514244220af52e66bd9ab04e8175ffde8e1f3660e24f7ee01792b07f", "size": 4481},
     "src/effects.js": {"sha256": "d8d07d4c9dc2a093fbb0d328be277db666f66dde8a799cc98ad5dc1c9f6fe9f2", "size": 15340},
-    "src/main.ts": {"sha256": "663e39a825909816143f92c5092c919c82ede5796a0922a79c24b881548b2309", "size": 31256},
-    "src/online.ts": {"sha256": "b4451328dd071bd95dd36fbc1e668056eed3bd404b81e0e8cceda5c99a23d3c7", "size": 6949},
-    "src/sim.js": {"sha256": "f8278d3988eab621df42ac06bff86f6a94c5d54f29b39333ea2e243201405402", "size": 32300},
-    "starhermit.txt": {"sha256": "ec02977f5c41ca964a3198c228b85cd5ce7b9456a46ef2c64f96cea11f277ca9", "size": 2102}
+    "src/main.ts": {"sha256": "c448013aeafbc953a44dece818235ac1b41029b2d20dd11c1fd1def505de99c9", "size": 31378},
+    "src/online.ts": {"sha256": "1781c0aef909fe042529b0e50a4d851601b764fdc56996c876361f712830bc89", "size": 6964},
+    "src/sim.js": {"sha256": "ddd5cc87bea2a1954e8430ff7aff8b28dd26866bfdacb13f0b963436e575e6c9", "size": 32473},
+    "starhermit.txt": {"sha256": "dc1da2b66ec6fff47796b5fd8a4130097be6bd0d286439d18968e5b012947f96", "size": 1895}
   },
   "format": 1
 }
