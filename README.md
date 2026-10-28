@@ -1,9 +1,23 @@
 # Righteous Republic
 
-A monochrome fleet-combat game about the fictional Righteous Republic fighting the Left Wing Rebellion, built for **StarHermit engine 1.20.1**.
+A monochrome fleet-combat game about the fictional Righteous Republic fighting the Left Wing Rebellion, built for **StarHermit engine 1.21.0**.
 
 - **main** contains only the distributable game, with `index.html` and `starhermit.txt` at its root.
 - **development** contains editable source, tests, setup tools and the generated `dist/` build.
+
+## Shared universe, allegiance and voice
+
+Choose **Republic** or **Rebellion** on the main menu, then **ENTER SHARED UNIVERSE**. Everyone discovers the same named common world; it admits up to **32 concurrent pilots**, including late arrivals. Empty worlds pause and resume through StarHermit's persistent-session service. There is no automatic overflow shard when the common world is full. The room reserves extra discovery seats so a full 32-pilot game remains listed; the authoritative server enforces the 32-pilot limit. Concurrent first creators reconcile their lobbies before launch; production operators should keep one common world rather than manually starting duplicate rooms. Solo campaigns are saved separately for each faction, with existing saves migrated as Republic campaigns. The legacy two-pilot missions and daily challenge remain available separately.
+
+The server owns factions, movement, damage, resource collection, cloak visibility, mines, purchases, death and respawns. The two faction bases sit at opposite ends of a single shared frontier. Capture neutral relays, mine the central belt, fight patrols and opposing pilots, and dock at your faction base with **E** to expand your actual hull or change role. Hull sizes add armor, visible size, weapon mounts and projectiles while reducing speed and turning. Six physically distinct roles trade speed, armor, shield strength, damage, tractor range, repairs, mine capacity and cloak efficiency: Interceptor, Guardian, Prospector, Minelayer, Infiltrator and Support Tender. Progress is kept in world state and periodically in authoritative per-player documents; purchases save immediately. Leaving does not finish the common world. Reset Expedition affects solo progress only.
+
+**C** toggles cloak. It drains capacitor, slows travel and suppresses firing; firing, boosting, damage and close-range detection defeat stealth. A Guardian cannot cloak. Hidden enemy pilot coordinates are removed from faction snapshots; allies and nearby detectors can still see them. **L** lays a mine behind the ship, with an arming delay, capacitor cost, cooldown, faction safety, finite lifetime and per-role rack limits. The Minelayer supports the largest rack. Both mechanics also work in solo campaigns.
+
+Click **ENABLE VOICE** in online play, allow the runtime's microphone prompt, and hold **V** (or touch PTT) to speak. Allied voices are full volume within 120m, fall off smoothly and become silent at 1,100m; opponents, unknown ships and destroyed ships are locally muted. Existing individual volume/mute preferences are respected and restored on voice exit. The graph over a friendly ship shows real **speaking activity over time**; the engine does not expose remote frequency bins, so this is not a true FFT spectrum. Voice uses the session's StarHermit conversation and is subject to the platform's voice-room capacity and service availability. The game never starts microphone capture on its own.
+
+Asteroids crack and split into smaller, drifting, rotating pieces as they take damage. Area and contained ore are conserved in normal splits (at the density cap a smaller surviving piece retains the ore); fragments below 13m dissolve into debris and collectible ore on destruction. New fragments are not hit again by the projectile that created them. Entity counts, inputs, player snapshots and effect histories are bounded. See `scripts/test-universe.mjs` for authority, membership, stealth, progression, fragmentation and serialization checks.
+
+Publishing the updated `main` build on StarHermit is required to install the persistent backend declaration and membership hook. GitHub alone does not run a server or grant microphone permission. Production multi-account networking, resumed-world behavior and live microphones still require a published build and real-account testing; they cannot be verified by the local headless checks.
 
 ## Expedition
 
@@ -75,7 +89,7 @@ Supply `STARHERMIT_ACCESS_TOKEN` in your local environment with an owner access 
 
 ## Develop / build
 
-Download the official 1.20.1 runtime from https://wiki.starhermit.com/docs/engine-releases.html, then on **development**:
+Download the official 1.21.0 runtime from https://wiki.starhermit.com/docs/engine-releases.html, then on **development**:
 
 ```
 starhermit types game
@@ -88,6 +102,7 @@ node scripts/test-defenses.mjs
 node scripts/test-effects.mjs
 node scripts/test-controls.mjs
 node scripts/test-campaign.mjs
+node scripts/test-universe.mjs
 node scripts/build.mjs
 ```
 

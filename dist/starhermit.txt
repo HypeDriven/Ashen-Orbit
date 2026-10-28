@@ -1,16 +1,16 @@
 name=Righteous Republic
-description=Command the Republic fleet against the fictional Left Wing Rebellion. Disable rebel outposts, recover military intelligence, customize modular warships and reclaim eleven contested sectors.
+description=Choose Republic or Rebellion in a shared persistent space frontier. Upgrade distinct hulls and roles, capture relays, lay mines, cloak, mine fragmenting asteroids and coordinate through distance-based allied voice.
 cover=assets/republic-cover.jpg
 banner=assets/republic-banner.jpg
-tags=Space,Action,Strategy,Singleplayer,Exploration,Co-op
-release_notes=Reset Expedition now immediately replaces the saved campaign and starts from the initial Pale Belt sector with the starter ship, equipment and resources. Progress, upgrades, collected intel, contracts and world damage are reset. Includes the Righteous Republic rebellion campaign, Close Contact effects and mouse-directed flight.
+tags=Space,Action,Multiplayer,PvP,Co-op,Mining,Stealth
+release_notes=Shared Frontier: faction choice, a persistent 32-pilot common universe with mid-game joins, faction-filtered cloak visibility, proximity voice/activity graphs, six ship roles, hull progression, dedicated mines, cloaking and ore-conserving asteroid fragmentation. Engine 1.21.0. Existing solo campaigns and missions retained.
 link.Source=https://github.com/HypeDriven/Ashen-Orbit/tree/development
 launch=index.html
 engine.api=1
 engine.entry=src/main.ts
-engine.version=1.20.1
-engine.minor=18
-engine.capabilities=storage,platform
+engine.version=1.21.0
+engine.minor=23
+engine.capabilities=storage,platform,voice
 server=server.js
 control.up=KeyW+ArrowUp | Apply forward thrust
 control.down=KeyS+ArrowDown | Apply reverse thrust
@@ -41,3 +41,7 @@ engine.gamepad.pause=Start
 cache..=0
 
 control.target=Tab | Cycle nearby target
+
+control.cloak=KeyC | Toggle cloak
+control.mine=KeyL | Lay proximity mine
+control.talk=KeyV | Push to talk

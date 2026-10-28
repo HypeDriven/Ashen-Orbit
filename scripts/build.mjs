@@ -1,5 +1,5 @@
 import {spawnSync} from 'node:child_process';import fs from 'node:fs';import path from 'node:path';import crypto from 'node:crypto';
-await import('./sync-defenses.mjs');
+await import('./sync-defenses.mjs');await import('./sync-universe.mjs');
 const engine=process.env.STARHERMIT_RUNTIME||'starhermit';
 for(const args of [['check','game'],['package','--web','game','--out','dist']]){const r=spawnSync(engine,args,{stdio:'inherit'});if(r.error)throw r.error;if(r.status!==0)process.exit(r.status||1);}
 const root=path.resolve('dist'),index=JSON.parse(fs.readFileSync(path.join(root,'starhermit-files.json'),'utf8'));

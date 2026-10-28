@@ -1,9 +1,9 @@
 import assert from 'node:assert/strict';
 import {createGame,checkpoint,loadSector,expandHull,fit,update} from '../game/src/sim.js';
-import {resetExpedition} from '../game/src/campaign.js';
+import {resetExpedition,saveExpedition,savedExpedition} from '../game/src/campaign.js';
 const clone=x=>JSON.parse(JSON.stringify(x));
 let old=createGame();old.scrap=99999;old.tech=100;old.cleared=[0,1,2,3,4,5,7,8];for(let i=0;i<4;i++)assert.ok(expandHull(old));assert.ok(fit(old,0,'siege'));old.sector=8;old.depth=8;loadSector(old);old.kills=270;old.contractLog=['2:relay','5:relay','8:relay'];old.ciphers=[2,5,8];old.nests[0].hp=0;old.nests[0].destroyed=true;old.objectives[0].done=true;old.objectives[0].progress=8;old.loot=[{x:1,y:2,v:99}];old.baseDefense.shields[0].hp=1;old.baseDefense.fighters[0].hp=0;old.player.hp=0;old.dead=true;old.won=true;old.time=800;old.heat=110;old.overheated=true;old.tractorOn=true;
-const values={campaign:clone(checkpoint(old)),settings:{muted:true},'daily-scrap':1234};const storage={setJson:(key,value)=>values[key]=clone(value)};
+const values={campaign:clone(checkpoint(old)),settings:{muted:true},'daily-scrap':1234};const storage={getJson:key=>values[key],setJson:(key,value)=>values[key]=clone(value)};
 const fresh=resetExpedition(storage),baseline=createGame();
 for(const key of ['sector','depth','scrap','tech','kills','hull','wing','upgrades','loadout','owned','visited','cleared','contractLog','ciphers','time','pulse','boost','energy','tractorOn','heat','overheated','stance','sectorDone','dead','won','seed'])assert.deepEqual(fresh[key],baseline[key],key+' resets to the exact starting value');
 assert.equal(fresh.sector,0);assert.equal(fresh.scrap,120);assert.equal(fresh.hull,0);assert.equal(fresh.wing,2);assert.equal(fresh.player.hp,fresh.player.max);assert.equal(fresh.ships.filter(e=>!e.team).length,3);assert.equal(fresh.loot.length,0);assert.equal(fresh.bullets.length,0);assert.ok(fresh.nests.every(n=>n.hp===n.max&&!n.destroyed));assert.ok(fresh.objectives.every(o=>!o.done&&!o.failed));assert.deepEqual(fresh.baseDefense,baseline.baseDefense);
@@ -12,4 +12,5 @@ const reloaded=createGame(values.campaign);for(const key of ['sector','scrap','h
 // No old object references survive, including the solo world used after online play.
 old.upgrades.gun=5;old.loadout[0]='siege';old.nests[0].hp=-999;old.baseDefense.shields[0].hp=0;assert.equal(fresh.upgrades.gun,1);assert.equal(fresh.loadout[0],'cannon');assert.ok(fresh.nests[0].hp>0);assert.equal(fresh.baseDefense.shields[0].hp,65);assert.deepEqual(values.settings,{muted:true});assert.equal(values['daily-scrap'],1234);
 update(fresh,1/60,{steering:true,thrust:1});assert.ok(fresh.time>0);assert.equal(values.campaign.world.time,0);const again=resetExpedition(storage);assert.equal(again.time,0);assert.equal(createGame(values.campaign).time,0);
+const republic=createGame();republic.scrap=555;saveExpedition(storage,republic);const rebellion=resetExpedition(storage,1);rebellion.scrap=777;saveExpedition(storage,rebellion);assert.equal(createGame(savedExpedition(storage,0)).scrap,555);assert.equal(createGame(savedExpedition(storage,1)).scrap,777);resetExpedition(storage,1);assert.equal(createGame(savedExpedition(storage,0)).scrap,555);assert.equal(createGame(savedExpedition(storage,1)).scrap,120);
 console.log('PASS: full reset from an upgraded late-sector/dead/won expedition; immediate persisted replacement and reload; pristine starting world/resources/equipment; no stale references; repeat reset; unrelated settings and scores preserved.');
