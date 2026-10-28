@@ -17,13 +17,14 @@
     "index.html": {"sha256": "f73a8f4edc22d2503d9d6fb2e3d118621ae4fe8e7447c9856e14f68d065747fa", "size": 1789},
     "server.js": {"sha256": "b87c587c2937cf965a9e1c936d52a1d98be02090aacf3c3ad507aed18879c776", "size": 13502},
     "src/arsenal.js": {"sha256": "eb5f382b74af87bc46a6942fa0ea238da4bf52f8a7a5475723411e9ece64eea0", "size": 7002},
+    "src/campaign.js": {"sha256": "7ffb2954823ade54660eb9e604935da2afd8aa86e89b65a393d92955e9633796", "size": 341},
     "src/controls.js": {"sha256": "d99870ed90d3851eb78fa11bb58609d4eb6d1ad58e505c0868d0bff1e1a7cde3", "size": 1152},
     "src/defenses.js": {"sha256": "8a747088514244220af52e66bd9ab04e8175ffde8e1f3660e24f7ee01792b07f", "size": 4481},
     "src/effects.js": {"sha256": "d8d07d4c9dc2a093fbb0d328be277db666f66dde8a799cc98ad5dc1c9f6fe9f2", "size": 15340},
-    "src/main.ts": {"sha256": "9ddf3d04bbc7e6f13f789142e9fc44bf1111496d47fcd25078e84c198154fac5", "size": 31817},
+    "src/main.ts": {"sha256": "6cf2a7fd877983d9e9cc14e85bc876e9b520ba70b281250a9d5a636023fa069a", "size": 32263},
     "src/online.ts": {"sha256": "b2d261f976a65b92adbe7cdee5c2be55c6f61bb2e63490a51412136ce4906d91", "size": 6987},
     "src/sim.js": {"sha256": "008745432bf5ff65ae1ad0feb432896f0471c3249b01af3988b6d662ae0fd2e9", "size": 32623},
-    "starhermit.txt": {"sha256": "753f26477a8aa9c40e6f51fec33499d731be5ef58a370ce5847719704a695d84", "size": 1894}
+    "starhermit.txt": {"sha256": "cf6cda9019037db40c6ef5decf697b5f906d4bdff6573d21214ae7ac50c1fcde", "size": 1910}
   },
   "format": 1
 }
