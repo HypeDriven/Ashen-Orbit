@@ -33,9 +33,17 @@ Ring 07 provides light support, not an invulnerable sanctuary:
 
 Defenses and their damage/cooldowns persist in campaign checkpoints. Older saves gain the defenses automatically. Stationary online cores (salvage, relay and daily missions) use the same deterministic defense logic on the authoritative server; the moving convoy does not gain a shielded base. Server snapshots include shields, fighters and laser flashes. Score submissions still count only scrap picked up by a pilot.
 
+## Close Contact effects
+
+Zoom to **3.6x** with the mouse wheel, keyboard +/−, or the on-screen zoom buttons. All 17 weapon types have procedural visual recipes: detailed missile bodies/fins and exhaust, animated energy trails, piercing rail wakes, plasma lobes, lightning forks, siphon return filaments and armed mine indicators. Muzzles, hull contacts, shield contacts and explosions have separate layered effects. Close views reveal extra fragments, filaments, receiver assemblies, cooling ribs, lens rings, armor seams, cockpit details and fasteners. Hull hits leave up to eight local scorch marks per ship, preserved by campaign checkpoints.
+
+Effects use a shared 3,000-command geometry budget per frame, physical-pixel detail thresholds, viewport culling, at most 144 transient events and twelve trail samples per projectile. The effect renderer is deterministic and does not mutate projectile physics. Online muzzle, contact and destruction events originate on the authoritative server and are retained/deduplicated by the client while they animate. No damage or weapon balance changes are part of the visual update.
+
+`node scripts/preview-effects.mjs /tmp/ashen-effects-sheet.svg` produces a contact sheet using the game's own renderer. `node scripts/test-effects.mjs` checks recipes, geometry validity, draw limits, lifetimes and integration hooks.
+
 ## Controls
 
-Left/right arrows turn the hull; up applies forward thrust; down brakes without reversing. WASD provides optional world-space movement. Click selects a nearby enemy and fires; Tab cycles nearby targets; Space fires; Shift boosts; **T toggles the tractor beam**; Q fires EMP; R changes escort stance; E docks; M opens the sector chart at Ring 07; P pauses offline play. A powered tractor collects distant scrap, recovers black boxes and reduces thrust while active. Touch devices get movement, fire and boost controls; the tractor and station menus use touchable buttons.
+W/Up applies forward thrust, S/Down brakes without reversing, A/Left rotates counterclockwise, and D/Right rotates clockwise. Either Shift key boosts. Keyboard steering works immediately, even before the mouse moves; the original directional action names are retained, and the requested physical keys also work with older saved account bindings. Click selects a nearby enemy and fires; Tab cycles nearby targets; Space fires; Shift boosts; **T toggles the tractor beam**; Q fires EMP; R changes escort stance; E docks; M opens the sector chart at Ring 07; P pauses offline play. A powered tractor collects distant scrap, recovers black boxes and reduces thrust while active. Touch devices get movement, fire and boost controls; the tractor and station menus use touchable buttons.
 
 ## Two-player StarHermit PvE
 
@@ -73,6 +81,8 @@ node scripts/test-sim.mjs
 node scripts/test-server.mjs
 node scripts/test-arsenal.mjs
 node scripts/test-defenses.mjs
+node scripts/test-effects.mjs
+node scripts/test-controls.mjs
 node scripts/build.mjs
 ```
 
