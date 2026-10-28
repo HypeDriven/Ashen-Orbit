@@ -14,4 +14,4 @@ for(let i=0;i<20;i++){
  else if(i===18){p.poly([[44,0],[10,-15],[-25,-30],[-35,-20],[-20,0],[-35,20],[-25,30],[10,15]],'#b9bda7');renderHullDetail(p,{x:0,y:0,a:0,scars:[{x:-9,y:7,a:.5,size:3,born:1,weapon:'plasma'}]},45,2.37,[{type:'turret',x:0,y:-20}],['plasma']);renderVisual(p,{effect:'impact',x:24,y:0,a:Math.PI,size:17,t:.46,max:.65,seed:73},2.37);}
  else renderVisual(p,{effect:'explosion',x:0,y:0,size:25,t:1.25,max:1.7,seed:47},2.37);
 }
-parts.push('</svg>');fs.writeFileSync(process.argv[2]||'/tmp/ashen-effects-sheet.svg',parts.join('\n'));
+parts.push('</svg>');fs.writeFileSync(process.argv[2]||'/tmp/republic-effects-sheet.svg',parts.join('\n'));

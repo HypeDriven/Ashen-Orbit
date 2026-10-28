@@ -1,6 +1,6 @@
-# Ashen Orbit — Arsenal & Command
+# Righteous Republic
 
-A monochrome space-salvage and fleet-combat game for **StarHermit engine 1.20.1**.
+A monochrome fleet-combat game about the fictional Righteous Republic fighting the Left Wing Rebellion, built for **StarHermit engine 1.20.1**.
 
 - **main** contains only the distributable game, with `index.html` and `starhermit.txt` at its root.
 - **development** contains editable source, tests, setup tools and the generated `dist/` build.
@@ -9,9 +9,9 @@ A monochrome space-salvage and fleet-combat game for **StarHermit engine 1.20.1*
 
 Four upgrade trees contain twelve prerequisite-linked technologies: cannons, multishot, piercing ammunition; hull, shields, nanite repair; engines, tractor range, EMP; hangar capacity, escort weapons and escort armor. Salvage and research fund separate upgrade paths. Escorts must be built after expanding the hangar.
 
-Fly through eleven sector profiles. After purging a sector, choose a destination with different jump tolls, salvage multipliers, service prices, thermal or ion hazards, asteroid density and enemy populations. Dead Star requires eight non-final sector clears, twelve distinct completed contracts, navigation ciphers from the relays in The Hollow, Brood Frontier and The Silent Archive, and a Cruiser or Dreadnought hull. Revisit cleared sectors to finish missed objectives; completed contracts do not repay. The 9,500-hull final dreadnought has shield guards and three reinforcement phases. Each sector offers black-box recovery, relay reboot, bounty hunting and a vulnerable freighter escort. Optional objectives pay once; exact world snapshots prevent save/reload reward farming.
+Fly through eleven sector profiles. After securing a sector, choose a destination with different jump tolls, salvage multipliers, service prices, thermal or ion hazards, asteroid density and enemy populations. Rebel Citadel requires eight non-final sector clears, twelve distinct completed contracts, navigation ciphers from the relays in The Hollow, Rebel Frontier and The Silent Archive, and a Cruiser or Dreadnought hull. Revisit cleared sectors to finish missed objectives; completed contracts do not repay. The 9,500-hull final dreadnought has shield guards and three reinforcement phases. Each sector offers black-box recovery, relay reboot, bounty hunting and a vulnerable freighter escort. Optional objectives pay once; exact world snapshots prevent save/reload reward farming. The campaign targets rebel military outposts, squadrons and command infrastructure. Existing campaign saves remain compatible; the repository address remains HypeDriven/Ashen-Orbit.
 
-Six enemy classes have distinct combat behavior: raider, armored bulwark, dreadnought, charging lancer, drone-spawning broodmother and close-range leech.
+Six enemy classes have distinct combat behavior: raider, armored bulwark, dreadnought, charging lancer, drone-spawning drone carrier and close-range boarding drone.
 
 ## Weapons and shipyard
 
@@ -39,7 +39,7 @@ Zoom to **3.6x** with the mouse wheel, keyboard +/−, or the on-screen zoom but
 
 Effects use a shared 3,000-command geometry budget per frame, physical-pixel detail thresholds, viewport culling, at most 144 transient events and twelve trail samples per projectile. The effect renderer is deterministic and does not mutate projectile physics. Online muzzle, contact and destruction events originate on the authoritative server and are retained/deduplicated by the client while they animate. No damage or weapon balance changes are part of the visual update.
 
-`node scripts/preview-effects.mjs /tmp/ashen-effects-sheet.svg` produces a contact sheet using the game's own renderer. `node scripts/test-effects.mjs` checks recipes, geometry validity, draw limits, lifetimes and integration hooks.
+`node scripts/preview-effects.mjs /tmp/republic-effects-sheet.svg` produces a contact sheet using the game's own renderer. `node scripts/test-effects.mjs` checks recipes, geometry validity, draw limits, lifetimes and integration hooks.
 
 ## Controls
 
@@ -90,4 +90,4 @@ Set `STARHERMIT_RUNTIME` to the engine executable path if it is not on PATH. The
 
 ## Artwork
 
-Original game cover and banner were made with the built-in image generator, then JPEG-encoded for web delivery. Cover prompt: “Ashen Orbit; stippled monochrome orbital ring, cratered asteroid, salvage ships and tractor beams; ivory serif title.” Banner prompt: “wide monochrome engraved orbital ring and asteroid field with scavenger ships and a dark eclipse; no text.” Assets are `game/assets/cover.jpg` and `game/assets/banner.jpg`; `cover=` and `banner=` in the manifest reference the packaged images relative to the launch file. The small in-game asteroid/station sprites are reproducible with `python scripts/generate-art.py` (Pillow and NumPy).
+The new square cover and wide banner use monochrome etched space-fleet artwork and the **Righteous Republic** title. They were created with the built-in image generator and encoded as JPEG assets at `game/assets/republic-cover.jpg` and `game/assets/republic-banner.jpg`. The manifest references those project-local files. Exact generation prompts are in `config/republic-art-prompts.json`. The small asteroid/station sprites remain reproducible with `python scripts/generate-art.py` (Pillow and NumPy).
