@@ -43,7 +43,7 @@ Effects use a shared 3,000-command geometry budget per frame, physical-pixel det
 
 ## Controls
 
-W/Up applies forward thrust, S/Down brakes without reversing, A/Left rotates counterclockwise, and D/Right rotates clockwise. Either Shift key boosts. Keyboard steering works immediately, even before the mouse moves; the original directional action names are retained, and the requested physical keys also work with older saved account bindings. Click selects a nearby enemy and fires; Tab cycles nearby targets; Space fires; Shift boosts; **T toggles the tractor beam**; Q fires EMP; R changes escort stance; E docks; M opens the sector chart at Ring 07; P pauses offline play. A powered tractor collects distant scrap, recovers black boxes and reduces thrust while active. Touch devices get movement, fire and boost controls; the tractor and station menus use touchable buttons.
+W/Up applies forward thrust, S/Down applies reverse thrust (slowing forward travel and then driving backward), A/Left rotates counterclockwise, and D/Right rotates clockwise. Either Shift key boosts forward or reverse thrust. Keyboard steering works immediately, even before the mouse moves; the original directional action names are retained, and the requested physical keys also work with older saved account bindings. Click selects a nearby enemy and fires; Tab cycles nearby targets; Space fires; Shift boosts; **T toggles the tractor beam**; Q fires EMP; R changes escort stance; E docks; M opens the sector chart at Ring 07; P pauses offline play. A powered tractor collects distant scrap, recovers black boxes and reduces thrust while active. Touch devices get movement, fire and boost controls; the tractor and station menus use touchable buttons.
 
 ## Two-player StarHermit PvE
 

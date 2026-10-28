@@ -140,10 +140,11 @@ function contracts(s,dt){const p=s.player;for(const o of s.objectives){if(o.done
 export function update(s,dt,input){
  if(s.dead||s.won)return;s.events=[];s.time+=dt;s.messageTime-=dt;s.pulse=Math.max(0,s.pulse-dt);const p=s.player,cfg=SECTOR_INFO[s.sector];
  const st=stats(s);let dx=input.x||0,dy=input.y||0;const steering=input.steering===true;
- if(steering){p.a+=(input.turn||0)*st.turn*dt;dx+=Math.cos(p.a)*(input.thrust||0);dy+=Math.sin(p.a)*(input.thrust||0);}
+ const throttle=Math.max(-1,Math.min(1,(input.thrust||0)-(input.brake?1:0)));
+ if(steering){p.a+=(input.turn||0)*st.turn*dt;dx+=Math.cos(p.a)*throttle;dy+=Math.sin(p.a)*throttle;}
  let mag=Math.hypot(dx,dy);if(mag>1){dx/=mag;dy/=mag;}const boosting=input.boost&&s.boost>1&&mag>.1,towing=s.tractorOn&&s.energy>0,speed=(boosting?440:225)*(1+level(s,'engine')*.09)*st.speed*(towing?.74:1);
  s.boost=Math.max(0,Math.min(100,s.boost+dt*(boosting?-34/(1+level(s,'engine')*.2):19)));
- const drag=input.brake?9:steering&&mag<.1?.3:4;
+ const drag=steering&&mag<.1?.3:4;
  if(steering){p.vx+=dx*speed*dt*2;p.vy+=dy*speed*dt*2;p.vx*=Math.max(0,1-drag*dt);p.vy*=Math.max(0,1-drag*dt);const v=Math.hypot(p.vx,p.vy);if(v>speed){p.vx*=speed/v;p.vy*=speed/v;}}
  else{p.vx+=(dx*speed-p.vx)*Math.min(1,dt*4);p.vy+=(dy*speed-p.vy)*Math.min(1,dt*4);if(mag>.1)p.a=Math.atan2(dy,dx);}
  if(!steering&&!selectedTarget(s))selectTarget(s);const target=selectedTarget(s);if(!steering&&mag<.1&&target)p.a=turnTowards(p.a,Math.atan2(target.y-p.y,target.x-p.x),st.turn*dt);
