@@ -1,3 +1,4 @@
+import {emitVisual,stepVisuals,rememberTrail} from './effects.js';
 import {createBaseDefense,updateBaseDefense,interceptBaseShot} from './defenses.js';
 import {WEAPONS,COMPONENTS,HULLS,weapon,component,compatible,angleDelta,turnTowards,segmentDistance} from './arsenal.js';
 export {WEAPONS,COMPONENTS,HULLS} from './arsenal.js';
@@ -121,11 +122,11 @@ export function jump(s,destination){if(s.sector===6&&!campaignStatus(s).ready){n
  const choice=routes(s).find(r=>r.id===destination);if(!choice){notify(s,'CHOOSE AN AVAILABLE SECTOR ON THE CHART');return false;}if(s.scrap<choice.toll){notify(s,'INSUFFICIENT SALVAGE FOR JUMP TOLL');return false;}s.scrap-=choice.toll;s.sector=destination;s.depth++;loadSector(s);return true;}
 export function tractorRange(s){return 340+level(s,'tractor')*110+stats(s).magnet*140;}
 export function emp(s){if(s.pulse>0||s.dead)return;s.pulse=14-level(s,'emp')*2;const range=420+level(s,'emp')*70,damage=110+level(s,'emp')*40;for(const e of s.ships)if(e.team&&dist(e,s.player)<range){e.hp-=damage;e.cd=3;}for(const n of s.nests)if(n.hp>0&&dist(n,s.player)<range)n.hp-=damage;s.bullets=s.bullets.filter(b=>!b.team||dist(b,s.player)>range);s.fx.push({x:s.player.x,y:s.player.y,vx:0,vy:0,t:.65,max:.65,pulse:true,r:range});s.events.push('pulse');}
-function burst(s,x,y,n=18){for(let i=0;i<n;i++){const a=Math.random()*TAU,v=25+Math.random()*180;s.fx.push({x,y,vx:Math.cos(a)*v,vy:Math.sin(a)*v,t:.35+Math.random()*.6,max:1});}s.events.push('boom');}
+function burst(s,x,y,n=18){emitVisual(s.fx,'explosion',x,y,{size:n>=45?80:n>=30?42:n<=12?20:29,color:n<=12?'#b9b59a':'#e8bd85'});s.events.push('boom');}
 function salvage(s,x,y,count){for(let i=0;i<count;i++)s.loot.push({x:x+(Math.random()-.5)*55,y:y+(Math.random()-.5)*55,v:Math.round(8*SECTOR_INFO[s.sector].reward)});}
 function damage(s,e,amount){if(e.kind===2&&e.team&&s.ships.some(g=>g.bossGuard&&g.hp>0))amount*=.06;if(e.team&&e.kind===1)amount*=.72;let shield=Math.min(e.shield||0,amount);e.shield=Math.max(0,(e.shield||0)-shield);e.hp-=amount-shield;e.hit=.15;e.lastHit=s.time;}
 function complete(s,o){if(o.done||o.failed)return;o.done=true;const key=s.sector+':'+o.id;if(!s.contractLog.includes(key))s.contractLog.push(key);if(o.id==='relay'&&[2,5,8].includes(s.sector)&&!s.ciphers.includes(s.sector)){s.ciphers.push(s.sector);notify(s,'NAVIGATION CIPHER RECOVERED');}s.scrap+=Math.round(o.reward*SECTOR_INFO[s.sector].reward);s.tech+=o.tech;notify(s,o.name+' / CONTRACT PAID');s.events.push('buy');}
-function shoot(s,e,a){if(s.bullets.length>320)return;const player=e===s.player,kind=e.team?e.kind:-1;let speed=e.team?kind===3?620:300:650;let n=player?1+level(s,'multishot'):kind===2?7:kind===1?3:1;for(let i=0;i<n;i++){const aa=a+(i-(n-1)/2)*(kind===2?.26:kind===1?.15:.075);s.bullets.push({x:e.x+Math.cos(aa)*25,y:e.y+Math.sin(aa)*25,vx:Math.cos(aa)*speed+e.vx*.3,vy:Math.sin(aa)*speed+e.vy*.3,t:e.team?3:1.3,team:e.team,dmg:e.team?(kind===3?28:kind===2?18:10):player?18+s.gun*7:16*(1+level(s,'wingguns')*.4),pierce:player?level(s,'pierce'):0,hits:[]});}e.cd=e.team?ENEMIES[kind].rate:player?.25/(1+s.gun*.12):.5;if(player)s.events.push('shot');}
+function shoot(s,e,a){if(s.bullets.length>320)return;const player=e===s.player,kind=e.team?e.kind:-1;let speed=e.team?kind===3?620:300:650;let n=player?1+level(s,'multishot'):kind===2?7:kind===1?3:1;for(let i=0;i<n;i++){const aa=a+(i-(n-1)/2)*(kind===2?.26:kind===1?.15:.075);s.bullets.push({x:e.x+Math.cos(aa)*25,y:e.y+Math.sin(aa)*25,vx:Math.cos(aa)*speed+e.vx*.3,vy:Math.sin(aa)*speed+e.vy*.3,t:e.team?3:1.3,team:e.team,dmg:e.team?(kind===3?28:kind===2?18:10):player?18+s.gun*7:16*(1+level(s,'wingguns')*.4),pierce:player?level(s,'pierce'):0,hits:[]});}e.cd=e.team?ENEMIES[kind].rate:player?.25/(1+s.gun*.12):.5;emitVisual(s.fx,'muzzle',e.x+Math.cos(a)*25,e.y+Math.sin(a)*25,{a,weapon:e.team?'cannon':'pulse',size:e.kind===2?15:8});if(player)s.events.push('shot');}
 function contracts(s,dt){const p=s.player;for(const o of s.objectives){if(o.done||o.failed)continue;const d=dist(p,o);
  if(o.id==='wreck'){if(d<160&&s.tractorOn&&s.energy>0)o.progress+=dt*(1+level(s,'tractor')*.3);}
  if(o.id==='relay'){if(d<160&&Math.hypot(p.vx,p.vy)<95)o.progress+=dt;}
@@ -165,17 +166,17 @@ export function update(s,dt,input){
  for(const boss of s.ships.filter(e=>e.team&&e.kind===2)){const phase=boss.hp<boss.max*.33?2:boss.hp<boss.max*.66?1:0;if(phase>(boss.phase||0)){boss.phase=phase;boss.shield=boss.maxShield=350;for(let i=0;i<3;i++)s.ships.push(makeShip(boss.x+(i-1)*100,boss.y+100,1,phase===1?3:4));notify(s,'DREADNOUGHT PHASE '+(phase+1)+' / REINFORCEMENTS');}if(phase===2)boss.cd-=dt*.6;}
  for(const n of s.nests){if(n.hp<=0)continue;n.cd-=dt;if(n.cd<=0&&s.ships.filter(e=>e.team&&e.hp>0).length<28){n.cd=cfg.hazard==='brood'?7:13;s.ships.push(makeShip(n.x+80,n.y,1,cfg.types[Math.floor(s.time)%cfg.types.length]));}}
  updateBaseDefense(s.baseDefense,dt,s.time,s.ships.filter(e=>e.team),s.bullets,(e,amount)=>damage(s,e,amount));
- for(const b of s.bullets){if(b.t<=0)continue;const w=b.weapon?weapon(b.weapon):null;const ax=b.x,ay=b.y;
+ for(const b of s.bullets){if(b.t<=0)continue;const w=b.weapon?weapon(b.weapon):null;const ax=b.x,ay=b.y;rememberTrail(b,dt);
  if(w?.homing){const target=s.ships.concat(s.nests).find(e=>(e.id||-1)===b.target&&e.hp>0&&e.team);if(target){const a=turnTowards(Math.atan2(b.vy,b.vx),Math.atan2(target.y-b.y,target.x-b.x),w.homing*dt);b.vx=Math.cos(a)*w.speed;b.vy=Math.sin(a)*w.speed;}}
  b.x+=b.vx*dt;b.y+=b.vy*dt;b.t-=dt;if(interceptBaseShot(s.baseDefense,b,ax,ay,b.x,b.y))continue;
  for(const e of s.ships.concat(b.team?[]:s.nests)){if(e.hp<=0||e.team===b.team||b.hits.includes(e.id||-1))continue;
  const radius=e.r||(e.team?ENEMIES[e.kind].radius:e===p?HULLS[s.hull].radius:16);
  if(w?.mine&&b.t>w.life-1)continue;
  if(segmentDistance(e.x,e.y,ax,ay,b.x,b.y)<radius+(w?.mine?45:0)){
- if(w)weaponDamage(s,e,w,b.dmg);else damage(s,e,b.dmg);b.hits.push(e.id||-1);
+ contactVisual(s,e,w,b.dmg,ax,ay);if(w)weaponDamage(s,e,w,b.dmg);else damage(s,e,b.dmg);b.hits.push(e.id||-1);
  if(w?.splash)explodeWeapon(s,b,w,e);
  if(b.pierce<=0)b.t=-1;else b.pierce--;break;}}
- if(b.t>0)for(const r of s.rocks){if(r.hp>0&&segmentDistance(r.x,r.y,ax,ay,b.x,b.y)<r.r*.85){r.hp-=b.dmg;b.t=-1;if(w?.splash)explodeWeapon(s,b,w,null);if(r.hp<=0){burst(s,r.x,r.y,12);salvage(s,r.x,r.y,3);}break;}}
+ if(b.t>0)for(const r of s.rocks){if(r.hp>0&&segmentDistance(r.x,r.y,ax,ay,b.x,b.y)<r.r*.85){emitVisual(s.fx,'impact',b.x,b.y,{a:Math.atan2(b.vy,b.vx),weapon:b.weapon||'cannon',size:13,color:'#c5bda4'});r.hp-=b.dmg;b.t=-1;if(w?.splash)explodeWeapon(s,b,w,null);if(r.hp<=0){burst(s,r.x,r.y,12);salvage(s,r.x,r.y,3);}break;}}
  if(b.t<=0&&w?.mine&&!b.hits.length)explodeWeapon(s,b,w,null);
  }
  s.bullets=s.bullets.filter(b=>b.t>0);s.rocks=s.rocks.filter(r=>r.hp>0);
@@ -187,7 +188,7 @@ export function update(s,dt,input){
  if(towing&&s.objectives.some(o=>o.id==='wreck'&&!o.done&&dist(p,o)<160))working=true;
  s.energy=Math.max(0,Math.min(100,s.energy+dt*(working?-10:st.regen)));if(s.energy<=0){s.tractorOn=false;notify(s,'TRACTOR CAPACITOR EMPTY / RECHARGING');}
  s.loot=s.loot.filter(l=>l.v>0);contracts(s,dt);
- for(const f of s.fx){f.t-=dt;f.x+=f.vx*dt;f.y+=f.vy*dt;}s.fx=s.fx.filter(f=>f.t>0);if(s.fx.length>220)s.fx.splice(0,s.fx.length-220);
+ s.fx=stepVisuals(s.fx,dt);
  const safe=dist(p,{x:0,y:0})<270;
  if(safe)p.hp=Math.min(p.max,p.hp+dt*4);
  if(s.time-p.lastHit>6){if(cfg.hazard!=='ion'||safe)p.shield=Math.min(p.maxShield,p.shield+dt*(9+level(s,'shield')*2));if(level(s,'regen'))p.hp=Math.min(p.max,p.hp+dt*level(s,'regen')*1.2);}
@@ -205,12 +206,19 @@ export function fit(s,slot,id){if(interact(s)!=='dock')return false;const st=fit
 export function selectedTarget(s){return s.ships.concat(s.nests).find(e=>(e.id||-1)===s.targetId&&e.hp>0&&e.team&&dist(s.player,e)<1400)||null;}
 export function selectTarget(s,x=null,y=null){const enemies=s.ships.concat(s.nests).filter(e=>e.team&&e.hp>0&&dist(s.player,e)<1400).sort((a,b)=>x===null?dist(s.player,a)-dist(s.player,b):dist({x,y},a)-dist({x,y},b));if(x!==null){s.targetId=enemies.length?enemies[0].id||-1:null;}else{const i=enemies.findIndex(e=>(e.id||-1)===s.targetId);s.targetId=enemies.length?(enemies[(i+1)%enemies.length].id||-1):null;}return selectedTarget(s);}
 function weaponDamage(s,e,w,dmg){const before=e.hp;if(e.shield>0&&w.shield){const drained=Math.min(e.shield,dmg*w.shield);e.shield-=drained;damage(s,e,Math.max(0,dmg-drained/w.shield));}else damage(s,e,dmg*(e.kind===1?(w.armor||1):1));if(w.jam)e.jam=Math.max(e.jam||0,w.jam);if(w.burn)e.burn=Math.max(e.burn||0,w.burn);if(w.heal)s.player.hp=Math.min(s.player.max,s.player.hp+Math.max(0,before-e.hp)*w.heal);}
-function explodeWeapon(s,b,w,direct){for(const e of s.ships.concat(s.nests)){if(e===direct||e.hp<=0||!e.team)continue;const d=dist(e,b);if(d<w.splash)weaponDamage(s,e,w,b.dmg*.65*(1-d/w.splash));}if(w.self&&dist(s.player,b)<w.splash)damage(s,s.player,b.dmg*.3*(1-dist(s.player,b)/w.splash));s.fx.push({x:b.x,y:b.y,vx:0,vy:0,t:.25,max:.25,pulse:true,r:w.splash});}
+function explodeWeapon(s,b,w,direct){for(const e of s.ships.concat(s.nests)){if(e===direct||e.hp<=0||!e.team)continue;const d=dist(e,b);if(d<w.splash)weaponDamage(s,e,w,b.dmg*.65*(1-d/w.splash));}if(w.self&&dist(s.player,b)<w.splash)damage(s,s.player,b.dmg*.3*(1-dist(s.player,b)/w.splash));emitVisual(s.fx,'explosion',b.x,b.y,{size:w.splash*.35,weapon:w.id});}
 function fireMounts(s,dt,fire,target){const p=s.player,h=HULLS[s.hull];for(let i=0;i<h.mounts.length;i++){const m=h.mounts[i],w=weapon(s.loadout[i]);if(!w)continue;const mount=s.mountState[i]||(s.mountState[i]={a:p.a,cd:0});mount.cd=Math.max(0,mount.cd-dt);const x=p.x+Math.cos(p.a)*m.x-Math.sin(p.a)*m.y,y=p.y+Math.sin(p.a)*m.x+Math.cos(p.a)*m.y;
  if(m.type==='turret'){if(target)mount.a=turnTowards(mount.a,Math.atan2(target.y-y,target.x-x),3.4*dt);}else mount.a=p.a;
  if(!fire||mount.cd>0||s.overheated||s.energy<w.energy||s.bullets.length>=320)continue;
  if(m.type==='turret'&&(!target||Math.abs(angleDelta(mount.a,Math.atan2(target.y-y,target.x-x)))>.16))continue;
- if(w.beam){const bx=x+Math.cos(mount.a)*w.range,by=y+Math.sin(mount.a)*w.range;const hits=s.ships.concat(s.nests).filter(e=>e.team&&e.hp>0&&segmentDistance(e.x,e.y,x,y,bx,by)<(e.r||ENEMIES[e.kind].radius)).sort((a,b)=>dist({x,y},a)-dist({x,y},b));let victim=hits[0];if(victim){weaponDamage(s,victim,w,w.damage*(1+s.gun*.12));let last=victim;const struck=new Set([victim]);for(let j=0;j<(w.chain||0);j++){const next=s.ships.find(e=>e.team&&e.hp>0&&!struck.has(e)&&dist(last,e)<230);if(!next)break;weaponDamage(s,next,w,w.damage*.55);s.fx.push({x:last.x,y:last.y,x2:next.x,y2:next.y,beam:true,color:w.color,t:.13,max:.13,vx:0,vy:0});last=next;struck.add(next);}}
- const end=victim||{x:bx,y:by};s.fx.push({x,y,x2:end.x,y2:end.y,beam:true,color:w.color,t:.11,max:.11,vx:0,vy:0});
+ emitVisual(s.fx,'muzzle',x+Math.cos(mount.a)*13,y+Math.sin(mount.a)*13,{a:mount.a,weapon:w.id,size:w.splash?14:w.beam?7:9});
+ if(w.beam){const bx=x+Math.cos(mount.a)*w.range,by=y+Math.sin(mount.a)*w.range;const hits=s.ships.concat(s.nests).filter(e=>e.team&&e.hp>0&&segmentDistance(e.x,e.y,x,y,bx,by)<(e.r||ENEMIES[e.kind].radius)).sort((a,b)=>dist({x,y},a)-dist({x,y},b));let victim=hits[0];if(victim){contactVisual(s,victim,w,w.damage,x,y);weaponDamage(s,victim,w,w.damage*(1+s.gun*.12));let last=victim;const struck=new Set([victim]);for(let j=0;j<(w.chain||0);j++){const next=s.ships.find(e=>e.team&&e.hp>0&&!struck.has(e)&&dist(last,e)<230);if(!next)break;contactVisual(s,next,w,w.damage*.55,last.x,last.y);weaponDamage(s,next,w,w.damage*.55);s.fx.push({x:last.x,y:last.y,x2:next.x,y2:next.y,beam:true,weapon:w.id,color:w.color,t:.13,max:.13,vx:0,vy:0});last=next;struck.add(next);}}
+ const end=victim||{x:bx,y:by};s.fx.push({x,y,x2:end.x,y2:end.y,beam:true,weapon:w.id,color:w.color,t:.11,max:.11,vx:0,vy:0});
  }else{const count=(w.count||1)+(w.id==='cannon'?level(s,'multishot'):0);for(let n=0;n<count;n++){const a=mount.a+(count>1?(n-(count-1)/2)*(w.spread||.075):(w.spread||0)*(Math.random()-.5));s.bullets.push({x,y,vx:Math.cos(a)*w.speed,vy:Math.sin(a)*w.speed,t:w.life,team:0,dmg:w.damage*(1+s.gun*.12),pierce:(w.pierce||0)+(w.id==='cannon'?level(s,'pierce'):0),hits:[],weapon:w.id,target:s.targetId});}}
  s.energy-=w.energy;s.heat=Math.min(120,s.heat+w.heat);if(s.heat>=100)s.overheated=true;mount.cd=w.rate/(1+s.gun*.05);s.events.push('shot');}}
+
+function contactVisual(s,e,w,amount,fromX,fromY){
+ const a=Math.atan2(e.y-fromY,e.x-fromX),radius=e.r||(e===s.player?HULLS[s.hull].radius:e.team?ENEMIES[e.kind].radius:18),x=e.x-Math.cos(a)*radius*.85,y=e.y-Math.sin(a)*radius*.85,shielded=(e.shield||0)>0;
+ emitVisual(s.fx,shielded?'shield':'impact',x,y,{a,weapon:w?.id||'cannon',color:shielded?'#8fc7ed':w?.color||'#d6b898',size:shielded?18+radius*.2:8+Math.sqrt(amount)*1.2});
+ if(!shielded&&!e.r){const local=a-(e.a||0),r=radius*.35;const scars=e.scars||(e.scars=[]);scars.push({x:-Math.cos(local)*r,y:-Math.sin(local)*r,a:local,size:1.2+Math.min(3,Math.sqrt(amount)*.2),born:s.time,weapon:w?.id||'cannon'});if(scars.length>8)scars.shift();}
+}
