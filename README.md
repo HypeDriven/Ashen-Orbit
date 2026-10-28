@@ -13,6 +13,10 @@ Fly through eleven sector profiles. After securing a sector, choose a destinatio
 
 Six enemy classes have distinct combat behavior: raider, armored bulwark, dreadnought, charging lancer, drone-spawning drone carrier and close-range boarding drone.
 
+## Reset expedition
+
+**RESET EXPEDITION** on the title screen, tactical pause, defeat or victory screen starts a completely new campaign in **The Pale Belt**. It restores the standard starting Skiff, cannon, two escorts and 120 scrap, with no purchased upgrades, intel, cleared sectors, contracts, ciphers or advanced equipment licenses. The fresh sector has intact outposts and default station defenses. The new checkpoint is saved immediately, so reloading before the first autosave cannot restore the old expedition. Continue and Rebuild at Checkpoint keep their existing resume behavior. Account controls, audio preferences and online leaderboard records are unaffected.
+
 ## Weapons and shipyard
 
 Dry Dock → **HULL / OUTFIT** opens the shipyard. Grow from Skiff (4 mounts) through Corvette (6), Frigate (9), Cruiser (10) and Dreadnought (12). Each step needs scrap, research and cleared sectors. Larger hulls gain armor, reactor power and mounts but lose speed and turn rate and have larger collision radii. Existing compatible equipment transfers to the larger hull.
@@ -83,6 +87,7 @@ node scripts/test-arsenal.mjs
 node scripts/test-defenses.mjs
 node scripts/test-effects.mjs
 node scripts/test-controls.mjs
+node scripts/test-campaign.mjs
 node scripts/build.mjs
 ```
 
