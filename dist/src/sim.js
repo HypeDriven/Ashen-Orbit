@@ -141,7 +141,7 @@ export function update(s,dt,input){
  if(s.dead||s.won)return;s.events=[];s.time+=dt;s.messageTime-=dt;s.pulse=Math.max(0,s.pulse-dt);const p=s.player,cfg=SECTOR_INFO[s.sector];
  const st=stats(s);let dx=input.x||0,dy=input.y||0;const steering=input.steering===true;
  const throttle=Math.max(-1,Math.min(1,(input.thrust||0)-(input.brake?1:0)));
- if(steering){p.a+=(input.turn||0)*st.turn*dt;dx+=Math.cos(p.a)*throttle;dy+=Math.sin(p.a)*throttle;}
+ if(steering){if(Number.isFinite(input.aim))p.a=turnTowards(p.a,input.aim,st.turn*dt);else p.a+=(input.turn||0)*st.turn*dt;const strafe=Math.max(-1,Math.min(1,input.strafe||0));dx+=Math.cos(p.a)*throttle-Math.sin(p.a)*strafe;dy+=Math.sin(p.a)*throttle+Math.cos(p.a)*strafe;}
  let mag=Math.hypot(dx,dy);if(mag>1){dx/=mag;dy/=mag;}const boosting=input.boost&&s.boost>1&&mag>.1,towing=s.tractorOn&&s.energy>0,speed=(boosting?440:225)*(1+level(s,'engine')*.09)*st.speed*(towing?.74:1);
  s.boost=Math.max(0,Math.min(100,s.boost+dt*(boosting?-34/(1+level(s,'engine')*.2):19)));
  const drag=steering&&mag<.1?.3:4;

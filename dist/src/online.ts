@@ -28,7 +28,7 @@ export async function join(){if(online.busy)return;online.busy=true;try{let r=on
 export async function start(){if(!online.room||online.busy)return;if(online.room.participants.filter(p=>!p.isAi).length!==2){online.status='Two human pilots must join before launch.';return;}online.busy=true;try{const r=await platform.rooms.start(online.room.id);online.room=r;if(r.gameSessionId)attachSession(r.gameSessionId);online.busy=false;}catch(e){failure(e);}}
 export async function daily(){if(online.busy)return;online.busy=true;try{attachSession(await platform.sessions.practice());online.busy=false;}catch(e){failure(e);}}
 export async function leave(){try{socket?.sendCommand({type:'leave'});socket?.close();socket=null;roomSocket?.close();roomSocket=null;if(online.room)await platform.rooms.leave(online.room.id);else if(online.sessionId)await platform.sessions.leave(online.sessionId);}catch(e){failure(e);}online.room=null;online.active=false;online.ended=false;online.sessionId='';}
-export function updateOnline(dt:number,input:{steering?:boolean;turn?:number;thrust?:number;brake?:boolean;x:number;y:number;fire:boolean;boost:boolean;aim:number|null;tractor:boolean}){
+export function updateOnline(dt:number,input:{steering?:boolean;turn?:number;strafe?:number;thrust?:number;brake?:boolean;x:number;y:number;fire:boolean;boost:boolean;aim:number|null;tractor:boolean}){
  if(online.active&&!online.ended){sendClock+=dt;if(sendClock>=.05){sendClock=0;socket?.sendInput(input);}}
  poll+=dt;if(poll>2){poll=0;if(online.room&&!online.active)platform.rooms.get(online.room.id).then(r=>{if(r){online.room=r;online.isHost=r.hostUserId===platform.player()?.userId;if(r.gameSessionId)attachSession(r.gameSessionId);}}).catch(failure);}
 }

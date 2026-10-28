@@ -16,7 +16,7 @@ export function makeShip(x:number,y:number,team?:number,kind?:number):Ship;
 export function createGame(saved?:unknown):Game;
 export function checkpoint(s:Game):import('starhermit:engine').JsonValue;
 export function loadSector(s:Game):void;
-export function update(s:Game,dt:number,input:{x?:number;y?:number;fire?:boolean;boost?:boolean;aim?:number|null;steering?:boolean;turn?:number;thrust?:number;brake?:boolean}):void;
+export function update(s:Game,dt:number,input:{x?:number;y?:number;fire?:boolean;boost?:boolean;aim?:number|null;steering?:boolean;turn?:number;strafe?:number;thrust?:number;brake?:boolean}):void;
 export function emp(s:Game):void; export function notify(s:Game,m:string):void;
 export function tractorRange(s:Game):number;
 export function interact(s:Game):string;
