@@ -1,0 +1,12 @@
+import * as platform from 'starhermit:platform';
+import {voiceGain} from './universe-rules.js';
+import type {Game} from './sim.js';
+export const comms={enabled:false,busy:false,status:'VOICE OFF / V push-to-talk',bars:{} as Record<string,number[]>};
+let clock=0;const preferences:Record<string,{volume:number;muted:boolean}>={};
+export async function toggleVoice(sessionId:string){if(comms.busy)return;if(comms.enabled){await stopVoice();return;}comms.busy=true;try{const session=await platform.sessions.get(sessionId);if(!session?.chatConversationId)throw Error('Session voice conversation unavailable.');platform.voice.setMode('push-to-talk');await platform.voice.join(session.chatConversationId);comms.enabled=true;comms.status='VOICE ON / HOLD V';}catch(e){comms.status=e instanceof Error?e.message:'Microphone unavailable';}finally{comms.busy=false;}}
+export async function stopVoice(){for(const id of Object.keys(preferences)){platform.voice.setVolume(id,preferences[id].volume);platform.voice.setLocallyMuted(id,preferences[id].muted);platform.voice.setPan(id,null);delete preferences[id];}comms.enabled=false;comms.bars={};comms.status='VOICE OFF / V push-to-talk';platform.voice.setTransmitting(false);await platform.voice.leave();}
+export function transmit(active:boolean){if(comms.enabled)platform.voice.setTransmitting(active);}
+export function updateVoice(dt:number,s:Game){if(!comms.enabled)return;clock+=dt;if(clock<.05)return;clock=0;const status=platform.voice.status(),me=s.player;comms.status=status.connection==='connected'?'VOICE ON / HOLD V':status.connection.toUpperCase();const ids=new Set<string>();
+ for(const participant of status.participants){const ship=s.ships.find(p=>p.pilot===participant.userId),id=participant.userId;ids.add(id);const pref=preferences[id]||(preferences[id]={volume:participant.volume,muted:participant.locallyMuted});const gain=ship?voiceGain({x:me.x,y:me.y,faction:me.faction??0},{x:ship.x,y:ship.y,faction:ship.faction??0,hp:ship.hp}):0;platform.voice.setVolume(id,gain*pref.volume);platform.voice.setLocallyMuted(id,gain<=0||pref.muted);platform.voice.setPan(id,ship?Math.max(-1,Math.min(1,(ship.x-me.x)/1100)):0);const bins=comms.bars[id]||(comms.bars[id]=Array(9).fill(0));bins.shift();bins.push(participant.speaking&&gain>0?1:0);}
+ const own=platform.player()?.userId;if(own){ids.add(own);const bins=comms.bars[own]||(comms.bars[own]=Array(9).fill(0));bins.shift();bins.push(status.transmitting?status.inputLevel:0);}for(const id of Object.keys(comms.bars))if(!ids.has(id))delete comms.bars[id];
+}
