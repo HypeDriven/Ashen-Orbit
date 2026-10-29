@@ -91,3 +91,34 @@ test('the server acknowledges only applied input and ignores older sequence numb
  const view=context.game.onPlayerMessage({...ctx,message:{from:'me',data:{type:'resync'}}}).broadcast[0].data.world;
  assert.equal(view.pilots[0][19],20);assert.equal(view.pilots[0][20],1);
 });
+
+test('reloading after an idle timeout preserves the sequence floor and accepts thrust immediately',()=>{
+ const context=vm.createContext({});vm.runInContext(readFileSync(new URL('../server.js',import.meta.url),'utf8'),context);
+ const ctx={players:[{id:'me',name:'Pilot'}],now:1000,room:{metadata:{universe:true}},playerStates:{}};
+ ctx.sessionState=context.game.createSession(ctx).sessionState;
+ context.game.onPlayerMessage({...ctx,message:{from:'me',data:{type:'choose',faction:0}}});
+ const server=ctx.sessionState.pilots[0];ctx.now+=50;
+ context.game.onTick({...ctx,inputs:[{from:'me',data:input({seq:90000})}]});
+ for(let i=0;i<24;i++){ctx.now+=50;context.game.onTick({...ctx,inputs:[]});}
+ assert.equal(server.inputAck,90000,'Idle must stop thrust without resetting the acknowledged sequence');
+ const view=context.game.onPlayerMessage({...ctx,message:{from:'me',data:{type:'resync'}}}).broadcast[0].data.world;
+ const predictor=new FlightPrediction(),s=scene(pilot({x:server.x,y:server.y,a:server.a,inputAck:view.pilots[0][19]}));
+ predictor.receive(s,view.time,true);const seq=predictor.step(1/60,input({thrust:1}),s);
+ assert.equal(seq,90001);ctx.now+=50;
+ context.game.onTick({...ctx,inputs:[{from:'me',data:input({seq,thrust:1})}]});
+ assert.equal(server.input.thrust,1);assert.equal(server.inputAck,seq);assert.ok(server.vy<0,'The first new input must move the authoritative ship');
+});
+
+test('idle timeout repairs sequence counters in a universe already affected by the bug',()=>{
+ const context=vm.createContext({});vm.runInContext(readFileSync(new URL('../server.js',import.meta.url),'utf8'),context);
+ const ctx={players:[{id:'me',name:'Pilot'}],now:1000,room:{metadata:{universe:true}},playerStates:{}};
+ ctx.sessionState=context.game.createSession(ctx).sessionState;
+ context.game.onPlayerMessage({...ctx,message:{from:'me',data:{type:'choose',faction:0}}});
+ const p=ctx.sessionState.pilots[0];p.input={...input({seq:50000})};p.inputAck=0;
+ ctx.now+=1500;context.game.onTick({...ctx,inputs:[]});
+ assert.equal(p.inputAck,50000);
+ // A legacy/neutral packet must not allow a delayed sequenced input to rewind controls.
+ ctx.now+=50;context.game.onTick({...ctx,inputs:[{from:'me',data:input()}]});
+ ctx.now+=50;context.game.onTick({...ctx,inputs:[{from:'me',data:input({seq:40000,thrust:-1})}]});
+ assert.equal(p.inputAck,50000);assert.equal(p.input.thrust,0);
+});

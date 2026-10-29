@@ -55,7 +55,7 @@ function interceptBaseShot(d,b,ax,ay,bx,by){
 function clamp(v,a,b){return Number.isFinite(v)?Math.max(a,Math.min(b,v)):0;}
 function distance(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
 function clean(m){return {steering:m.steering===true,turn:clamp(m.turn,-1,1),strafe:clamp(m.strafe,-1,1),thrust:clamp(m.thrust,-1,1),brake:m.brake===true,x:clamp(m.x,-1,1),y:clamp(m.y,-1,1),aim:Number.isFinite(m.aim)?clamp(m.aim,-Math.PI*2,Math.PI*2):null,fire:m.fire===true,tractor:m.tractor===true,boost:m.boost===true,voiceLevel:clamp(m.voiceLevel,0,1),seq:Number.isSafeInteger(m.seq)&&m.seq>0?Math.min(2147483647,m.seq):0};}
-function acceptPilotInput(p,data,now){var m=clean(data);if(m.seq&&m.seq<(p.input.seq||0))return;p.input=m;p.lastInput=now;}
+function acceptPilotInput(p,data,now){var m=clean(data);if(m.seq&&m.seq<Math.max(p.inputAck||0,p.input.seq||0))return;p.input=m;p.lastInput=now;}
 function broadcast(s){return [{to:'all',data:{type:'snapshot',world:s}}];}
 function start(ctx){
  var humans=ctx.players.filter(function(p){return !p.ai;});
@@ -81,7 +81,7 @@ function tick(ctx){
  (ctx.inputs||[]).forEach(function(packet){var p=s.pilots.find(function(p){return p.id===packet.from;});if(p){acceptPilotInput(p,packet.data||{},ctx.now);}});
  s.pilots.forEach(function(p){
   if(p.hp<=0){var partner=s.pilots.find(function(o){return o.id!==p.id&&o.hp>0&&distance(p,o)<120&&o.input.tractor&&ctx.now-o.lastInput<800;});if(partner){p.revive+=dt;if(p.revive>=4){p.hp=130;p.revive=0;}}else p.revive=0;return;}
-  var m=ctx.now-p.lastInput<800?p.input:clean({});stepPilotMovement(p,dt,m,[],false);p.inputAck=m.seq||0;p.cd-=dt;
+  var m=ctx.now-p.lastInput<800?p.input:clean({});stepPilotMovement(p,dt,m,[],false);p.inputAck=Math.max(p.inputAck||0,p.input.seq||0);p.cd-=dt;
   if(!m.steering&&m.aim!==null)p.a=m.aim;else if(!m.steering){var target=null,dd=900;s.enemies.forEach(function(e){var d=distance(p,e);if(d<dd){dd=d;target=e;}});if(target)p.a=Math.atan2(target.y-p.y,target.x-p.x);}
   if(m.fire&&p.cd<=0&&s.bullets.length<200){p.cd=.2;serverVisual(s,'muzzle',p.x,p.y,{a:p.a,weapon:'cannon',size:9,max:.12});s.bullets.push({x:p.x,y:p.y,vx:Math.cos(p.a)*640,vy:Math.sin(p.a)*640,t:1.6,owner:p.id,team:0,dmg:26});}
  });
@@ -190,7 +190,7 @@ function uTick(ctx){var s=ctx.sessionState,dt=Math.max(0,Math.min(.1,(ctx.now-s.
  (ctx.inputs||[]).forEach(function(packet){var p=s.pilots.find(function(q){return q.id===packet.from;});if(p){acceptPilotInput(p,packet.data||{},ctx.now);}});
  var offset=s.tick%Math.max(1,s.pilots.length),order=s.pilots.slice(offset).concat(s.pilots.slice(0,offset));order.forEach(function(p){if(p.faction<0)return;if(p.hp<=0){p.respawn-=dt;if(p.respawn<=0)uSpawn(p);return;}var m=ctx.now-p.lastInput<800?p.input:clean({}),st=uStats(p),role=uRole(p);p.cd-=dt;p.mineCd-=dt;p.lock=Math.max(0,p.lock-dt);if(p.lock===0)p.shield=Math.min(p.maxShield||0,(p.shield||0)+dt*8);
  if(m.fire||m.boost){p.cloaked=false;p.lock=Math.max(p.lock,2);}if(p.cloaked){p.energy-=dt*18*role.cloak;if(p.energy<=0){p.cloaked=false;p.energy=0;p.lock=3;}}else p.energy=Math.min(100,p.energy+dt*12);
- stepPilotMovement(p,dt,m,s.rocks,true);p.inputAck=m.seq||0;
+ stepPilotMovement(p,dt,m,s.rocks,true);p.inputAck=Math.max(p.inputAck||0,p.input.seq||0);
  if(m.fire&&!p.cloaked&&p.cd<=0&&s.bullets.length<48){p.cd=p.role===0?.22:.36;var shots=1+Math.floor(p.hull/2);for(var i=0;i<shots;i++){var a=p.a+(i-(shots-1)/2)*.09;s.bullets.push({id:s.next++,x:uRound(p.x+Math.cos(a)*st.radius),y:uRound(p.y+Math.sin(a)*st.radius),vx:uRound(Math.cos(a)*780),vy:uRound(Math.sin(a)*780),t:1.4,faction:p.faction,dmg:Math.round((20+p.hull*5)*role.damage),weapon:p.role===2?'laser':'cannon'});}serverVisual(s,'muzzle',p.x,p.y,{a:p.a,max:.12,size:9});}
  var base=uBase(p.faction);if(distance(p,base)<260){p.hp=Math.min(p.max,p.hp+dt*12);p.energy=Math.min(100,p.energy+dt*20);}if(p.role===5&&p.energy>10)s.pilots.forEach(function(q){if(q!==p&&q.faction===p.faction&&q.hp>0&&distance(p,q)<220&&q.hp<q.max){q.hp=Math.min(q.max,q.hp+dt*3);p.energy=Math.max(0,p.energy-dt*2);}});
  });
