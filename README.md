@@ -29,6 +29,14 @@ The universe keeps running while other pilots remain. Leaving as its final pilot
 keeps the room membership so the platform can pause the empty session and resume
 it on reconnect. Explicit platform closure or retention expiry can end a world.
 
+Online flight responds locally at 60 Hz using the server's movement and asteroid
+collision rules. Snapshots acknowledge input sequences; the client replays
+unacknowledged movement and eases ordinary corrections over roughly 70 ms.
+Remote ships use a 120 ms interpolation buffer with at most 150 ms of
+extrapolation. Prediction stops after a 500 ms snapshot gap; respawns, refits,
+teleports, and reconnects reset it. Damage, mining, weapons, and progression
+remain authoritative.
+
 ## Development
 
 Requires Node 24+ for the test runner's TypeScript stripping. No npm dependencies.
@@ -45,6 +53,8 @@ Edit shared rules in `src/universe-rules.js` and server logic in
 section of `server.js`. Tests check synchronization, discovery, immutable
 snapshots, late joins, persistence, hull/role tradeoffs, cloaks, mines, voice
 attenuation, fragmentation, and network/result size budgets.
+Prediction tests also simulate 160 ms round trips with jitter, packet loss,
+out-of-order inputs, collisions, angle wrapping, and respawns.
 
 The `owner=` declaration in `starhermit.txt` identifies the existing StarHermit
 owner by user ID. After importing a repository listing, its owner must re-sync

@@ -15,7 +15,7 @@
     "assets/rock9.png": {"sha256": "8164e919b56fbbb0011a6dfc70fe627cd0d7903757b45b17e4872b424b1f6ac6", "size": 17111},
     "assets/station.png": {"sha256": "53e63b668c3e35e65c6875da233705fdcf89844c5a16404fc74b9a27e0de418a", "size": 78908},
     "index.html": {"sha256": "873359952493f2f1e47e6553e29cd22abc2269410a19d657d7a610f5ef2fb5b8", "size": 1789},
-    "server.js": {"sha256": "926ce9b8860380803e65c523fa8c1f2e71675184f90013eae78723b55880f951", "size": 32249},
+    "server.js": {"sha256": "20005ee099bc6a74db9834670c336b87c0b9dead9753b3e9ef89aa98a2f9d191", "size": 33305},
     "src/arsenal.js": {"sha256": "eb5f382b74af87bc46a6942fa0ea238da4bf52f8a7a5475723411e9ece64eea0", "size": 7002},
     "src/campaign.js": {"sha256": "b5fb26ce80d5e012b2b7cd044183e6da2752b2759c304a867918926db870fd10", "size": 772},
     "src/comms.ts": {"sha256": "132b6072ca4392ec5769c48139509dee17e6c69738fc353c7f4aefe90c5bd581", "size": 3075},
@@ -23,10 +23,11 @@
     "src/defenses.js": {"sha256": "8a747088514244220af52e66bd9ab04e8175ffde8e1f3660e24f7ee01792b07f", "size": 4481},
     "src/effects.js": {"sha256": "d8d07d4c9dc2a093fbb0d328be277db666f66dde8a799cc98ad5dc1c9f6fe9f2", "size": 15340},
     "src/main.ts": {"sha256": "02b5a458470e4614ac6dc3f5be93e8b8bfd253d9ee59bd354e991e065d9211e9", "size": 39078},
-    "src/online.ts": {"sha256": "0a6bd5fcb1b1854f8f1a0c6f7b59ee0ad2410e38ccad4bb4795ea9a505d19b7e", "size": 11781},
+    "src/online.ts": {"sha256": "d7697b786b0a19b3e841cb60781a92e82ae37de29d52c92fcda2d05e8c8ca489", "size": 12158},
+    "src/prediction.js": {"sha256": "34322afff49ab042dc96557b998e9e59773f81c4e08014256e68519f0b5a7831", "size": 4381},
     "src/sim.js": {"sha256": "f309bd1b6898846b3af94030aa146d7f5a47e8741071a79d463e474347ce58ed", "size": 36557},
-    "src/universe-rules.js": {"sha256": "d8b4d66672cf6f90fdb49958e65cfd84e2c647f5f56544df86a46ebab569873b", "size": 2907},
-    "starhermit.txt": {"sha256": "3189ad3f543ee970e6532f5377f36833b78d4610c247830ad5be7778b2e8132a", "size": 2083}
+    "src/universe-rules.js": {"sha256": "fe5d33572067c11adf215b09f3798ed4f2356d7db9967ba095e846c5e074d150", "size": 5214},
+    "starhermit.txt": {"sha256": "5aa15c6ed6b64810bd2fd5902c93009c5abf960e703682fc739cc40115d2945d", "size": 2103}
   },
   "excluded": ["README.md", "package.json", "scripts/", "src/universe-server.js", "tests/"],
   "format": 1

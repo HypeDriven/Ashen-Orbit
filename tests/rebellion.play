@@ -7,4 +7,5 @@ until 1500 2/32 pilots
 frames 200
 key KeyC 1
 until 300 CLOAKED
+key KeyW 120
 frames 1200

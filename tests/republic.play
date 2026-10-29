@@ -8,7 +8,9 @@ until 180 MINES 1/2
 key KeyE 1
 expect ACTUAL SHIP
 key KeyE 1
-frames 120
+key KeyW 60
+key KeyD 30
+key KeyS 30
 click LEAVE UNIVERSE
 until 300 CHOOSE YOUR ALLEGIANCE
 click ENTER SHARED UNIVERSE
