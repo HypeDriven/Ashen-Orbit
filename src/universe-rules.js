@@ -40,4 +40,5 @@ export function stepPilotMovement(p,dt,input,rocks=[],shared=true){
  const cap=Math.max(1,Math.hypot(p.vx,p.vy)/speed);p.vx/=cap;p.vy/=cap;
  p.x=flightClamp(p.x+p.vx*dt,shared?-3200:-1400,shared?3200:1400);p.y=flightClamp(p.y+p.vy*dt,shared?-WORLD_Y:-1000,shared?WORLD_Y:1000);
  if(shared)for(const r of rocks){const d=Math.hypot(p.x-r.x,p.y-r.y),radius=r.r+st.radius;if(d<radius){const a=Math.atan2(p.y-r.y,p.x-r.x);p.x=r.x+Math.cos(a)*radius;p.y=r.y+Math.sin(a)*radius;p.vx*=.65;p.vy*=.65;}}
+ if(shared){p.x=flightClamp(p.x,-3200,3200);p.y=flightClamp(p.y,-WORLD_Y,WORLD_Y);}
 }

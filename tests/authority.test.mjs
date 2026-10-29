@@ -57,3 +57,7 @@ test('in-flight reports from one correction count as one incident, while repeate
  validateFlightReport(p,{...p,x:0},8,650,input);assert.equal(p.untrusted,undefined);
  validateFlightReport(p,{...p,x:0},9,700,input);validateFlightReport(p,{...p,x:0},10,800,input);assert.equal(p.untrusted,true);
 });
+
+test('asteroid collision resolution cannot push a legitimate pilot outside world bounds',()=>{
+ const p=pilot();p.x=3190;p.y=7195;stepPilotMovement(p,.05,input,[{x:3180,y:7180,r:50}],true);assert.ok(p.x<=3200);assert.ok(p.y<=7200);
+});

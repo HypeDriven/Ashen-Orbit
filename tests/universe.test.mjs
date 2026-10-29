@@ -155,3 +155,7 @@ test('weapon status effects and escort bulkheads retain their shipyard tradeoffs
  const enemy={id:999,faction:1,x:0,y:0,vx:0,vy:0,a:0,hp:100,max:100,cd:1,kind:0};w.s.enemies=[enemy];w.sandbox.uDamage(w.s,enemy,10,p.id,{burn:3,jam:1.8});w.tick(20);assert.ok(enemy.hp<82&&enemy.hp>80);assert.ok(Math.hypot(enemy.x,enemy.y)<50,'ion slows patrol drives');assert.ok(enemy.cd>.8,'ion delays patrol weapons');
  p.scrap=5000;p.tech=100;p.upgrades.hangar=1;p.upgrades.wingguns=1;assert.equal(w.cmd(0,{type:'upgrade',id:'escort'}).ok,true);assert.equal(w.cmd(0,{type:'upgrade',id:'winghull'}).ok,true);assert.equal(w.s.escorts[0].max,205);assert.equal(w.s.escorts[0].hp,205);
 });
+
+test('obsolete flight-policy flags are retired when the validation policy changes',()=>{
+ const id='00000000-0000-0000-0000-000000000000',w=world(1,{[id]:{flightTrust:{untrusted:true,violations:3},universe:{faction:0,trust:{untrusted:true,violations:3}}}});assert.equal(w.s.pilots[0].untrusted,false);assert.equal(w.s.pilots[0].violations,0);assert.equal(w.cmd(0,{type:'leave'}).playerStates[id].flightTrust.policy,2);
+});
