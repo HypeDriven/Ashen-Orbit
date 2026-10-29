@@ -137,3 +137,15 @@ test('shared shipyard enforces the same catalog gates, prices and stats as solo'
 test('old running universes migrate without losing pilots or crashing',()=>{
  const w=world();w.cmd(0,{type:'choose',faction:0});delete w.s.version;delete w.s.escorts;delete w.s.records;delete w.s.worldId;w.s.bases=w.s.bases.filter(b=>b.sector===4);const p=w.s.pilots[0];delete p.loadout;delete p.upgrades;delete p.owned;delete p.cleared;delete p.boost;delete p.heat;w.tick();assert.equal(w.s.version,2);assert.equal(w.s.bases.length,18);assert.ok(Number.isFinite(p.x));assert.equal(p.loadout[0],'cannon');
 });
+
+test('EMP damages enemy bases and changing sides dismisses old friendly escorts',()=>{
+ const w=world(1);w.cmd(0,{type:'choose',faction:0});const p=w.s.pilots[0],base=w.s.bases.find(b=>b.faction===1&&b.sector===4);p.x=base.x-300;p.y=base.y;const hp=base.hp;assert.equal(w.cmd(0,{type:'pulse'}).ok,true);assert.equal(base.hp,hp-110);
+ p.x=-2200;p.y=120;p.scrap=2000;assert.equal(w.cmd(0,{type:'upgrade',id:'escort'}).ok,true);assert.equal(w.s.escorts.length,1);p.choiceAt=-100;assert.equal(w.cmd(0,{type:'choose',faction:1}).ok,true);assert.equal(w.s.escorts.length,0);
+});
+
+test('untrusted movement restrictions persist across reconnects and fresh worlds',()=>{
+ const w=world(1);w.cmd(0,{type:'choose',faction:0});const p=w.s.pilots[0];
+ for(let i=1;i<=3;i++)w.tick(1,[{from:p.id,data:{seq:i,steering:true,motion:{x:3000,y:6000,vx:99999,vy:0,a:0,spawnSeq:p.spawnSeq}}}]);
+ assert.equal(p.untrusted,true);const saved=w.cmd(0,{type:'leave'}).playerStates;assert.equal(saved[p.id].flightTrust.untrusted,true);
+ const next=world(1,saved);next.s.worldId='fresh-world';next.s.pilots=[];next.tick();const restored=next.s.pilots[0];assert.equal(restored.untrusted,true);assert.equal(restored.hull,0);assert.ok(next.sandbox.movementAuthority(restored)<.25);
+});

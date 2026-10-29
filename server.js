@@ -480,13 +480,13 @@ function uCommand(ctx){
   if(p.faction===m.faction)return {ok:true,sessionState:s,broadcast:[uProfilePacket(p)].concat(uPackets(s,p.faction,[p.id]))};
   if(p.faction>=0&&(p.hp<=0||!uAtBase(s,p)||s.time-p.choiceAt<60))return {ok:false,error:'Change sides at a surviving base after 60 seconds.'};
   if(!s.bases.some(function(b){return b.faction===m.faction&&b.hp>0;}))return {ok:false,error:'That faction has no surviving base.'};
-  s.mines=s.mines.filter(function(mine){return mine.owner!==p.id;});p.faction=m.faction;p.choiceAt=s.time;p.x=uBase(p.faction).x;p.y=0;uSpawn(s,p);
+  s.mines=s.mines.filter(function(mine){return mine.owner!==p.id;});s.escorts=s.escorts.filter(function(escort){return escort.owner!==p.id;});p.faction=m.faction;p.choiceAt=s.time;p.x=uBase(p.faction).x;p.y=0;uSpawn(s,p);
  }else if(p.faction<0)return {ok:false,error:'Choose a faction first.'};
  else if(m.type==='cloak'){if(p.cloaked)p.cloaked=false;else{if(p.hp<=0||!uRole(p).cloak||p.energy<25||p.lock>0)return {ok:false,error:'Cloak unavailable: recharge or change role.'};p.cloaked=true;}}
  else if(m.type==='mine'){if(p.hp<=0||p.cloaked||p.mineCd>0||p.energy<25||s.mines.filter(function(a){return a.owner===p.id;}).length>=uRole(p).mines||s.mines.length>=64)return {ok:false,error:'Mine rack or capacitor unavailable.'};p.energy-=25;p.mineCd=2.5;s.mines.push({id:s.next++,x:uRound(p.x-Math.cos(p.a)*45),y:uRound(p.y-Math.sin(p.a)*45),faction:p.faction,owner:p.id,arm:1.2,t:90,dmg:p.role===3?140:95});}
  else if(m.type==='jump-sector'){var destination=s.bases.find(function(b){return b.faction===p.faction&&b.sector===m.sector&&b.hp>0;});if(!uAtBase(s,p)||!destination||p.hp<=0)return {ok:false,error:'Jump from a surviving friendly base to another friendly base.'};p.x=destination.x;p.y=destination.y+120;p.sector=destination.sector;p.vx=p.vy=0;p.spawnSeq++;resetFlightAudit(p,s.now);}
  else if(m.type==='stance'){p.stance=p.stance?0:1;}
- else if(m.type==='pulse'){if(p.hp<=0||p.pulse>0)return {ok:false,error:'EMP is recharging.'};p.pulse=14-shipLevel(p,'emp')*2;var range=420+shipLevel(p,'emp')*70,amount=110+shipLevel(p,'emp')*40;uTargets(s).forEach(function(t){if(!t.base&&t.hp>0&&t.faction!==p.faction&&distance(p,t)<range)uDamage(s,t,amount,p.id,{});});s.bullets=s.bullets.filter(function(b){return b.faction===p.faction||distance(p,b)>range;});serverVisual(s,'pulse',p.x,p.y,{max:.65,size:range});}
+ else if(m.type==='pulse'){if(p.hp<=0||p.pulse>0)return {ok:false,error:'EMP is recharging.'};p.pulse=14-shipLevel(p,'emp')*2;var range=420+shipLevel(p,'emp')*70,amount=110+shipLevel(p,'emp')*40;uTargets(s).forEach(function(t){if(t.hp>0&&t.faction!==p.faction&&distance(p,t)<range)uDamage(s,t,amount,p.id,{});});s.bullets=s.bullets.filter(function(b){return b.faction===p.faction||distance(p,b)>range;});serverVisual(s,'pulse',p.x,p.y,{max:.65,size:range});}
  else if(['hull','role','fit','upgrade'].indexOf(m.type)>=0){var error=uShipyard(s,p,m);if(error)return {ok:false,error:error};}
  else return {ok:false,error:'Unknown universe command.'};
  return {ok:true,sessionState:s,playerStates:uSave(s,ctx),broadcast:[uProfilePacket(p)].concat(uBroadcast(s,true))};
