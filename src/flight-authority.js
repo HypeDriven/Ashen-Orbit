@@ -39,7 +39,11 @@ export function validateFlightReport(p,report,seq,now,input,rocks=[]){
  if(elapsed>.65){resetFlightAudit(p,now);return {accepted:false,reason:'resync'};}
  audit.seq=seq;
  if(reason){
-  p.violations=(p.violations||0)+1;audit.score+=reason==='non-finite'||travel>maxCap?4:1;
+  // One correction takes a network round trip to reach the pilot. Treat its
+  // in-flight reports as one incident rather than several independent strikes.
+  const hard=reason==='non-finite'||reason==='world-bounds'||speed>maxCap*1.5||travel>maxCap;
+  if(hard||p.lastFlightStrike===undefined||now-p.lastFlightStrike>=350){p.violations=(p.violations||0)+1;audit.score+=hard?4:1;p.lastFlightStrike=now;}
+  p.lastFlightReason=reason;
   if(audit.score>=3)p.untrusted=true;
   p.correctionSeq=(p.correctionSeq||0)+1;
   // A rejected sample never changes the anchor or teaches a wider envelope.

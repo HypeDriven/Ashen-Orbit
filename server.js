@@ -284,7 +284,11 @@ function validateFlightReport(p,report,seq,now,input,rocks=[]){
  if(elapsed>.65){resetFlightAudit(p,now);return {accepted:false,reason:'resync'};}
  audit.seq=seq;
  if(reason){
-  p.violations=(p.violations||0)+1;audit.score+=reason==='non-finite'||travel>maxCap?4:1;
+  // One correction takes a network round trip to reach the pilot. Treat its
+  // in-flight reports as one incident rather than several independent strikes.
+  const hard=reason==='non-finite'||reason==='world-bounds'||speed>maxCap*1.5||travel>maxCap;
+  if(hard||p.lastFlightStrike===undefined||now-p.lastFlightStrike>=350){p.violations=(p.violations||0)+1;audit.score+=hard?4:1;p.lastFlightStrike=now;}
+  p.lastFlightReason=reason;
   if(audit.score>=3)p.untrusted=true;
   p.correctionSeq=(p.correctionSeq||0)+1;
   // A rejected sample never changes the anchor or teaches a wider envelope.
@@ -383,19 +387,21 @@ function uStats(p){var st=shipStats(p),motion=pilotMotionStats(p);return {hp:st.
 function uBase(f){return {x:FACTIONS[f].baseX,y:0};}
 function uFriendlyBase(s,p){var candidates=s.bases.filter(function(b){return b.faction===p.faction&&b.hp>0;});return candidates.sort(function(a,b){return distance(p,a)-distance(p,b);})[0]||null;}
 function uAtBase(s,p){var base=uFriendlyBase(s,p);return base&&distance(p,base)<280?base:null;}
-function uProfile(p){return {hull:p.hull,role:p.role,tech:p.tech,upgrades:p.upgrades,loadout:p.loadout,owned:p.owned,cleared:p.cleared,stance:p.stance||0,trust:{untrusted:!!p.untrusted,violations:p.violations||0,authority:movementAuthority(p)}};}
+function uProfile(p){return {hull:p.hull,role:p.role,tech:p.tech,upgrades:p.upgrades,loadout:p.loadout,owned:p.owned,cleared:p.cleared,stance:p.stance||0,trust:{policy:2,untrusted:!!p.untrusted,violations:p.violations||0,authority:movementAuthority(p),reason:p.lastFlightReason||''}};}
 function uProfilePacket(p){return {to:[p.id],data:{type:'profile',profile:uProfile(p)}};}
 function uSaved(p,s){return Object.assign(uProfile(p),{world:s.worldId,scrap:p.scrap,faction:p.faction,total:p.total,day:s.day,dayScrap:p.dayScrap});}
-function uSave(s,ctx){var docs={};s.pilots.forEach(function(p){docs[p.id]=Object.assign({},ctx.playerStates&&ctx.playerStates[p.id]||{},{universe:uSaved(p,s),flightTrust:{untrusted:!!p.untrusted,violations:p.violations||0}});});return docs;}
+function uSave(s,ctx){var docs={};s.pilots.forEach(function(p){docs[p.id]=Object.assign({},ctx.playerStates&&ctx.playerStates[p.id]||{},{universe:uSaved(p,s),flightTrust:{policy:2,untrusted:!!p.untrusted,violations:p.violations||0}});});return docs;}
 function uRecord(s,p){s.records[p.id]=[p.id,p.name,p.faction,p.kills||0,p.deaths||0,p.baseKills||0,Math.round(p.damage||0),p.total||0,p.shots||0,!!p.untrusted];}
 function uAdd(s,ctx,person){
  var parked=s.parked[person.id],stored=ctx.playerStates&&ctx.playerStates[person.id]||{},saved=parked||stored.universe||{},same=saved.world===s.worldId,trust=stored.flightTrust||saved.trust||{};
- var p={id:person.id,pilot:true,name:(person.displayName||person.name||'Pilot').slice(0,20),faction:saved.faction===1?1:saved.faction===0?0:-1,x:0,y:0,vx:0,vy:0,a:-Math.PI/2,hp:0,max:176,energy:100,boost:100,heat:0,overheated:false,cloaked:false,lock:0,mineCd:0,respawn:0,input:clean({}),inputAck:0,lastInput:ctx.now,choiceAt:-100,spawnSeq:0,hull:same?clamp(saved.hull,0,4)|0:0,role:same?clamp(saved.role,0,5)|0:0,scrap:same?clamp(saved.scrap,0,1000000):120,tech:same?clamp(saved.tech,0,10000):0,upgrades:same&&saved.upgrades||{gun:1,armor:0},loadout:same&&saved.loadout||defaultLoadout(),owned:same&&saved.owned||['cannon','drive','reactor','barrier'],cleared:same&&saved.cleared||[],total:same?saved.total||0:0,dayScrap:saved.day===s.day?saved.dayScrap||0:0,sector:4,untrusted:!!(trust.untrusted||saved.trust&&saved.trust.untrusted),violations:Math.max(trust.violations||0,saved.trust&&saved.trust.violations||0),kills:0,deaths:0,baseKills:0,damage:0,shots:0,profileDirty:true};
+ var currentTrust=trust.policy===2||saved.trust&&saved.trust.policy===2;
+ var p={id:person.id,pilot:true,flightPolicy:2,name:(person.displayName||person.name||'Pilot').slice(0,20),faction:saved.faction===1?1:saved.faction===0?0:-1,x:0,y:0,vx:0,vy:0,a:-Math.PI/2,hp:0,max:176,energy:100,boost:100,heat:0,overheated:false,cloaked:false,lock:0,mineCd:0,respawn:0,input:clean({}),inputAck:0,lastInput:ctx.now,choiceAt:-100,spawnSeq:0,hull:same?clamp(saved.hull,0,4)|0:0,role:same?clamp(saved.role,0,5)|0:0,scrap:same?clamp(saved.scrap,0,1000000):120,tech:same?clamp(saved.tech,0,10000):0,upgrades:same&&saved.upgrades||{gun:1,armor:0},loadout:same&&saved.loadout||defaultLoadout(),owned:same&&saved.owned||['cannon','drive','reactor','barrier'],cleared:same&&saved.cleared||[],total:same?saved.total||0:0,dayScrap:saved.day===s.day?saved.dayScrap||0:0,sector:4,untrusted:!!(currentTrust&&(trust.untrusted||saved.trust&&saved.trust.untrusted)),violations:currentTrust?Math.max(trust.violations||0,saved.trust&&saved.trust.violations||0):0,kills:0,deaths:0,baseKills:0,damage:0,shots:0,profileDirty:true};
  p.loadout=HULLS[p.hull].mounts.map(function(m,i){return compatible(m,p.loadout[i])?p.loadout[i]||null:null;});
  if(s.records[p.id]){var row=s.records[p.id];p.kills=row[3];p.deaths=row[4];p.baseKills=row[5];p.damage=row[6];p.total=row[7];p.shots=row[8];}
  s.pilots.push(p);delete s.parked[p.id];if(p.faction>=0)uSpawn(s,p);
 }
 function uMigrate(s,ctx){
+ s.pilots.forEach(function(p){if(p.flightPolicy!==2){p.flightPolicy=2;p.untrusted=false;p.violations=0;p.lastFlightReason='';if(p.audit)p.audit.score=0;p.profileDirty=true;}});
  if(s.version===2)return;
  s.worldId=s.worldId||ctx.sessionId||'local';s.escorts=s.escorts||[];s.records=s.records||{};s.parked=s.parked||{};
  var old=s.bases||[];s.bases=[];s.beacons=[];
