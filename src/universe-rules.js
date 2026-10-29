@@ -1,13 +1,6 @@
-export const WORLD_CAPACITY=32;
-export const FACTIONS=[{name:'RIGHTEOUS REPUBLIC',short:'REPUBLIC',color:'#c7d1ab',baseX:-2200},{name:'LEFT WING REBELLION',short:'REBELLION',color:'#d4a296',baseX:2200}];
-export const ROLES=[
- {id:'interceptor',name:'INTERCEPTOR',desc:'Fast, agile dogfighter; light armor, only 2 mines.',cost:0,speed:1.2,hp:.8,turn:1.3,damage:1,tractor:1,cloak:1,mines:2,shape:0},
- {id:'guardian',name:'GUARDIAN',desc:'Heavy shields and armor; slow, cannot cloak.',cost:280,speed:.72,hp:1.5,turn:.8,damage:1.1,tractor:.8,cloak:0,mines:3,shape:1},
- {id:'miner',name:'PROSPECTOR',desc:'60% more ore, wide tractor; weak combat weapons.',cost:220,speed:.85,hp:1.1,turn:.9,damage:.7,tractor:1.6,cloak:1,mines:4,shape:2},
- {id:'minelayer',name:'MINELAYER',desc:'12 persistent mines; modest hull and gun damage.',cost:260,speed:.95,hp:.9,turn:1,damage:.85,tractor:1,cloak:1,mines:12,shape:3},
- {id:'infiltrator',name:'INFILTRATOR',desc:'Efficient cloak and nimble flight; fragile hull.',cost:320,speed:1.12,hp:.72,turn:1.2,damage:.9,tractor:.8,cloak:.45,mines:3,shape:4},
- {id:'support',name:'SUPPORT TENDER',desc:'Repairs nearby allies; slow, low weapon damage.',cost:240,speed:.88,hp:1.1,turn:.85,damage:.7,tractor:1.2,cloak:1.2,mines:5,shape:5}
-];
+import {WORLD_CAPACITY,FACTIONS,ROLES} from './factions.js';
+export {WORLD_CAPACITY,FACTIONS,ROLES} from './factions.js';
+import {shipStats,shipLevel} from './shipyard.js';
 export function voiceGain(listener,speaker){if(!listener||!speaker||listener.hp<=0||listener.faction!==speaker.faction||speaker.hp<=0)return 0;const d=Math.hypot(listener.x-speaker.x,listener.y-speaker.y);if(d>=1100)return 0;if(d<=120)return 1;const t=(d-120)/980;return (1-t)*(1-t);}
 export function visibleShip(viewer,target){return viewer.faction===target.faction||!target.cloaked||Math.hypot(viewer.x-target.x,viewer.y-target.y)<=150;}
 export const ROCK_MIN=13;
@@ -23,7 +16,11 @@ export function driftRocks(rocks,dt){for(const r of rocks){r.x+=(r.vx||0)*dt;r.y
 export function sweptHit(ax,ay,bx,by,x,y,r){const dx=bx-ax,dy=by-ay,t=Math.max(0,Math.min(1,((x-ax)*dx+(y-ay)*dy)/(dx*dx+dy*dy||1)));return Math.hypot(x-ax-t*dx,y-ay-t*dy)<=r;}
 
 const flightClamp=(v,a,b)=>Number.isFinite(v)?Math.max(a,Math.min(b,v)):0;
-export function pilotMotionStats(p){const hull=p.hull||0,role=ROLES[p.role||0];return {speed:(250-hull*24)*role.speed,turn:(2.8-hull*.32)*role.turn,radius:22+hull*9};}
+export const WORLD_SECTORS=9,SECTOR_SPACING=1600,WORLD_Y=7200;
+export const sectorAt=y=>Math.max(0,Math.min(WORLD_SECTORS-1,Math.floor((y+WORLD_Y)/SECTOR_SPACING)));
+export const sectorY=id=>(id-4)*SECTOR_SPACING;
+export function pilotMotionStats(p){const hull=p.hull||0,role=ROLES[p.role||0];if(p.loadout){const st=shipStats(p);return {speed:225*(1+shipLevel(p,'engine')*.09)*st.speed,turn:st.turn,radius:HULLS_MOTION_RADIUS[ hull ]};}return {speed:(250-hull*24)*role.speed,turn:(2.8-hull*.32)*role.turn,radius:22+hull*9};}
+const HULLS_MOTION_RADIUS=[24,31,40,52,66];
 // Used by the authoritative server, live prediction, and input replay. This
 // changes movement only: damage, weapons, resources and visibility stay on the server.
 export function stepPilotMovement(p,dt,input,rocks=[],shared=true){
@@ -36,11 +33,11 @@ export function stepPilotMovement(p,dt,input,rocks=[],shared=true){
  let dx=m.steering?Math.cos(p.a)*thrust-Math.sin(p.a)*m.strafe:m.x,dy=m.steering?Math.sin(p.a)*thrust+Math.cos(p.a)*m.strafe:m.y;
  if(!shared&&m.steering){dx+=m.x/length;dy+=m.y/length;}
  const n=Math.max(1,Math.hypot(dx,dy)),cloaked=p.cloaked&&!input.fire&&!m.boost;
- const speed=shared?st.speed*(m.boost&&!cloaked?1.65:1)*(cloaked?.65:1)*(m.tractor?.75:1):m.boost?310:m.tractor?155:215;
+ const speed=shared?st.speed*(m.boost&&!cloaked&&p.boost!==0?(p.loadout?440/225:1.65):1)*(cloaked?.65:1)*(m.tractor?.75:1):m.boost?310:m.tractor?155:215;
  if(shared){p.vx+=(dx/n*speed-p.vx)*Math.min(1,dt*3);p.vy+=(dy/n*speed-p.vy)*Math.min(1,dt*3);}
  else if(m.steering){p.vx+=(dx/n*speed*2-p.vx*.3)*dt;p.vy+=(dy/n*speed*2-p.vy*.3)*dt;}
  else{p.vx=dx/n*speed;p.vy=dy/n*speed;if(m.aim!==null)p.a=m.aim;}
  const cap=Math.max(1,Math.hypot(p.vx,p.vy)/speed);p.vx/=cap;p.vy/=cap;
- p.x=flightClamp(p.x+p.vx*dt,shared?-3200:-1400,shared?3200:1400);p.y=flightClamp(p.y+p.vy*dt,shared?-2400:-1000,shared?2400:1000);
+ p.x=flightClamp(p.x+p.vx*dt,shared?-3200:-1400,shared?3200:1400);p.y=flightClamp(p.y+p.vy*dt,shared?-WORLD_Y:-1000,shared?WORLD_Y:1000);
  if(shared)for(const r of rocks){const d=Math.hypot(p.x-r.x,p.y-r.y),radius=r.r+st.radius;if(d<radius){const a=Math.atan2(p.y-r.y,p.x-r.x);p.x=r.x+Math.cos(a)*radius;p.y=r.y+Math.sin(a)*radius;p.vx*=.65;p.vy*=.65;}}
 }

@@ -83,3 +83,18 @@ test('proximity voice attenuates once, mutes hostile ships and restores user set
  me.hp=0;mod.updateVoice(.05,game);assert.equal(participants[0].locallyMuted,true);
  await mod.stopVoice();assert.equal(participants[0].volume,.8);assert.equal(participants[0].locallyMuted,false);assert.equal(participants[1].volume,1.2);assert.equal(pans.friend,null);
 });
+
+test('multipart frames publish all colliders atomically and retain both results leaderboards',async()=>{
+ const sock=socket(),mod=await client('online.ts',{player:()=>({userId:'me'}),launchContext:()=>({sessionId:'session'}),connectGame:()=>sock});mod.resumeLaunch();
+ const world={kind:'universe',pilots:[['me','Pilot',0,0,0,0,0,0,176,176,0,0,0,false,100,120,0,0,0,0,1,1,1,4,100,0]],enemies:[],rocks:[],mines:[],bases:[],fx:[],beacons:[],core:{x:0,y:0},bullets:[],loot:[],time:1,message:'War',progress:0,goal:9,ended:false};
+ sock.events.game({type:'snapshot',world});sock.events.game({type:'entity-part',time:2,kind:'rocks',values:[[10,20,35,20,0,0]]});assert.equal(mod.online.view.rocks.length,0);
+ sock.events.game({type:'entity-part',time:2,kind:'rocks',values:[[30,40,25,10,1,0]]});
+ sock.events.game({type:'world-results',results:{winner:0,duration:123,teams:[[],[]]}});sock.events.game({type:'results-team',faction:0,rows:[{name:'Winner',score:9000}]});sock.events.game({type:'results-team',faction:1,rows:[{name:'Defender',score:100}]});
+ sock.events.game({type:'snapshot',world:{...world,time:2,multipart:true,ended:true,results:null}});assert.equal(mod.online.view.rocks.length,2);assert.equal(mod.online.results.teams[1][0].name,'Defender');assert.equal(mod.online.ended,true);
+});
+
+test('joining the next world leaves a completed world and preserves the chosen faction',async()=>{
+ let leaves=0,created=0;const sock=socket(),room={id:'old',metadata:{universe:true},hostUserId:'me',gameSessionId:'finished',participants:[]},next={...room,id:'new',gameSessionId:'new-session',joinCode:'new'};
+ const mod=await client('online.ts',{player:()=>({userId:'me'}),sessions:{get:async()=>({status:'finished'})},connectGame:()=>sock,rooms:{mine:async()=>room,leave:async()=>{leaves++;},browse:async()=>[],create:async()=>{created++;return next;},open:async()=>next,connect:()=>socket()}});
+ await mod.enterUniverse(1);assert.equal(leaves,1);assert.equal(created,1);assert.equal(mod.online.sessionId,'new-session');sock.events.open();assert.equal(sock.sent[0].faction,1);
+});

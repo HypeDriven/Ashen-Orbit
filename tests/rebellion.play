@@ -1,9 +1,9 @@
 until 300 CHOOSE YOUR ALLEGIANCE
 click 2 / REBELLION
 click ENTER SHARED UNIVERSE
-until 1200 Shared frontier
+until 1200 SECTOR WAR
 expect LEFT WING REBELLION
-until 1500 2/32 pilots
+until 1500 2/32 PILOTS
 frames 200
 key KeyC 1
 until 300 CLOAKED

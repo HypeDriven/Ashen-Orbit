@@ -29,13 +29,25 @@ The universe keeps running while other pilots remain. Leaving as its final pilot
 keeps the room membership so the platform can pause the empty session and resume
 it on reconnect. Explicit platform closure or retention expiry can end a world.
 
-Online flight responds locally at 60 Hz using the server's movement and asteroid
-collision rules. Snapshots acknowledge input sequences; the client replays
-unacknowledged movement and eases ordinary corrections over roughly 70 ms.
-Remote ships use a 120 ms interpolation buffer with at most 150 ms of
-extrapolation. Prediction stops after a 500 ms snapshot gap; respawns, refits,
-teleports, and reconnects reset it. Damage, mining, weapons, and progression
-remain authoritative.
+Online flight responds locally at 60 Hz. Trusted clients retain their movement
+between snapshots; the server checks speed, acceleration, turning, cumulative
+travel, collisions, and rolling prediction residuals using server time. Network
+jitter receives a bounded allowance. Repeated impossible reports mark a pilot
+untrusted, persist that status, and progressively reduce movement authority.
+Combat, mining, weapons, resources, and progression stay on the server. Remote
+ships use a 120 ms interpolation buffer and at most 150 ms extrapolation.
+Prediction stops after a 500 ms snapshot gap.
+
+Each of nine sectors has one base per faction with light projectile defenses.
+Destroy an enemy base to secure that sector and earn research. Destroyed bases
+cannot repair ships, receive jumps, or spawn pilots; respawns use the nearest
+surviving friendly base. **M** opens the sector chart; dock to jump between
+friendly bases. Destroy all enemy bases to win the world. The results screen
+shows both faction leaderboards and lets pilots join the next world, starting
+fresh ship progression. Movement trust restrictions carry forward.
+
+Single player and the shared universe use the same hulls, mount catalogs,
+roles, upgrade trees, prices, research requirements, and equipment tradeoffs.
 
 ## Development
 

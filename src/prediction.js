@@ -18,13 +18,15 @@ export class FlightPrediction {
   if(changed){this.history=[];this.error={x:0,y:0,a:0};}
   else if(Number.isFinite(old.inputAck))this.history=this.history.filter(f=>f.seq>old.inputAck);
   else this.history=[]; // Compatible with a session running an older server.
-  this.local={...old};
-  if(!changed){
-   // A stalled connection cannot accumulate an unbounded speculative journey.
-   let remaining=.5;
-   for(let i=this.history.length-1;i>=0;i--){remaining-=this.history[i].dt;if(remaining<0){this.history.splice(0,i+1);break;}}
-   for(const frame of this.history)stepPilotMovement(this.local,frame.dt,frame.input,s.rocks,shared);
-   if(display)this.error={x:display.x-this.local.x,y:display.y-this.local.y,a:angleDelta(display.a,this.local.a)};
+  const keepLocal=!changed&&shared&&old.authority===1&&old.correctionSeq===this.local.correctionSeq&&Math.hypot(old.x-this.local.x,old.y-this.local.y)<180;
+  if(keepLocal){this.local={...old,...pose(this.local)};this.error={x:0,y:0,a:0};}
+  else{this.local={...old};
+   if(!changed){
+    let remaining=.5;
+    for(let i=this.history.length-1;i>=0;i--){remaining-=this.history[i].dt;if(remaining<0){this.history.splice(0,i+1);break;}}
+    for(const frame of this.history)stepPilotMovement(this.local,frame.dt,frame.input,s.rocks,shared);
+    if(display)this.error={x:display.x-this.local.x,y:display.y-this.local.y,a:angleDelta(display.a,this.local.a)};
+   }
   }
   if(first||serverTime>this.latestTime){this.latestTime=serverTime;this.arrival=this.clock;}
   if(first)this.renderTime=serverTime-.12;
@@ -39,6 +41,8 @@ export class FlightPrediction {
   for(const id of this.remote.keys())if(!present.has(id))this.remote.delete(id);
   this.write(s);
  }
+ applyProfile(profile){if(this.local)Object.assign(this.local,profile);}
+ report(){if(!this.local)return null;return {...pose(this.local),a:Math.atan2(Math.sin(this.local.a),Math.cos(this.local.a)),spawnSeq:this.local.spawnSeq};}
  get display(){return this.local?{x:this.local.x+this.error.x,y:this.local.y+this.error.y,a:this.local.a+this.error.a}:null;}
  step(dt,input,s){
   this.clock+=dt;if(!this.local)return this.sequence;

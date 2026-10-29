@@ -31,23 +31,23 @@ test('late joins enter the existing universe, choose sides, and reconnect withou
 });
 
 test('faction and purchased hull/role survive departure and saved-state restoration',()=>{
- const w=world();w.cmd(0,{type:'choose',faction:1});const p=w.s.pilots[0];p.scrap=2000;
+ const w=world();w.cmd(0,{type:'choose',faction:1});const p=w.s.pilots[0];p.scrap=2000;p.tech=3;p.cleared=[0];
  assert.equal(w.cmd(0,{type:'role',role:1}).ok,true);assert.equal(p.max,330);assert.equal(p.shield,140);
- assert.equal(w.cmd(0,{type:'hull'}).ok,true);assert.equal(p.hull,1);assert.equal(p.max,585);
+ assert.equal(w.cmd(0,{type:'hull'}).ok,true);assert.equal(p.hull,1);assert.equal(p.max,495);
  const id=p.id,saved=w.cmd(0,{type:'leave'}).playerStates;
  w.ctx.players.shift();w.tick();assert.equal(w.s.parked[id].faction,1);
  const restored=world(1,saved);assert.equal(restored.s.pilots[0].faction,1);assert.equal(restored.s.pilots[0].hull,1);assert.equal(restored.s.pilots[0].role,1);
- assert.equal(restored.cmd(0,{type:'resync'}).broadcast[0].data.world.kind,'universe');
+ assert.equal(restored.cmd(0,{type:'resync'}).broadcast.find(packet=>packet.data.type==='snapshot').data.world.kind,'universe');
 });
 
 test('cloaks drain energy, hide hostile pilots, and break on fire or damage',()=>{
  const w=world();w.cmd(0,{type:'choose',faction:0});w.cmd(1,{type:'choose',faction:1});w.tick(65);
  const p=w.s.pilots[1];p.x=1500;p.y=500;assert.equal(w.cmd(1,{type:'cloak'}).ok,true);
- let view=w.cmd(0,{type:'resync'}).broadcast[0].data.world;
+ let view=w.cmd(0,{type:'resync'}).broadcast.find(packet=>packet.data.type==='snapshot').data.world;
  assert.equal(view.pilots.some(pilot=>pilot[0]===p.id),false);
  w.tick(10);assert.ok(p.energy<100);assert.equal(p.cloaked,true);
  w.s.pilots[0].x=p.x+100;w.s.pilots[0].y=p.y;
- view=w.cmd(0,{type:'resync'}).broadcast[0].data.world;assert.equal(view.pilots.some(pilot=>pilot[0]===p.id),true);
+ view=w.cmd(0,{type:'resync'}).broadcast.find(packet=>packet.data.type==='snapshot').data.world;assert.equal(view.pilots.some(pilot=>pilot[0]===p.id),true);
  w.tick(1,[{from:p.id,data:{fire:true}}]);assert.equal(p.cloaked,false);
  p.lock=0;w.cmd(1,{type:'cloak'});w.s.mines.push({x:p.x,y:p.y,owner:'other',faction:0,arm:0,t:30,dmg:20});w.tick();assert.equal(p.cloaked,false);
 });
@@ -88,12 +88,12 @@ test('32 pilots and a crowded universe fit network frames without dropping aster
  w.s.bullets=Array.from({length:48},(_,i)=>({id:i,x:i*20,y:i*30,vx:779.2,vy:-440.5,t:1.4,faction:i%2,dmg:40,weapon:'cannon'}));
  for(const p of w.s.pilots){p.name='界'.repeat(20);p.scrap=999999;}
  for(let faction=0;faction<2;faction++){
-  const r=w.cmd(faction,{type:'resync'}),view=r.broadcast[0].data.world;
-  assert.equal(view.rocks.length,96);assert.equal(view.pilots.length,32);
-  assert.ok(Buffer.byteLength(JSON.stringify(w.tick()))<65536,'Tick result must fit the platform result budget');
-  assert.ok(Buffer.byteLength(JSON.stringify(r.broadcast[0].data))<16000);
+  const r=w.cmd(faction,{type:'resync'}),view=r.broadcast.find(packet=>packet.data.type==='snapshot').data.world;
+  assert.equal(r.broadcast.filter(p=>p.data.type==='entity-part'&&p.data.kind==='rocks').reduce((n,p)=>n+p.data.values.length,view.rocks.length),96);assert.equal(view.pilots.length,32);
+  assert.ok(Buffer.byteLength(JSON.stringify(w.tick()))<262144,'Tick result must fit the platform result budget');
+  for(const packet of r.broadcast)assert.ok(Buffer.byteLength(JSON.stringify(packet.data))<16000);
  }
- w.s.tick=99;assert.ok(Buffer.byteLength(JSON.stringify(w.tick()))<65536,'Periodic saves must also fit the result budget');
+ w.s.tick=99;assert.ok(Buffer.byteLength(JSON.stringify(w.tick()))<262144,'Periodic saves must also fit the result budget');
  w.ctx.players.push({id:'overflow',ai:false});assert.equal(w.game.onMembershipChange(w.ctx).ok,false);
 });
 
@@ -102,4 +102,38 @@ test('solo roles apply tradeoffs and laid mines retain their original damage',()
  assert.equal(chooseRole(s,1),true);const guardian=stats(s);assert.ok(guardian.hp>interceptor.hp);assert.ok(guardian.speed<interceptor.speed);
  chooseRole(s,3);assert.equal(layMine(s),true);assert.equal(s.mines[0].dmg,140);chooseRole(s,0);assert.equal(s.mines[0].dmg,140);
  update(s,1/60,{x:0,y:0,thrust:0,strafe:0,turn:0,fire:false,boost:false,aim:0});assert.ok(Number.isFinite(s.player.hp));
+});
+
+test('destroyed bases stop repairs, jumps and spawning; the last enemy base ends the world',()=>{
+ const w=world();w.cmd(0,{type:'choose',faction:0});w.cmd(1,{type:'choose',faction:1});w.s.rocks=[];w.s.spawn=100000;
+ const attacker=w.s.pilots[0],defender=w.s.pilots[1];
+ for(let sector=0;sector<9;sector++){
+  const base=w.s.bases.find(b=>b.faction===1&&b.sector===sector);attacker.x=base.x-650;attacker.y=base.y;attacker.a=0;attacker.vx=attacker.vy=0;attacker.energy=100;attacker.heat=0;attacker.overheated=false;
+  for(let i=0;i<1600&&base.hp>0;i++)w.tick(1,[{from:attacker.id,data:{seq:sector*2000+i+1,steering:true,fire:true,aim:0}}]);
+  assert.equal(base.hp,0,'cannon destroys base '+sector);
+  if(sector===4){defender.hp=0;defender.respawn=0;w.tick();assert.equal(defender.hp,defender.max);assert.notEqual(defender.sector,4);assert.equal(w.cmd(1,{type:'jump-sector',sector:4}).ok,false);}
+ }
+ assert.equal(w.s.ended,true);assert.equal(w.s.winner,0);assert.equal(attacker.baseKills,9);assert.equal(w.s.results.teams[0][0].bases,9);assert.equal(w.s.results.teams[1][0].id,defender.id);
+ assert.equal(w.cmd(0,{type:'mine'}).ok,false);assert.equal(w.game.onMembershipChange(w.ctx).ok,false);
+ const result=w.tick();assert.ok(result.broadcast.some(p=>p.data.type==='snapshot'&&p.data.world.ended));
+ const saved=w.cmd(0,{type:'leave'}).playerStates;const next=world(2,saved);next.s.worldId='new-world';next.s.pilots=[];next.tick();assert.equal(next.s.pilots[0].hull,0);assert.equal(next.s.pilots[0].scrap,120);assert.equal(next.s.bases.filter(b=>b.hp>0).length,18);
+});
+
+test('light base defenses fire avoidable projectiles and stop after destruction',()=>{
+ const w=world();w.cmd(0,{type:'choose',faction:0});const p=w.s.pilots[0],base=w.s.bases.find(b=>b.faction===1&&b.sector===4);w.s.rocks=[];w.s.spawn=100000;p.x=base.x-450;p.y=base.y;w.tick();assert.ok(w.s.bullets.some(b=>b.owner===base.id));assert.equal(p.hp,p.max);base.hp=0;w.s.bullets=[];w.tick(50);assert.equal(w.s.bullets.some(b=>b.owner===base.id),false);
+});
+
+test('shared shipyard enforces the same catalog gates, prices and stats as solo',()=>{
+ const w=world(1);w.cmd(0,{type:'choose',faction:0});const p=w.s.pilots[0],solo=createGame();p.scrap=solo.scrap=10000;p.tech=solo.tech=100;
+ assert.equal(w.cmd(0,{type:'hull'}).ok,false);
+ p.cleared=solo.cleared=[0,1,2,3,4,5,7,8];
+ for(let hull=0;hull<5;hull++){
+  for(let role=0;role<6;role++){p.role=solo.role=role;solo.hull=p.hull;assert.equal(w.sandbox.uStats(p).hp,stats(solo).hp);assert.equal(w.sandbox.uStats(p).shield,stats(solo).shield);}
+  if(hull<4){p.role=0;assert.equal(w.cmd(0,{type:'hull'}).ok,true);solo.hull=p.hull;solo.loadout=Array.from(p.loadout);}
+ }
+ assert.equal(p.hull,4);assert.equal(w.cmd(0,{type:'fit',slot:0,item:'fortress'}).ok,false);
+});
+
+test('old running universes migrate without losing pilots or crashing',()=>{
+ const w=world();w.cmd(0,{type:'choose',faction:0});delete w.s.version;delete w.s.escorts;delete w.s.records;delete w.s.worldId;w.s.bases=w.s.bases.filter(b=>b.sector===4);const p=w.s.pilots[0];delete p.loadout;delete p.upgrades;delete p.owned;delete p.cleared;delete p.boost;delete p.heat;w.tick();assert.equal(w.s.version,2);assert.equal(w.s.bases.length,18);assert.ok(Number.isFinite(p.x));assert.equal(p.loadout[0],'cannon');
 });

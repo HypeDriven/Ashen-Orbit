@@ -88,7 +88,7 @@ test('the server acknowledges only applied input and ignores older sequence numb
  const p=ctx.sessionState.pilots[0];ctx.now+=50;
  context.game.onTick({...ctx,inputs:[{from:'me',data:input({seq:20,thrust:1})}]});assert.equal(p.inputAck,20);
  ctx.now+=50;context.game.onTick({...ctx,inputs:[{from:'me',data:input({seq:19,thrust:-1})}]});assert.equal(p.inputAck,20);assert.equal(p.input.thrust,1);
- const view=context.game.onPlayerMessage({...ctx,message:{from:'me',data:{type:'resync'}}}).broadcast[0].data.world;
+ const view=context.game.onPlayerMessage({...ctx,message:{from:'me',data:{type:'resync'}}}).broadcast.find(packet=>packet.data.type==='snapshot').data.world;
  assert.equal(view.pilots[0][19],20);assert.equal(view.pilots[0][20],1);
 });
 
@@ -101,7 +101,7 @@ test('reloading after an idle timeout preserves the sequence floor and accepts t
  context.game.onTick({...ctx,inputs:[{from:'me',data:input({seq:90000})}]});
  for(let i=0;i<24;i++){ctx.now+=50;context.game.onTick({...ctx,inputs:[]});}
  assert.equal(server.inputAck,90000,'Idle must stop thrust without resetting the acknowledged sequence');
- const view=context.game.onPlayerMessage({...ctx,message:{from:'me',data:{type:'resync'}}}).broadcast[0].data.world;
+ const view=context.game.onPlayerMessage({...ctx,message:{from:'me',data:{type:'resync'}}}).broadcast.find(packet=>packet.data.type==='snapshot').data.world;
  const predictor=new FlightPrediction(),s=scene(pilot({x:server.x,y:server.y,a:server.a,inputAck:view.pilots[0][19]}));
  predictor.receive(s,view.time,true);const seq=predictor.step(1/60,input({thrust:1}),s);
  assert.equal(seq,90001);ctx.now+=50;

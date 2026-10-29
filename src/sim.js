@@ -1,3 +1,4 @@
+import {UPGRADES,TREES,shipStats,shipUpgradeStatus,shipHullStatus,shipFitStatus} from './shipyard.js';
 import {ROLES,fractureRock,driftRocks} from './universe-rules.js';
 import {emitVisual,stepVisuals,rememberTrail} from './effects.js';
 import {createBaseDefense,updateBaseDefense,interceptBaseShot} from './defenses.js';
@@ -5,20 +6,8 @@ import {WEAPONS,COMPONENTS,HULLS,weapon,component,compatible,angleDelta,turnTowa
 export {WEAPONS,COMPONENTS,HULLS} from './arsenal.js';
 // Righteous Republic: fixed-step simulation shared by native and browser runtimes.
 export const TAU = Math.PI * 2;
-export const SECTOR_INFO = [
-  {name:'THE PALE BELT',risk:'LOW',reward:1,hazard:'none',toll:0,repair:35,types:[0,1,5],note:'Quiet salvage lanes. Affordable repairs.',bonus:'Balanced rewards / safe station'},
-  {name:'CINDER REACH',risk:'HIGH',reward:1.65,hazard:'heat',toll:35,repair:65,types:[0,1,3],note:'Hot debris drains hull outside the ring.',bonus:'+65% salvage / thermal hull damage'},
-  {name:'THE HOLLOW',risk:'HIGH',reward:1.45,hazard:'ion',toll:0,repair:55,types:[3,4,5],note:'Ion storms suppress shield regeneration.',bonus:'+45% salvage / unreliable shields'},
-  {name:'DRIFTER HAVEN',risk:'LOW',reward:.85,hazard:'none',toll:55,repair:20,types:[0,5],note:'A protected refuge with cheap repairs.',bonus:'-15% salvage / low danger / cheap services'},
-  {name:'IRON GRAVEYARD',risk:'MEDIUM',reward:1.8,hazard:'dense',toll:25,repair:55,types:[1,3,4],note:'Rich ore, dense rocks, armored patrols.',bonus:'+80% salvage / 90 asteroids / heavy enemies'},
-  {name:'REBEL FRONTIER',risk:'EXTREME',reward:1.5,hazard:'reinforcements',toll:0,repair:70,types:[4,5,3],note:'Carrier swarms. Every rebel outpost yields extra intel.',bonus:'+50% salvage / double outpost intel'},
-  {name:'REBEL CITADEL',risk:'FINAL',reward:1.8,hazard:'ion',toll:80,repair:60,types:[0,1,3,4,5],note:'Destroy the rebel flagship and dismantle its command network.',bonus:'Final battle / requires the completed command campaign'},
-  {name:'PRISM NEBULA',risk:'HIGH',reward:1.7,hazard:'ion',toll:60,repair:70,types:[1,3,5],note:'Shielded guardians patrol the relay.',bonus:'Disruptors counter shields / +70% salvage'},
-  {name:'THE SILENT ARCHIVE',risk:'EXTREME',reward:1.9,hazard:'dense',toll:80,repair:80,types:[1,3,4],note:'Recover an ancient navigation cipher at the relay.',bonus:'Navigation cipher / armored long-range patrols'},
-  {name:'EMBER FORGE',risk:'EXTREME',reward:2,hazard:'heat',toll:90,repair:95,types:[1,4,5],note:'Hot salvage fields favor radiators over raw firepower.',bonus:'+100% salvage / heat and carrier swarms'},
-  {name:'OUTER WATCH',risk:'EXTREME',reward:2.1,hazard:'reinforcements',toll:100,repair:100,types:[1,3,4],note:'The last armada stands between you and Rebel Citadel.',bonus:'+110% salvage / elite defenders'}
-];
-export const SECTORS=SECTOR_INFO.map(s=>s.name);
+export {SECTOR_INFO,SECTORS} from './sectors.js';
+import {SECTOR_INFO,SECTORS} from './sectors.js';
 export const ENEMIES=[
  {name:'REBEL RAIDER',hp:75,speed:155,range:300,rate:1.1,radius:17,reward:3},
  {name:'REBEL BULWARK',hp:240,speed:78,range:260,rate:.8,radius:29,reward:8},
@@ -27,21 +16,7 @@ export const ENEMIES=[
  {name:'DRONE CARRIER',hp:310,speed:68,range:580,rate:2.2,radius:38,reward:12},
  {name:'BOARDING DRONE',hp:32,speed:235,range:15,rate:1.6,radius:12,reward:2}
 ];
-export const UPGRADES=[
- {id:'gun',tree:0,name:'CANNON COILS',desc:'+7 damage; faster firing each rank.',max:5,base:70,need:'',rank:0,tech:0},
- {id:'multishot',tree:0,name:'SPLIT BARRELS',desc:'Additional projectiles in a narrow spread.',max:3,base:130,need:'gun',rank:2,tech:1},
- {id:'pierce',tree:0,name:'PHASE ROUNDS',desc:'Pierce one extra target per rank.',max:3,base:180,need:'multishot',rank:1,tech:1},
- {id:'armor',tree:1,name:'HULL PLATING',desc:'+60 flagship hull. Repairs hull on purchase.',max:4,base:85,need:'',rank:0,tech:0},
- {id:'shield',tree:1,name:'AEGIS SHIELD',desc:'+45 regenerating shields per rank.',max:4,base:110,need:'armor',rank:1,tech:1},
- {id:'regen',tree:1,name:'NANITE REPAIR',desc:'Regenerate hull after 6s without damage.',max:3,base:160,need:'shield',rank:1,tech:1},
- {id:'engine',tree:2,name:'VECTOR DRIVES',desc:'+9% thrust; more efficient afterburners.',max:4,base:80,need:'',rank:0,tech:0},
- {id:'tractor',tree:2,name:'TRACTOR ARRAY',desc:'+110m beam range; faster wreck recovery.',max:4,base:105,need:'engine',rank:1,tech:0},
- {id:'emp',tree:2,name:'PULSE CAPACITOR',desc:'Stronger EMP, larger radius, less cooldown.',max:3,base:155,need:'tractor',rank:1,tech:1},
- {id:'hangar',tree:3,name:'HANGAR DECK',desc:'+1 escort capacity per rank (up to 5).',max:3,base:130,need:'',rank:0,tech:0},
- {id:'wingguns',tree:3,name:'SQUADRON WEAPONS',desc:'+40% escort damage per rank.',max:3,base:140,need:'hangar',rank:1,tech:1},
- {id:'winghull',tree:3,name:'ESCORT BULKHEADS',desc:'+55 escort hull per rank; repairs escorts.',max:3,base:120,need:'wingguns',rank:1,tech:1}
-];
-export const TREES=['WEAPONS','DEFENSE','ENGINEERING','FLEET'];
+export {UPGRADES,TREES} from './shipyard.js';
 export const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 export function rng(seed){let x=seed;return ()=>{x=(x*1664525+1013904223)>>>0;return x/4294967296;};}
 let serial=0;
@@ -104,7 +79,7 @@ export function clear(s){return s.nests.every(n=>n.hp<=0)&&!s.ships.some(e=>e.te
 export function campaignStatus(s){const sectors=s.cleared.filter(n=>n!==6).length,contracts=s.contractLog.length,ciphers=s.ciphers.length;return {sectors,contracts,ciphers,ready:sectors>=8&&contracts>=12&&ciphers>=3&&s.hull>=3,text:`COMMAND GATE: ${sectors}/8 sectors | ${contracts}/12 contracts | ${ciphers}/3 ciphers | ${HULLS[s.hull].name} (CRUISER+)`};}
 export function routes(s){return SECTOR_INFO.map((cfg,id)=>({...cfg,id})).filter(c=>c.id!==s.sector&&(c.id!==6||campaignStatus(s).ready));}
 export function interact(s){if(dist(s.player,{x:0,y:0})>285){notify(s,'RETURN TO RING 07 / CONTRACTS ARE MARKED ON THE SCAN');return 'far';}return 'dock';}
-export function upgradeStatus(s,id){const u=UPGRADES.find(u=>u.id===id);if(!u)return {cost:0,tech:0,ok:false,reason:'UNKNOWN UPGRADE',level:0};const l=level(s,id),cost=Math.ceil(u.base*(l+(id==='gun'?0:1)));let reason=l>=u.max?'MAX RANK':u.need&&level(s,u.need)<u.rank?'REQUIRES '+u.need.toUpperCase()+' '+u.rank:s.scrap<cost?'NEED SALVAGE':s.tech<u.tech?'NEED RESEARCH':'';return {cost,tech:u.tech,ok:!reason,reason,level:l};}
+export function upgradeStatus(s,id){return shipUpgradeStatus(s,id);}
 export function upgrade(s,id){if(typeof id==='number')id=['','gun','armor','escort','repair'][id];if(dist(s.player,{x:0,y:0})>285)return false;
  if(id==='repair'||id==='escort'){
   const cost=id==='repair'?SECTOR_INFO[s.sector].repair:95+s.wing*25;
@@ -121,7 +96,7 @@ export function upgrade(s,id){if(typeof id==='number')id=['','gun','armor','esco
 }
 export function jump(s,destination){if(s.sector===6&&!campaignStatus(s).ready){notify(s,'COMPLETE THE COMMAND CAMPAIGN FIRST');return false;}if(dist(s.player,{x:0,y:0})>285){notify(s,'DOCK AT RING 07 TO JUMP');return false;}if(!clear(s)){notify(s,'DISABLE THE THREE REBEL OUTPOSTS BEFORE JUMPING');return false;}if(s.sector===6){s.won=true;notify(s,'REBEL COMMAND DISMANTLED. REPUBLIC SECURED.');return true;}
  const choice=routes(s).find(r=>r.id===destination);if(!choice){notify(s,'CHOOSE AN AVAILABLE SECTOR ON THE CHART');return false;}if(s.scrap<choice.toll){notify(s,'INSUFFICIENT SALVAGE FOR JUMP TOLL');return false;}s.scrap-=choice.toll;s.sector=destination;s.depth++;loadSector(s);return true;}
-export function tractorRange(s){return 340+level(s,'tractor')*110+stats(s).magnet*140;}
+export function tractorRange(s){return (340+level(s,'tractor')*110+stats(s).magnet*140)*(ROLES[s.role||0].tractor);}
 export function emp(s){if(s.pulse>0||s.dead)return;s.pulse=14-level(s,'emp')*2;const range=420+level(s,'emp')*70,damage=110+level(s,'emp')*40;for(const e of s.ships)if(e.team&&dist(e,s.player)<range){e.hp-=damage;e.cd=3;}for(const n of s.nests)if(n.hp>0&&dist(n,s.player)<range)n.hp-=damage;s.bullets=s.bullets.filter(b=>!b.team||dist(b,s.player)>range);s.fx.push({x:s.player.x,y:s.player.y,vx:0,vy:0,t:.65,max:.65,pulse:true,r:range});s.events.push('pulse');}
 function burst(s,x,y,n=18){emitVisual(s.fx,'explosion',x,y,{size:n>=45?80:n>=30?42:n<=12?20:29,color:n<=12?'#b9b59a':'#e8bd85'});s.events.push('boom');}
 function salvage(s,x,y,count){for(let i=0;i<count;i++)s.loot.push({x:x+(Math.random()-.5)*55,y:y+(Math.random()-.5)*55,v:Math.round(8*SECTOR_INFO[s.sector].reward)});}
@@ -203,14 +178,14 @@ export function update(s,dt,input){
  if(p.hp<=0){s.dead=true;notify(s,'FLAGSHIP LOST');}
 }
 
-export function stats(s){const ids=s.loadout||[],count=id=>ids.filter(x=>x===id).length,h=HULLS[s.hull||0],role=ROLES[s.role||0];return {power:ids.reduce((v,id)=>v+(weapon(id)?.power||component(id)?.power||0),0),budget:h.power,cooling:Math.max(7,24+14*count('radiator')-8*count('overdrive')),regen:18+10*count('reactor')+22*count('overdrive'),magnet:count('magnet'),speed:h.speed*(role?.speed||1)*(1+.18*count('drive')+.32*count('cruise')+.05*count('agile'))*(1-.1*count('magnet'))*(1-.08*count('bulkhead'))*(1-.15*count('fortress')),turn:h.turn*(role?.turn||1)*(1+.15*count('drive')-.25*count('cruise')+.45*count('agile')),hp:Math.round((h.hp+level(s,'armor')*60+count('bulkhead')*110)*(role?.hp||1)),shield:(s.role===1?140:0)+level(s,'shield')*45+count('barrier')*90+count('fortress')*190};}
+export function stats(s){return shipStats(s);}
 function refit(s,heal=false){const st=stats(s),p=s.player,missing=Math.max(0,(p.max||st.hp)-p.hp);p.max=st.hp;p.hp=heal?p.max:Math.max(1,p.max-missing);p.maxShield=st.shield;p.shield=heal?st.shield:Math.min(p.shield||0,st.shield);}
-export function hullStatus(s){const h=HULLS[s.hull+1];if(!h)return {ok:false,reason:'LARGEST HULL',cost:0,research:0};const reason=s.cleared.filter(id=>id!==6).length<h.sectors?'CLEAR '+h.sectors+' SECTORS':s.scrap<h.cost?'NEED SCRAP':s.tech<h.research?'NEED RESEARCH':'';return {ok:!reason,reason,cost:h.cost,research:h.research};}
+export function hullStatus(s){return shipHullStatus(s);}
 export function expandHull(s){if(interact(s)!=='dock')return false;const st=hullStatus(s);if(!st.ok){notify(s,st.reason);return false;}const old=HULLS[s.hull],items=s.loadout.slice();s.scrap-=st.cost;s.tech-=st.research;s.hull++;const used=new Set();s.loadout=HULLS[s.hull].mounts.map(m=>{const i=old.mounts.findIndex((o,i)=>!used.has(i)&&o.type===m.type&&items[i]);if(i>=0){used.add(i);return items[i];}return null;});s.mountState=[];refit(s,true);notify(s,HULLS[s.hull].name+' / NEW MOUNTS AVAILABLE');s.events.push('buy');return true;}
-export function fitStatus(s,slot,id){const m=HULLS[s.hull].mounts[slot],def=weapon(id)||component(id);if(!m||!compatible(m,id))return {ok:false,reason:'INCOMPATIBLE MOUNT',cost:0,research:0};const cost=id&&!s.owned.includes(id)?def.cost:0,research=id&&!s.owned.includes(id)?def.research||0:0;const draw=stats(s).power-(weapon(s.loadout[slot])?.power||component(s.loadout[slot])?.power||0)+(def?.power||0);const reason=weapon(id)&&s.cleared.length<def.tier?'CLEAR '+def.tier+' SECTORS':draw>HULLS[s.hull].power?'POWER BUDGET EXCEEDED':s.scrap<cost?'NEED SCRAP':s.tech<research?'NEED RESEARCH':'';return {ok:!reason,reason,cost,research};}
+export function fitStatus(s,slot,id){return shipFitStatus(s,slot,id);}
 export function fit(s,slot,id){if(interact(s)!=='dock')return false;const st=fitStatus(s,slot,id);if(!st.ok){notify(s,st.reason);return false;}s.scrap-=st.cost;s.tech-=st.research;if(id&&!s.owned.includes(id))s.owned.push(id);s.loadout[slot]=id;s.mountState[slot]=null;refit(s);notify(s,id?'COMPONENT FITTED / LICENSE REUSABLE':'MOUNT EMPTIED');return true;}
-export function selectedTarget(s){return s.ships.concat(s.nests).find(e=>(e.id||-1)===s.targetId&&e.hp>0&&e.team&&dist(s.player,e)<1400)||null;}
-export function selectTarget(s,x=null,y=null){const enemies=s.ships.concat(s.nests).filter(e=>e.team&&e.hp>0&&dist(s.player,e)<1400).sort((a,b)=>x===null?dist(s.player,a)-dist(s.player,b):dist({x,y},a)-dist({x,y},b));if(x!==null){s.targetId=enemies.length?enemies[0].id||-1:null;}else{const i=enemies.findIndex(e=>(e.id||-1)===s.targetId);s.targetId=enemies.length?(enemies[(i+1)%enemies.length].id||-1):null;}return selectedTarget(s);}
+export function selectedTarget(s){return s.ships.concat(s.nests,s.bases||[]).find(e=>(e.id||-1)===s.targetId&&e.hp>0&&e.team&&dist(s.player,e)<1400)||null;}
+export function selectTarget(s,x=null,y=null){const enemies=s.ships.concat(s.nests,s.bases||[]).filter(e=>e.team&&e.hp>0&&dist(s.player,e)<1400).sort((a,b)=>x===null?dist(s.player,a)-dist(s.player,b):dist({x,y},a)-dist({x,y},b));if(x!==null){s.targetId=enemies.length?enemies[0].id||-1:null;}else{const i=enemies.findIndex(e=>(e.id||-1)===s.targetId);s.targetId=enemies.length?(enemies[(i+1)%enemies.length].id||-1):null;}return selectedTarget(s);}
 function weaponDamage(s,e,w,dmg){const before=e.hp;if(e.shield>0&&w.shield){const drained=Math.min(e.shield,dmg*w.shield);e.shield-=drained;damage(s,e,Math.max(0,dmg-drained/w.shield));}else damage(s,e,dmg*(e.kind===1?(w.armor||1):1));if(w.jam)e.jam=Math.max(e.jam||0,w.jam);if(w.burn)e.burn=Math.max(e.burn||0,w.burn);if(w.heal)s.player.hp=Math.min(s.player.max,s.player.hp+Math.max(0,before-e.hp)*w.heal);}
 function explodeWeapon(s,b,w,direct){for(const e of s.ships.concat(s.nests)){if(e===direct||e.hp<=0||!e.team)continue;const d=dist(e,b);if(d<w.splash)weaponDamage(s,e,w,b.dmg*.65*(1-d/w.splash));}if(w.self&&dist(s.player,b)<w.splash)damage(s,s.player,b.dmg*.3*(1-dist(s.player,b)/w.splash));emitVisual(s.fx,'explosion',b.x,b.y,{size:w.splash*.35,weapon:w.id});}
 function fireMounts(s,dt,fire,target){const p=s.player,h=HULLS[s.hull];for(let i=0;i<h.mounts.length;i++){const m=h.mounts[i],w=weapon(s.loadout[i]);if(!w)continue;const mount=s.mountState[i]||(s.mountState[i]={a:p.a,cd:0});mount.cd=Math.max(0,mount.cd-dt);const x=p.x+Math.cos(p.a)*m.x-Math.sin(p.a)*m.y,y=p.y+Math.sin(p.a)*m.x+Math.cos(p.a)*m.y;
