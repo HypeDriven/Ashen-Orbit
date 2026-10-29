@@ -15,7 +15,7 @@
     "assets/rock9.png": {"sha256": "8164e919b56fbbb0011a6dfc70fe627cd0d7903757b45b17e4872b424b1f6ac6", "size": 17111},
     "assets/station.png": {"sha256": "53e63b668c3e35e65c6875da233705fdcf89844c5a16404fc74b9a27e0de418a", "size": 78908},
     "index.html": {"sha256": "873359952493f2f1e47e6553e29cd22abc2269410a19d657d7a610f5ef2fb5b8", "size": 1789},
-    "server.js": {"sha256": "417330ccad02062d28a1b4f1df0b074f6b2978e3b85d21625a59f8a69fbb1b6e", "size": 68564},
+    "server.js": {"sha256": "9c7cb8e5cd0b5578edfc8c8ab2d9269f5a03e81e996ae99bf3e3057b9212bc71", "size": 68937},
     "src/arsenal.js": {"sha256": "eb5f382b74af87bc46a6942fa0ea238da4bf52f8a7a5475723411e9ece64eea0", "size": 7002},
     "src/campaign.js": {"sha256": "b5fb26ce80d5e012b2b7cd044183e6da2752b2759c304a867918926db870fd10", "size": 772},
     "src/comms.ts": {"sha256": "132b6072ca4392ec5769c48139509dee17e6c69738fc353c7f4aefe90c5bd581", "size": 3075},

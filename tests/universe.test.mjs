@@ -149,3 +149,9 @@ test('untrusted movement restrictions persist across reconnects and fresh worlds
  assert.equal(p.untrusted,true);const saved=w.cmd(0,{type:'leave'}).playerStates;assert.equal(saved[p.id].flightTrust.untrusted,true);
  const next=world(1,saved);next.s.worldId='fresh-world';next.s.pilots=[];next.tick();const restored=next.s.pilots[0];assert.equal(restored.untrusted,true);assert.equal(restored.hull,0);assert.ok(next.sandbox.movementAuthority(restored)<.25);
 });
+
+test('weapon status effects and escort bulkheads retain their shipyard tradeoffs online',()=>{
+ const w=world(1);w.cmd(0,{type:'choose',faction:0});const p=w.s.pilots[0];w.s.spawn=100000;w.s.rocks=[];
+ const enemy={id:999,faction:1,x:0,y:0,vx:0,vy:0,a:0,hp:100,max:100,cd:1,kind:0};w.s.enemies=[enemy];w.sandbox.uDamage(w.s,enemy,10,p.id,{burn:3,jam:1.8});w.tick(20);assert.ok(enemy.hp<82&&enemy.hp>80);assert.ok(Math.hypot(enemy.x,enemy.y)<50,'ion slows patrol drives');assert.ok(enemy.cd>.8,'ion delays patrol weapons');
+ p.scrap=5000;p.tech=100;p.upgrades.hangar=1;p.upgrades.wingguns=1;assert.equal(w.cmd(0,{type:'upgrade',id:'escort'}).ok,true);assert.equal(w.cmd(0,{type:'upgrade',id:'winghull'}).ok,true);assert.equal(w.s.escorts[0].max,205);assert.equal(w.s.escorts[0].hp,205);
+});

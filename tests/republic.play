@@ -7,6 +7,12 @@ key KeyL 1
 until 180 MINES 1/2
 key KeyE 1
 expect Build your flotilla.
+click HULL / OUTFIT
+expect SHIPYARD
+click SHIP ROLES
+expect ACTUAL SHIP
+click RETURN
+expect Build your flotilla.
 key KeyE 1
 key KeyW 60
 key KeyD 30
