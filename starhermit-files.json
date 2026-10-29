@@ -23,7 +23,7 @@
     "src/defenses.js": {"sha256": "8a747088514244220af52e66bd9ab04e8175ffde8e1f3660e24f7ee01792b07f", "size": 4481},
     "src/effects.js": {"sha256": "d8d07d4c9dc2a093fbb0d328be277db666f66dde8a799cc98ad5dc1c9f6fe9f2", "size": 15340},
     "src/main.ts": {"sha256": "02b5a458470e4614ac6dc3f5be93e8b8bfd253d9ee59bd354e991e065d9211e9", "size": 39078},
-    "src/online.ts": {"sha256": "d7697b786b0a19b3e841cb60781a92e82ae37de29d52c92fcda2d05e8c8ca489", "size": 12158},
+    "src/online.ts": {"sha256": "bd53bd9466a492971bfa8379e5cd3c4d72382f65918be7d69f01b633d8f47e2d", "size": 13227},
     "src/prediction.js": {"sha256": "34322afff49ab042dc96557b998e9e59773f81c4e08014256e68519f0b5a7831", "size": 4381},
     "src/sim.js": {"sha256": "f309bd1b6898846b3af94030aa146d7f5a47e8741071a79d463e474347ce58ed", "size": 36557},
     "src/universe-rules.js": {"sha256": "fe5d33572067c11adf215b09f3798ed4f2356d7db9967ba095e846c5e074d150", "size": 5214},

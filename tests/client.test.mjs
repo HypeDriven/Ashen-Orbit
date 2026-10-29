@@ -52,6 +52,26 @@ test('the final pilot exits without closing the common universe',async()=>{
  assert.equal(leaves,0);assert.equal(sock.state,'closed');assert.equal(mod.online.active,false);assert.equal(mod.online.room,null);
 });
 
+test('finished missions detach their sockets and ignore already-left membership errors',async()=>{
+ const sock=socket(),roster=socket();let leaves=0;
+ const room={id:'mission',metadata:{mission:'relay'},hostUserId:'me',gameSessionId:'session',participants:[{userId:'me'},{userId:'partner'}]};
+ const mod=await client('online.ts',{player:()=>({userId:'me'}),connectGame:()=>sock,leaderboards:{list:async()=>[]},rooms:{mine:async()=>room,connect:()=>roster,leave:async()=>{leaves++;throw Object.assign(Error('You are not a participant of this room.'),{kind:'not-found',status:404});}}});
+ await mod.refresh();mod.online.ended=true;await mod.leave();
+ assert.equal(leaves,1);assert.equal(sock.sent.some(p=>p.type==='leave'),false,'A completed mission must not be abandoned again');
+ const status=mod.online.status;assert.match(status,/Ready/);
+ sock.events.error('Late session error');sock.events.stopped('ended');roster.events.stopped('ended');roster.events.roster(room);
+ assert.equal(mod.online.status,status);assert.equal(mod.online.ended,false);assert.equal(mod.online.room,null);assert.equal(mod.online.sessionId,'');
+});
+
+test('a roster poll completing after leaving cannot replace the menu with a stale room error',async()=>{
+ const sock=socket(),roster=socket();let rejectPoll;
+ const room={id:'waiting',metadata:{mission:'relay'},hostUserId:'me',gameSessionId:null,participants:[{userId:'me'}]};
+ const mod=await client('online.ts',{player:()=>({userId:'me'}),connectGame:()=>sock,leaderboards:{list:async()=>[]},rooms:{mine:async()=>room,connect:()=>roster,get:()=>new Promise((resolve,reject)=>{rejectPoll=reject;}),leave:async()=>{}}});
+ await mod.refresh();mod.updateOnline(2.1,{x:0,y:0,fire:false,boost:false,aim:null,tractor:false});await mod.leave();
+ const status=mod.online.status;rejectPoll(Error('You are not a participant of this room.'));await new Promise(resolve=>setImmediate(resolve));
+ assert.equal(mod.online.status,status);assert.equal(mod.online.room,null);
+});
+
 test('proximity voice attenuates once, mutes hostile ships and restores user settings',async()=>{
  const participants=[{userId:'friend',volume:.8,locallyMuted:false,speaking:true},{userId:'enemy',volume:1.2,locallyMuted:false,speaking:true}];
  const state={connection:'connected',transmitting:true,inputLevel:.7,muted:false,serverMuted:false,participants};
