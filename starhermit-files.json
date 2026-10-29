@@ -24,7 +24,7 @@
     "src/effects.js": {"sha256": "d8d07d4c9dc2a093fbb0d328be277db666f66dde8a799cc98ad5dc1c9f6fe9f2", "size": 15340},
     "src/factions.js": {"sha256": "ac8c79c02e6f0de81e4f1d4c39ce661995aa6693414e215a2b47f9ec2f64250d", "size": 1261},
     "src/flight-authority.js": {"sha256": "593ddb88a859bb36bf0ec3de9fd5cc9ebcd2124857a40efa3fe0ffdeaa3ed503", "size": 4727},
-    "src/main.ts": {"sha256": "412ab5946a0d2f1bdc8b9494f3a2dba6aa4623cc97348f369a596355dda84588", "size": 43137},
+    "src/main.ts": {"sha256": "6285b6b92fc90e85c153c61ff382e70510a035e5dc84fdf8186e10f7b796bb24", "size": 43207},
     "src/online.ts": {"sha256": "8ebaf54442df8615a8f8b0d2307a8e20b40bb583bc69f5e78c181251171b50b4", "size": 15126},
     "src/prediction.js": {"sha256": "97c44345c4b5251c5de579860d665724b99f5d74bd82d90ccfc42b5a6ae48b28", "size": 4786},
     "src/sectors.js": {"sha256": "5ae988d601c8e6e41b35d692fe90238a103785c352f274ac609fd8eba0dee02a", "size": 2276},
