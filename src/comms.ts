@@ -1,6 +1,7 @@
 import * as platform from 'starhermit:platform';
 import {voiceGain} from './universe-rules.js';
-import type {Game} from './sim.js';
+import type * as Sim from './sim.js';
+type Game=ReturnType<typeof Sim.createGame>;
 export const comms={enabled:false,busy:false,status:'VOICE OFF / V push-to-talk',bars:{} as Record<string,number[]>};
 let clock=0,voiceEpoch=0;const preferences:Record<string,{volume:number;muted:boolean}>={};
 export async function toggleVoice(sessionId:string){if(comms.busy)return;if(comms.enabled){await stopVoice();return;}comms.busy=true;const epoch=++voiceEpoch;try{const session=await platform.sessions.get(sessionId);if(!session?.chatConversationId)throw Error('Session voice conversation unavailable.');if(epoch!==voiceEpoch)return;platform.voice.setMode('push-to-talk');await platform.voice.join(session.chatConversationId);if(epoch!==voiceEpoch){await platform.voice.leave();return;}clock=0;comms.enabled=true;comms.status='VOICE ON / HOLD V';}catch(e){comms.status=e instanceof Error?e.message:'Microphone unavailable';}finally{comms.busy=false;}}
