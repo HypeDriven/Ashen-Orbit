@@ -26,7 +26,7 @@
     "src/online.ts": {"sha256": "0a6bd5fcb1b1854f8f1a0c6f7b59ee0ad2410e38ccad4bb4795ea9a505d19b7e", "size": 11781},
     "src/sim.js": {"sha256": "f309bd1b6898846b3af94030aa146d7f5a47e8741071a79d463e474347ce58ed", "size": 36557},
     "src/universe-rules.js": {"sha256": "d8b4d66672cf6f90fdb49958e65cfd84e2c647f5f56544df86a46ebab569873b", "size": 2907},
-    "starhermit.txt": {"sha256": "9630e6b8ec89fe8f1212dc87a4f4ae8282c8009769824972c2d85f66df9ed7be", "size": 2040}
+    "starhermit.txt": {"sha256": "3189ad3f543ee970e6532f5377f36833b78d4610c247830ad5be7778b2e8132a", "size": 2083}
   },
   "excluded": ["README.md", "package.json", "scripts/", "src/universe-server.js", "tests/"],
   "format": 1

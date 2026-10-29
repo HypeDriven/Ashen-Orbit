@@ -1,4 +1,5 @@
 name=Righteous Republic
+owner=2712e04e-461b-4d23-81ae-e40b429128a8
 description=Choose Republic or Rebellion in a shared persistent space frontier. Upgrade distinct hulls and roles, capture relays, lay mines, cloak, mine fragmenting asteroids and coordinate through distance-based allied voice.
 cover=assets/republic-cover.jpg
 banner=assets/republic-banner.jpg

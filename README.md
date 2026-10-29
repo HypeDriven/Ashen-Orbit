@@ -46,6 +46,14 @@ section of `server.js`. Tests check synchronization, discovery, immutable
 snapshots, late joins, persistence, hull/role tradeoffs, cloaks, mines, voice
 attenuation, fragmentation, and network/result size budgets.
 
+The `owner=` declaration in `starhermit.txt` identifies the existing StarHermit
+owner by user ID. After importing a repository listing, its owner must re-sync
+it in StarHermit (`POST /api/v1/me/github-games/{id}/claim`). This verifies the
+repository, assigns its platform game ID, and provisions `server.js`. An
+unverified listing can serve the web files but the dashboard launches it without
+a token, so multiplayer opens the sign-in dialog. Keep the ownership declaration
+when packaging or updating the game.
+
 For a real two-client check, run StarHermit 1.21.0 with `--dev --local-platform
 --render-check --script tests/republic.play` and `--player republic`, then launch
 a second runtime with `--player rebellion --script tests/rebellion.play`.
