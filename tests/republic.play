@@ -1,0 +1,16 @@
+until 300 CHOOSE YOUR ALLEGIANCE
+click ENTER SHARED UNIVERSE
+until 1200 Shared frontier
+expect RIGHTEOUS REPUBLIC
+until 3600 2/32 pilots
+key KeyL 1
+until 180 MINES 1/2
+key KeyE 1
+expect ACTUAL SHIP
+key KeyE 1
+frames 120
+click LEAVE UNIVERSE
+until 300 CHOOSE YOUR ALLEGIANCE
+click ENTER SHARED UNIVERSE
+until 600 Shared frontier
+frames 300

@@ -1,0 +1,9 @@
+{
+  "name": "righteous-republic",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node scripts/sync-universe.mjs --check && node --test tests/*.test.mjs",
+    "sync": "node scripts/sync-universe.mjs"
+  }
+}
