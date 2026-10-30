@@ -48,14 +48,11 @@ test('arrival jitter consumes bounded server-time credit without false trust fla
  assert.equal(p.untrusted,undefined);
 });
 
-test('in-flight reports from one correction count as one incident, while repeated incidents restrict authority',()=>{
- const p=pilot();p.x=200;resetFlightAudit(p,0);
- for(let i=1;i<=5;i++)assert.equal(validateFlightReport(p,{...p,x:0},i,i*50,input).accepted,false);
+test('repeated impossible acceleration incidents restrict authority while their in-flight reports are debounced',()=>{
+ const p=pilot();resetFlightAudit(p,0);
+ for(let i=1;i<=3;i++)validateFlightReport(p,{...p,a:3},i,i*50,input);
  assert.equal(p.violations,1);assert.equal(p.untrusted,undefined);
- validateFlightReport(p,{...p,x:0},6,450,input);assert.equal(p.violations,2);
- validateFlightReport(p,{...p,x:0},7,600,input);assert.equal(p.untrusted,undefined);
- validateFlightReport(p,{...p,x:0},8,650,input);assert.equal(p.untrusted,undefined);
- validateFlightReport(p,{...p,x:0},9,700,input);validateFlightReport(p,{...p,x:0},10,800,input);assert.equal(p.untrusted,true);
+ validateFlightReport(p,{...p,a:3},4,450,input);assert.equal(p.untrusted,undefined);
 });
 
 test('asteroid collision resolution cannot push a legitimate pilot outside world bounds',()=>{

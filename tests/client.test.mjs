@@ -8,7 +8,7 @@ async function client(file,platform){
  let source=stripTypeScriptTypes(readFileSync(new URL('../src/'+file,import.meta.url),'utf8'))
   .replace("import * as platform from 'starhermit:platform';",'const platform=globalThis.__frontierTestPlatform;')
   .replace(/import \{\s*stopVoice\s*\} from '\.\/comms\.js';/,'const stopVoice=async()=>{};');
- for(const name of ['sim','universe-rules','prediction'])source=source.replaceAll(`'./${name}.js'`,JSON.stringify(new URL(`../src/${name}.js`,import.meta.url).href));
+ for(const name of ['sim','universe-rules','prediction','fire-feedback','wire'])source=source.replaceAll(`'./${name}.js'`,JSON.stringify(new URL(`../src/${name}.js`,import.meta.url).href));
  return import('data:text/javascript;base64,'+Buffer.from(source).toString('base64')+'#'+Math.random());
 }
 function frozen(value){if(value&&typeof value==='object'){for(const v of Object.values(value))frozen(v);Object.freeze(value);}return value;}

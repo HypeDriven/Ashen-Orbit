@@ -50,7 +50,7 @@ test('remote ships interpolate between snapshots and turn across the angle wrap 
 test('packet loss bounds speculation and remote extrapolation; hidden ships are removed immediately',()=>{
  const p=new FlightPrediction();let s=scene(pilot(),[pilot({id:'other',pilot:'other',x:100,vx:100})]);p.receive(s,0,true);
  for(let i=0;i<300;i++)p.step(1/60,input({thrust:1}),s);
- assert.ok(p.history.length<=31);assert.ok(s.player.x<100);assert.ok(s.ships[1].x<=115.001);
+ assert.ok(p.history.length<=61);assert.ok(s.player.x<310);assert.ok(s.ships[1].x<=115.001);
  const x=s.player.x;p.step(1/60,input({thrust:1}),s);assert.equal(s.player.x,x);
  s=scene(pilot());p.receive(s,5,true);assert.equal(p.remote.size,0);assert.equal(s.ships.length,1);
 });
@@ -121,4 +121,8 @@ test('idle timeout repairs sequence counters in a universe already affected by t
  ctx.now+=50;context.game.onTick({...ctx,inputs:[{from:'me',data:input()}]});
  ctx.now+=50;context.game.onTick({...ctx,inputs:[{from:'me',data:input({seq:40000,thrust:-1})}]});
  assert.equal(p.inputAck,50000);assert.equal(p.input.thrust,0);
+});
+
+test('motion-only packets preserve NPC interpolation history and trusted local movement',()=>{
+ const p=new FlightPrediction(),me=pilot({authority:1,correctionSeq:1}),npc={...pilot({id:'npc',x:500}),pilot:undefined};const s=scene(me,[npc]);p.receive(s,0,true);p.step(1/60,input({thrust:1}),s);const local=p.local.x,track=p.remote.get('npc');Object.assign(me,{x:-90,inputAck:1});p.receive(s,.05,true,true);assert.equal(p.local.x,local);assert.equal(p.remote.get('npc'),track);assert.equal(track.samples.length,1);
 });

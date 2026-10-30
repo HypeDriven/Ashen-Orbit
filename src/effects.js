@@ -15,7 +15,7 @@ function alpha(c,a){return c.slice(0,7)+Math.round(Math.max(0,Math.min(1,a))*255
 // The painter adapts geometric detail to *physical* projected scale. All effects,
 // projectiles and barrel details share one strict draw-command budget per frame.
 export function createEffectPainter(sink,view,budget=3000){
- const p={zoom:view.zoom,detail:view.zoom*(view.scale||1),count:0,budget};
+ const p={simple:false,zoom:view.zoom,detail:view.zoom*(view.scale||1),count:0,budget};
  const project=(x,y)=>[(x-view.cx)*view.zoom+view.width/2,(y-view.cy)*view.zoom+view.height/2];
  const take=(n=1)=>{if(p.count+n>p.budget)return false;p.count+=n;return true;};
  p.line=(x,y,xx,yy,c,w=1)=>{if(!take())return;const a=project(x,y),b=project(xx,yy);sink.line(a[0],a[1],b[0],b[1],c,Math.max(.35,w*view.zoom));};
@@ -40,6 +40,7 @@ export function renderBeam(p,f,time){
 export function renderProjectile(p,b,time){
  const id=b.weapon||'cannon',c=effectColor(id),x=b.x,y=b.y,a=Math.atan2(b.vy,b.vx),ux=Math.cos(a),uy=Math.sin(a),nx=-uy,ny=ux,near=p.detail>1.4;
  const point=(along,across)=>[x+ux*along+nx*across,y+uy*along+ny*across];
+ if(p.simple){p.line(x,y,x-ux*14,y-uy*14,c,2);return;}
  if(['homing','rocket','siege'].includes(id)){
   const size=id==='siege'?2:1,trail=b.trail||[];
   for(let i=trail.length-1;i>=0;i-=near?1:2){const q=trail[i],t=1-i/(trail.length||1);p.disc(q.x,q.y,(3+i*.75)*size,alpha('#83928c',.035*t));if(i<4)p.disc(q.x,q.y,(2+i*.5)*size,alpha(c,.14*t));}

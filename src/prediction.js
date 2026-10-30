@@ -8,17 +8,17 @@ const blend=(a,b,t)=>({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,a:a.a+angleDelta(b.a,
 export class FlightPrediction {
  constructor(){this.reset();}
  reset(){this.clock=0;this.sequence=0;this.history=[];this.local=null;this.error={x:0,y:0,a:0};this.remote=new Map();this.latestTime=-1;this.arrival=0;this.renderTime=null;this.shared=true;}
- receive(s,serverTime,shared){
+ receive(s,serverTime,shared,partial=false){
   // Command replies can repeat a tick; an older frame cannot rewind motion.
   if(serverTime<this.latestTime)return;
   const first=this.local===null,old=s.player;
-  const changed=first||this.shared!==shared||discontinuity(this.local,old);
+  const changed=first||this.shared!==shared||(this.local.id!==old.id||this.local.faction!==old.faction||this.local.hull!==old.hull||this.local.role!==old.role||this.local.spawnSeq!==old.spawnSeq||(this.local.hp>0)!==(old.hp>0)||!shared&&Math.hypot(this.local.x-old.x,this.local.y-old.y)>300);
   const display=this.display;
   this.shared=shared;this.sequence=Math.max(this.sequence,old.inputAck||0);
   if(changed){this.history=[];this.error={x:0,y:0,a:0};}
   else if(Number.isFinite(old.inputAck))this.history=this.history.filter(f=>f.seq>old.inputAck);
   else this.history=[]; // Compatible with a session running an older server.
-  const keepLocal=!changed&&shared&&old.authority===1&&old.correctionSeq===this.local.correctionSeq&&Math.hypot(old.x-this.local.x,old.y-this.local.y)<180;
+  const keepLocal=!changed&&shared&&old.authority===1&&old.correctionSeq===this.local.correctionSeq;
   if(keepLocal){this.local={...old,...pose(this.local)};this.error={x:0,y:0,a:0};}
   else{this.local={...old};
    if(!changed){
@@ -29,16 +29,16 @@ export class FlightPrediction {
    }
   }
   if(first||serverTime>this.latestTime){this.latestTime=serverTime;this.arrival=this.clock;}
-  if(first)this.renderTime=serverTime-.12;
+  if(first)this.renderTime=serverTime-.08;
   const present=new Set();
-  for(const ship of s.ships){if(ship===s.player)continue;present.add(ship.id);let track=this.remote.get(ship.id);
+  for(const ship of s.ships){if(ship===s.player||partial&&!ship.pilot)continue;present.add(ship.id);let track=this.remote.get(ship.id);
    if(!track||discontinuity(track.meta,ship)){track={meta:{...ship},samples:[]};this.remote.set(ship.id,track);}
    const sample={...pose(ship),time:serverTime};const last=track.samples.at(-1);
    if(last?.time===serverTime)track.samples[track.samples.length-1]=sample;else track.samples.push(sample);
    if(track.samples.length>12)track.samples.shift();track.meta={...ship};
   }
   // Hidden cloaked enemies and destroyed/despawned ships disappear immediately.
-  for(const id of this.remote.keys())if(!present.has(id))this.remote.delete(id);
+  for(const id of this.remote.keys())if(!present.has(id)&&(!partial||this.remote.get(id).meta.pilot))this.remote.delete(id);
   this.write(s);
  }
  applyProfile(profile){if(this.local)Object.assign(this.local,profile);}
@@ -47,12 +47,12 @@ export class FlightPrediction {
  step(dt,input,s){
   this.clock+=dt;if(!this.local)return this.sequence;
   const seq=++this.sequence;
-  if(this.local.hp>0&&this.clock-this.arrival<.5){
+  if(this.local.hp>0&&this.clock-this.arrival<(this.shared?1:.5)){
    this.history.push({seq,dt,input:{...input}});if(this.history.length>120)this.history.shift();
    stepPilotMovement(this.local,dt,input,s.rocks,this.shared);
   }
   const decay=Math.exp(-dt*14);this.error.x*=decay;this.error.y*=decay;this.error.a*=decay;
-  const target=this.latestTime+(this.clock-this.arrival)-.12;
+  const target=this.latestTime+(this.clock-this.arrival)-.08;
   if(this.renderTime!==null)this.renderTime+=dt+Math.max(-dt*.5,Math.min(dt*.5,(target-this.renderTime)*dt*6));
   this.write(s);return seq;
  }

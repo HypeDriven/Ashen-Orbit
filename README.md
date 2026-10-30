@@ -35,8 +35,8 @@ travel, collisions, and rolling prediction residuals using server time. Network
 jitter receives a bounded allowance. Repeated impossible reports mark a pilot
 untrusted, persist that status, and progressively reduce movement authority.
 Combat, mining, weapons, resources, and progression stay on the server. Remote
-ships use a 120 ms interpolation buffer and at most 150 ms extrapolation.
-Prediction stops after a 500 ms snapshot gap.
+ships use an 80 ms interpolation buffer and at most 150 ms extrapolation.
+Prediction stops after a 1 s shared-world snapshot gap (500 ms in co-op).
 
 Each of nine sectors has one base per faction with light projectile defenses.
 Destroy an enemy base to secure that sector and earn research. Destroyed bases
@@ -81,3 +81,16 @@ For a real two-client check, run StarHermit 1.29.0 with `--dev --local-platform
 a second runtime with `--player rebellion --script tests/rebellion.play`.
 Both scripts verify the same two-pilot frontier; the Republic script also
 checks mine laying, refitting, and leaving/rejoining.
+
+Multiplayer performance: movement updates at 20 Hz, with sector-local combat
+snapshots at 10 Hz. Projectiles use compact binary records inside JSON-safe
+base64 packets. Spatial collision queries avoid testing every shot against every
+ship, and crowded battles use simpler projectile drawing. Trusted local movement
+is retained between snapshots; physical travel/speed/turn limits still apply.
+Local muzzle flashes and short tracers respond on the first frame and apply no
+damage. Each pilot has a 32-active-projectile budget within a 1,536 global budget.
+
+Run `node scripts/perf-universe.mjs` and add `--clustered` for a concentrated
+32-pilot battle with 160 escorts and 96 asteroids. The report includes Node VM
+tick/serialization timings, estimated aggregate payload traffic, and largest
+packet size; it does not measure platform hosting or real internet latency.

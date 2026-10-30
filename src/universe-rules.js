@@ -34,7 +34,7 @@ export function stepPilotMovement(p,dt,input,rocks=[],shared=true){
  if(!shared&&m.steering){dx+=m.x/length;dy+=m.y/length;}
  const n=Math.max(1,Math.hypot(dx,dy)),cloaked=p.cloaked&&!input.fire&&!m.boost;
  const speed=shared?st.speed*(m.boost&&!cloaked&&p.boost!==0?(p.loadout?440/225:1.65):1)*(cloaked?.65:1)*(m.tractor?.75:1):m.boost?310:m.tractor?155:215;
- if(shared){p.vx+=(dx/n*speed-p.vx)*Math.min(1,dt*3);p.vy+=(dy/n*speed-p.vy)*Math.min(1,dt*3);}
+ if(shared){p.vx+=(dx/n*speed-p.vx)*(1-Math.exp(-dt*12));p.vy+=(dy/n*speed-p.vy)*(1-Math.exp(-dt*12));}
  else if(m.steering){p.vx+=(dx/n*speed*2-p.vx*.3)*dt;p.vy+=(dy/n*speed*2-p.vy*.3)*dt;}
  else{p.vx=dx/n*speed;p.vy=dy/n*speed;if(m.aim!==null)p.a=m.aim;}
  const cap=Math.max(1,Math.hypot(p.vx,p.vy)/speed);p.vx/=cap;p.vy/=cap;

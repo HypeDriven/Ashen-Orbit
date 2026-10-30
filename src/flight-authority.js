@@ -3,7 +3,7 @@ import {pilotMotionStats,WORLD_Y} from './universe-rules.js';
 const turnDistance=(a,b)=>Math.abs(Math.atan2(Math.sin(a-b),Math.cos(a-b)));
 const round=n=>Math.round(n*1000)/1000;
 export function resetFlightAudit(p,now){
- p.audit={at:now,fundedAt:now,x:p.x,y:p.y,a:p.a,vx:p.vx||0,vy:p.vy||0,credit:12,seq:p.inputAck||0,mean:0,variance:1,samples:0,score:p.audit&&p.audit.score||0};
+ p.audit={at:now,fundedAt:now,x:p.x,y:p.y,a:p.a,vx:p.vx||0,vy:p.vy||0,credit:pilotMotionStats(p).speed*.35,seq:p.inputAck||0,mean:0,variance:1,samples:0,score:p.audit&&p.audit.score||0};
  p.correctionSeq=(p.correctionSeq||0)+1;
 }
 export function movementAuthority(p){return p.untrusted?Math.max(0,.25-(p.violations||0)*.025):1;}
@@ -16,14 +16,14 @@ export function validateFlightReport(p,report,seq,now,input,rocks=[]){
  const audit=p.audit;if(seq<=audit.seq)return {accepted:false,reason:'old-input'};
  const elapsed=Math.max(.001,(now-audit.at)/1000),st=pilotMotionStats(p);
  const cap=st.speed*(input.boost&&p.boost>0?440/225:1)*(p.cloaked?.65:1)*(input.tractor?.75:1),maxCap=st.speed*440/225;
- const allowance=p.untrusted?2:12,slack=p.untrusted?2:8;
+ const allowance=p.untrusted?2:maxCap*.35,slack=p.untrusted?2:8;
  audit.credit=Math.min(maxCap*.4+allowance,audit.credit+cap*Math.min(Math.max(0,(now-(audit.fundedAt??audit.at))/1000),.5));
  audit.fundedAt=now;
  const finite=['x','y','vx','vy','a'].every(k=>Number.isFinite(report[k]));
  const travel=finite?Math.hypot(report.x-audit.x,report.y-audit.y):Infinity;
  const speed=finite?Math.hypot(report.vx,report.vy):Infinity;
  const acceleration=finite?Math.hypot(report.vx-audit.vx,report.vy-audit.vy):Infinity;
- const previousSpeed=Math.hypot(audit.vx,audit.vy),span=Math.min(elapsed,.5),jitter=p.untrusted?.04:.12;
+ const previousSpeed=Math.hypot(audit.vx,audit.vy),span=Math.min(elapsed,.5),jitter=p.untrusted?.04:.25;
  const physicalDistance=Math.min(maxCap*(span+jitter),(previousSpeed+speed)*.5*(span+jitter)+maxCap*3*(span+jitter)*(span+jitter)*.5)+slack;
  const residual=finite?Math.hypot(report.x-p.x,report.y-p.y):Infinity;
  let reason='';
@@ -33,8 +33,8 @@ export function validateFlightReport(p,report,seq,now,input,rocks=[]){
  else if(travel>audit.credit+slack||travel>physicalDistance)reason='travel';
  else if(acceleration-Math.max(0,previousSpeed-speed)>maxCap*6*(span+jitter)+20)reason='acceleration';
  else if(turnDistance(report.a,audit.a)>st.turn*(span+jitter)+(p.untrusted?.04:.16))reason='turn';
- else if(residual>maxCap*.3+slack)reason='residual';
- else if(audit.samples>40&&residual/Math.max(4,maxCap*.08)>Math.max(2.5,audit.mean+4*Math.sqrt(audit.variance)))reason='statistical-outlier';
+ else if(p.untrusted&&residual>maxCap*.3+slack)reason='residual';
+ else if(p.untrusted&&audit.samples>40&&residual/Math.max(4,maxCap*.08)>Math.max(2.5,audit.mean+4*Math.sqrt(audit.variance)))reason='statistical-outlier';
  // Lag and a superseded spawn are resynchronizations, not evidence of cheating.
  if(elapsed>.65){resetFlightAudit(p,now);return {accepted:false,reason:'resync'};}
  audit.seq=seq;

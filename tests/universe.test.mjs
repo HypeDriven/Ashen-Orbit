@@ -157,5 +157,11 @@ test('weapon status effects and escort bulkheads retain their shipyard tradeoffs
 });
 
 test('obsolete flight-policy flags are retired when the validation policy changes',()=>{
- const id='00000000-0000-0000-0000-000000000000',w=world(1,{[id]:{flightTrust:{untrusted:true,violations:3},universe:{faction:0,trust:{untrusted:true,violations:3}}}});assert.equal(w.s.pilots[0].untrusted,false);assert.equal(w.s.pilots[0].violations,0);assert.equal(w.cmd(0,{type:'leave'}).playerStates[id].flightTrust.policy,2);
+ const id='00000000-0000-0000-0000-000000000000',w=world(1,{[id]:{flightTrust:{untrusted:true,violations:3},universe:{faction:0,trust:{untrusted:true,violations:3}}}});assert.equal(w.s.pilots[0].untrusted,false);assert.equal(w.s.pilots[0].violations,0);assert.equal(w.cmd(0,{type:'leave'}).playerStates[id].flightTrust.policy,3);
+});
+
+test('all 32 pilots can sustain fire together and every network packet stays bounded',()=>{
+ const w=world(32);w.s.rocks=[];w.s.spawn=1e9;for(let i=0;i<32;i++){w.cmd(i,{type:'choose',faction:i%2});const p=w.s.pilots[i];p.x=(i%8)*180-600;p.y=Math.floor(i/8)*160-250;p.hp=p.max=1e6;p.loadout[0]='gatling';}
+ let peak=0;for(let tick=0;tick<100;tick++){const r=w.tick(1,w.s.pilots.map((p,i)=>({from:p.id,data:{seq:tick+1,fire:true,steering:true,aim:i*.4}})));peak=Math.max(peak,w.s.bullets.length);for(const packet of r.broadcast)assert.ok(Buffer.byteLength(JSON.stringify(packet.data))<16000,'bounded frame');}
+ assert.ok(peak>64);for(const p of w.s.pilots)assert.ok(p.shots>=40,'all players retain firing capacity');
 });
