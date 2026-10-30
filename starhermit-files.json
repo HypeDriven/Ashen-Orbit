@@ -14,7 +14,7 @@
     "assets/rock8.png": {"sha256": "bd74f355e5da2c58b0f640469ef559fe1eee765d7481c59239820977559c0413", "size": 17110},
     "assets/rock9.png": {"sha256": "8164e919b56fbbb0011a6dfc70fe627cd0d7903757b45b17e4872b424b1f6ac6", "size": 17111},
     "assets/station.png": {"sha256": "53e63b668c3e35e65c6875da233705fdcf89844c5a16404fc74b9a27e0de418a", "size": 78908},
-    "index.html": {"sha256": "37450defc7eb7ade9b97e1870df500a353a2a77816c22fa5d19227897e7013ab", "size": 1809},
+    "index.html": {"sha256": "fad71b21bf51a71956b1270357336f2c87599d5c98ed90193e79b49968707273", "size": 1809},
     "server.js": {"sha256": "93b4b47166a82ffa24835a9a3a42607185709e91a4ea6fe51170d3f9b55717dd", "size": 73537},
     "src/arsenal.js": {"sha256": "eb5f382b74af87bc46a6942fa0ea238da4bf52f8a7a5475723411e9ece64eea0", "size": 7002},
     "src/campaign.js": {"sha256": "b5fb26ce80d5e012b2b7cd044183e6da2752b2759c304a867918926db870fd10", "size": 772},
@@ -33,7 +33,7 @@
     "src/sim.js": {"sha256": "2b2193276e7e58f60b353b14940712a9674370a6bb06020479e507b55e22a1a1", "size": 30968},
     "src/universe-rules.js": {"sha256": "219b6b6185ae0390cd9cc6e19696175e2db5b809852a1271e5e008bf01e220ff", "size": 4658},
     "src/wire.js": {"sha256": "24dbb83b18a75ece26abb04a1a4ca19cc96e437b91e0a0c74825b68dff8a5fdc", "size": 1220},
-    "starhermit.txt": {"sha256": "df050a8dbed1e8482fe06ff75601e557785301960b49d73439c91d747b07439a", "size": 2103}
+    "starhermit.txt": {"sha256": "dd1fd3696ee611b945c01eb60e3a5b639e740ace6735f4fea94c9011e5e702cf", "size": 2103}
   },
   "excluded": ["README.md", "package.json", "scripts/", "src/universe-combat.js", "src/universe-server.js", "tests/"],
   "format": 1

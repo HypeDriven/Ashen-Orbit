@@ -2809,9 +2809,10 @@ declare module "starhermit:scene" {
    * lights, as three.js r16x games constructed it). A port of three.js
    * r163 or later, where the light is always 900, passes the renderer.
    * Before API_MINOR 18 the light is 900 either way. three.js r183 and
-   * later lower the room by setting `position.y = -3.5`; here `position` is
-   * (0, 0, 0), as in r16x, and only moves the room, so an r183+ port sets
-   * it. An r155–r162 port keeps the constructor's argument as its page had
+   * later lower the room by setting `position.y = -3.5`; since API_MINOR
+   * 32 `position` starts there too (and environments light materials as
+   * three.js r185's PMREM does: spec rendering-and-quality.html#env-specular-1-32);
+   * before, it is (0, 0, 0), as in r16x, and an r183+ port sets it. An r155–r162 port keeps the constructor's argument as its page had
    * it: adding the renderer lights what the environment lights about 1.6 to
    * 3 times as brightly (spec: rendering-and-quality.html#environment-ports). */
   export class RoomEnvironment {
