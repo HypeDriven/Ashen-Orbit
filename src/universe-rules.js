@@ -23,6 +23,7 @@ export function pilotMotionStats(p){const hull=p.hull||0,role=ROLES[p.role||0];i
 const HULLS_MOTION_RADIUS=[24,31,40,52,66];
 // Force/torque integration shared by solo flight, server simulation and prediction.
 export function integratePilotThrust(p,dt,input,st){
+ p.thrusting=Math.abs(input.thrust||0)+Math.abs(input.strafe||0)+Math.abs(input.x||0)+Math.abs(input.y||0)>.01;
  const steps=Math.max(1,Math.ceil(dt*120)),h=dt/steps,turnAcceleration=st.turn*9;
  const thrust=flightClamp((input.thrust||0)-(input.brake?1:0),-1,1),strafe=flightClamp(input.strafe||0,-1,1);
  const boosted=input.boost&&p.boost!==0,limit=st.speed*(boosted?440/225:1)*(p.cloaked?.65:1)*(input.tractor?.75:1);

@@ -64,7 +64,7 @@ export class FlightPrediction {
   this.write(s);return seq;
  }
  write(s){
-  if(this.local&&this.display)Object.assign(s.player,this.display,{vx:this.local.vx,vy:this.local.vy});
+  if(this.local&&this.display)Object.assign(s.player,this.display,{vx:this.local.vx,vy:this.local.vy,av:this.local.av,thrusting:this.local.thrusting});
   for(const ship of s.ships){if(ship===s.player)continue;const track=this.remote.get(ship.id);if(!track)continue;
    const samples=track.samples,time=this.renderTime;
    if(this.shared){

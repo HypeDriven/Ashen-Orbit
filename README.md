@@ -98,7 +98,7 @@ packet size; it does not measure platform hosting or real internet latency.
 Live performance validation (2026-10-30): two headless browser clients measured
 16.7 ms median and 16.8 ms p95 animation frames after cached-starfield/native-arc
 rendering, versus 66.6 ms median before that rendering change. Both clients passed
-movement, firing, cloak, mine and trust checks. Forty-eight automated tests pass,
+movement, firing, cloak, mine and trust checks. Fifty-five automated tests pass,
 including 32 prediction clients under a 200 ms round trip with jitter and 32 pilots
 firing concurrently. The VM benchmark exercises 32 pilots, 160 escorts, and 96
 asteroids; it is a synthetic load test, not a live 32-account network test.
@@ -119,3 +119,10 @@ ships use the same substepped force/torque integrator. Local flight renders at
 60 Hz, inputs and shared-world server ticks request 30 Hz, and remote ships use
 bounded dead reckoning with smooth corrections. The shared-flight camera follows
 the local ship directly instead of adding a camera easing delay.
+
+Current live validation of inertial flight: owner diagnostics accepts 30 Hz;
+both browser clients measured approximately 29.5 actual server ticks/sec,
+14.8 combat snapshots/sec, and 16.7 ms median/p95 frames. Coasting after thrust
+release, movement, firing, cloak, mines, and normal trust status all passed.
+The earlier 20 Hz measurements above describe the scheduler repair, before this
+flight update raised the requested cadence to 30 Hz.

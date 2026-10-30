@@ -20,7 +20,7 @@ export {UPGRADES,TREES} from './shipyard.js';
 export const dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y);
 export function rng(seed){let x=seed;return ()=>{x=(x*1664525+1013904223)>>>0;return x/4294967296;};}
 let serial=0;
-export function makeShip(x,y,team=0,kind=0){const def=ENEMIES[kind]||ENEMIES[0];const hp=team?def.hp:180;return {id:++serial,x,y,vx:0,vy:0,a:-Math.PI/2,hp,max:hp,shield:0,maxShield:0,lastHit:0,cd:1,spawn:7,charge:0,team,kind,hit:0};}
+export function makeShip(x,y,team=0,kind=0){const def=ENEMIES[kind]||ENEMIES[0];const hp=team?def.hp:180;return {id:++serial,x,y,vx:0,vy:0,av:0,thrusting:false,a:-Math.PI/2,hp,max:hp,shield:0,maxShield:0,lastHit:0,cd:1,spawn:7,charge:0,team,kind,hit:0};}
 function level(s,id){return s.upgrades[id]||0;}
 export function notify(s,message){if(s.faction===1)message=message.replaceAll('REBEL','REPUBLIC').replace('REPUBLIC SECURED','REBELLION SECURED');s.message=message;s.messageTime=4;}
 export function createGame(saved=null){
