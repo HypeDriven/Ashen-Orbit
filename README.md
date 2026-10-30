@@ -76,7 +76,7 @@ unverified listing can serve the web files but the dashboard launches it without
 a token, so multiplayer opens the sign-in dialog. Keep the ownership declaration
 when packaging or updating the game.
 
-For a real two-client check, run StarHermit 1.28.0 with `--dev --local-platform
+For a real two-client check, run StarHermit 1.29.0 with `--dev --local-platform
 --render-check --script tests/republic.play` and `--player republic`, then launch
 a second runtime with `--player rebellion --script tests/rebellion.play`.
 Both scripts verify the same two-pilot frontier; the Republic script also
