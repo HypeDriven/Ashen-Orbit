@@ -21,10 +21,40 @@ export const sectorAt=y=>Math.max(0,Math.min(WORLD_SECTORS-1,Math.floor((y+WORLD
 export const sectorY=id=>(id-4)*SECTOR_SPACING;
 export function pilotMotionStats(p){const hull=p.hull||0,role=ROLES[p.role||0];if(p.loadout){const st=shipStats(p);return {speed:225*(1+shipLevel(p,'engine')*.09)*st.speed,turn:st.turn,radius:HULLS_MOTION_RADIUS[ hull ]};}return {speed:(250-hull*24)*role.speed,turn:(2.8-hull*.32)*role.turn,radius:22+hull*9};}
 const HULLS_MOTION_RADIUS=[24,31,40,52,66];
+// Force/torque integration shared by solo flight, server simulation and prediction.
+export function integratePilotThrust(p,dt,input,st){
+ const steps=Math.max(1,Math.ceil(dt*120)),h=dt/steps,turnAcceleration=st.turn*9;
+ const thrust=flightClamp((input.thrust||0)-(input.brake?1:0),-1,1),strafe=flightClamp(input.strafe||0,-1,1);
+ const boosted=input.boost&&p.boost!==0,limit=st.speed*(boosted?440/225:1)*(p.cloaked?.65:1)*(input.tractor?.75:1);
+ for(let i=0;i<steps;i++){
+  let av=p.av||0,torque=0;
+  if(Number.isFinite(input.aim)){
+   const error=Math.atan2(Math.sin(input.aim-p.a),Math.cos(input.aim-p.a));
+   const wanted=Math.sign(error)*Math.min(st.turn,Math.sqrt(2*turnAcceleration*Math.abs(error)));
+   torque=flightClamp((wanted-av)/h,-turnAcceleration,turnAcceleration);
+  }else torque=flightClamp(input.turn||0,-1,1)*turnAcceleration;
+  const nextAv=flightClamp(av+torque*h,-st.turn,st.turn),angle=p.a+(av+nextAv)*h*.25;
+  let ax,ay;
+  if(input.steering){ax=Math.cos(angle)*thrust-Math.sin(angle)*strafe;ay=Math.sin(angle)*thrust+Math.cos(angle)*strafe;}
+  else {ax=flightClamp(input.x||0,-1,1);ay=flightClamp(input.y||0,-1,1);}
+  const magnitude=Math.max(1,Math.hypot(ax,ay)),acceleration=limit*3;
+  const vx=p.vx||0,vy=p.vy||0,oldSpeed=Math.hypot(vx,vy);
+  let nx=vx+ax/magnitude*acceleration*h,ny=vy+ay/magnitude*acceleration*h;
+  // A speed limit constrains engine acceleration, never erases existing momentum.
+  const cap=Math.max(limit,oldSpeed),speed=Math.hypot(nx,ny);if(speed>cap){nx*=cap/speed;ny*=cap/speed;}
+  p.x+=(vx+nx)*.5*h;p.y+=(vy+ny)*.5*h;p.vx=nx;p.vy=ny;
+  p.a=Math.atan2(Math.sin(p.a+(av+nextAv)*h*.5),Math.cos(p.a+(av+nextAv)*h*.5));p.av=nextAv;
+ }
+}
 // Used by the authoritative server, live prediction, and input replay. This
 // changes movement only: damage, weapons, resources and visibility stay on the server.
 export function stepPilotMovement(p,dt,input,rocks=[],shared=true){
  if(p.hp<=0)return;
+ if(shared){
+  const st=pilotMotionStats(p);integratePilotThrust(p,dt,input,st);
+  for(const r of rocks){const d=Math.hypot(p.x-r.x,p.y-r.y),radius=r.r+st.radius;if(d<radius){const nx=d?(p.x-r.x)/d:1,ny=d?(p.y-r.y)/d:0,dot=p.vx*nx+p.vy*ny;p.x=r.x+nx*radius;p.y=r.y+ny*radius;if(dot<0){p.vx-=nx*dot*1.15;p.vy-=ny*dot*1.15;}}}
+  if(p.x>3200||p.x< -3200){p.x=flightClamp(p.x,-3200,3200);p.vx=0;}if(p.y>WORLD_Y||p.y< -WORLD_Y){p.y=flightClamp(p.y,-WORLD_Y,WORLD_Y);p.vy=0;}return;
+ }
  const m={steering:input.steering===true,turn:flightClamp(input.turn,-1,1),strafe:flightClamp(input.strafe,-1,1),thrust:flightClamp(input.thrust,-1,1),brake:input.brake===true,x:flightClamp(input.x,-1,1),y:flightClamp(input.y,-1,1),aim:Number.isFinite(input.aim)?input.aim:null,boost:input.boost===true,tractor:input.tractor===true};
  const st=shared?pilotMotionStats(p):{speed:215,turn:2.8,radius:25};
  if(m.aim!==null&&(shared||m.steering)){const delta=Math.atan2(Math.sin(m.aim-p.a),Math.cos(m.aim-p.a));p.a+=flightClamp(delta,-st.turn*dt,st.turn*dt);}else if(m.steering)p.a+=m.turn*st.turn*dt;

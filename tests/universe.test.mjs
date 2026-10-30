@@ -157,7 +157,7 @@ test('weapon status effects and escort bulkheads retain their shipyard tradeoffs
 });
 
 test('obsolete flight-policy flags are retired when the validation policy changes',()=>{
- const id='00000000-0000-0000-0000-000000000000',w=world(1,{[id]:{flightTrust:{untrusted:true,violations:3},universe:{faction:0,trust:{untrusted:true,violations:3}}}});assert.equal(w.s.pilots[0].untrusted,false);assert.equal(w.s.pilots[0].violations,0);assert.equal(w.cmd(0,{type:'leave'}).playerStates[id].flightTrust.policy,3);
+ const id='00000000-0000-0000-0000-000000000000',w=world(1,{[id]:{flightTrust:{untrusted:true,violations:3},universe:{faction:0,trust:{untrusted:true,violations:3}}}});assert.equal(w.s.pilots[0].untrusted,false);assert.equal(w.s.pilots[0].violations,0);assert.equal(w.cmd(0,{type:'leave'}).playerStates[id].flightTrust.policy,4);
 });
 
 test('all 32 pilots can sustain fire together and every network packet stays bounded',()=>{

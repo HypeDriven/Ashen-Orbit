@@ -35,7 +35,7 @@ travel, collisions, and rolling prediction residuals using server time. Network
 jitter receives a bounded allowance. Repeated impossible reports mark a pilot
 untrusted, persist that status, and progressively reduce movement authority.
 Combat, mining, weapons, resources, and progression stay on the server. Remote
-ships use an 80 ms interpolation buffer and at most 150 ms extrapolation.
+ships use velocity and angular-velocity dead reckoning without a fixed interpolation delay, bounded to 250 ms.
 Prediction stops after a 1 s shared-world snapshot gap (500 ms in co-op).
 
 Each of nine sectors has one base per faction with light projectile defenses.
@@ -82,8 +82,8 @@ a second runtime with `--player rebellion --script tests/rebellion.play`.
 Both scripts verify the same two-pilot frontier; the Republic script also
 checks mine laying, refitting, and leaving/rejoining.
 
-Multiplayer performance: movement updates at 20 Hz, with sector-local combat
-snapshots at 10 Hz. Projectiles use compact binary records inside JSON-safe
+Multiplayer performance: movement updates at 30 Hz, with sector-local combat
+snapshots at 15 Hz. Projectiles use compact binary records inside JSON-safe
 base64 packets. Spatial collision queries avoid testing every shot against every
 ship, and crowded battles use simpler projectile drawing. Trusted local movement
 is retained between snapshots; physical travel/speed/turn limits still apply.
@@ -110,3 +110,12 @@ requested tick rate. Live two-browser validation after deployment measures about
 16.7 ms median and 16.8 ms p95 browser frames. The backend change passes 1,503 game
 tests, including deterministic 20/30/60 Hz cadence tests under processing overhead.
 Owner diagnostics is available at `GET /api/v1/games/{slug}/diagnostics`.
+
+Flight applies ship-relative forward, reverse and lateral thrust to velocity.
+Releasing the controls preserves momentum; counter-thrust brakes it. Mouse aim
+commands angular thrust and counter-torque, rather than setting heading directly.
+Boost release preserves the speed already acquired. Solo and shared-universe
+ships use the same substepped force/torque integrator. Local flight renders at
+60 Hz, inputs and shared-world server ticks request 30 Hz, and remote ships use
+bounded dead reckoning with smooth corrections. The shared-flight camera follows
+the local ship directly instead of adding a camera easing delay.

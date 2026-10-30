@@ -14,7 +14,7 @@ async function client(file,platform){
 function frozen(value){if(value&&typeof value==='object'){for(const v of Object.values(value))frozen(v);Object.freeze(value);}return value;}
 function socket(){return {state:'open',events:{},sent:[],on(event,cb){this.events[event]=cb;},close(){this.state='closed';},sendCommand(data){this.sent.push(data);},sendInput(){}};}
 
-test('online updates predict movement between packets and send sequence numbers at 20Hz',async()=>{
+test('online updates predict movement between packets and send sequence numbers at 30Hz',async()=>{
  const sock=socket(),sent=[];sock.sendInput=data=>sent.push(data);
  const mod=await client('online.ts',{player:()=>({userId:'me'}),launchContext:()=>({sessionId:'session'}),connectGame:()=>sock});mod.resumeLaunch();
  const world={kind:'universe',pilots:[['me','Pilot',0,0,0,0,0,0,176,176,0,0,0,false,100,120,0,0,0,0,1]],enemies:[],rocks:[],mines:[],bases:[],fx:[],beacons:[],core:{x:-2200,y:0},bullets:[],loot:[],time:0,message:'Shared frontier',progress:0,goal:10000,ended:false};
@@ -22,7 +22,7 @@ test('online updates predict movement between packets and send sequence numbers 
  const input={steering:true,thrust:1,turn:0,strafe:0,x:0,y:0,aim:0,fire:false,boost:false,tractor:false};
  mod.updateOnline(1/60,input);assert.ok(mod.online.view.player.x>0);assert.equal(sent.length,0);
  for(let i=1;i<60;i++)mod.updateOnline(1/60,input);
- assert.equal(sent.length,20);assert.ok(sent.every((p,i)=>p.seq===(i+1)*3));
+ assert.equal(sent.length,30);assert.ok(sent.every((p,i)=>p.seq===(i+1)*2));
  const position=mod.online.view.player.x;
  sock.events.game({type:'snapshot',world:{...world,time:-1}});assert.equal(mod.online.view.player.x,position);
 });

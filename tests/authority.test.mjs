@@ -63,9 +63,9 @@ test('32 predicted pilots retain authority through 200ms round trips and jitter'
  const peers=Array.from({length:32},()=>{const server=pilot(),prediction=new FlightPrediction(),view={player:{...server,authority:1,correctionSeq:0},ships:[],rocks:[]};view.ships=[view.player];resetFlightAudit(server,0);view.player.correctionSeq=server.correctionSeq;prediction.receive(view,0,true);return {server,prediction,view,up:[],down:[],last:input};});
  for(let frame=1;frame<=720;frame++)for(const peer of peers){
   const now=frame/60,m={...input,aim:Math.sin(frame/100),thrust:frame%180<140?1:0};const seq=peer.prediction.step(1/60,m,peer.view);
-  if(frame%3===0)peer.up.push({at:frame+6+(frame%9===0?1:0),seq,m,report:peer.prediction.report()});
-  while(peer.up[0]?.at<=frame){const packet=peer.up.shift();peer.last=packet.m;stepPilotMovement(peer.server,.05,packet.m,[],true);validateFlightReport(peer.server,packet.report,packet.seq,now*1000,packet.m);peer.server.inputAck=packet.seq;}
-  if(frame%6===0)peer.down.push({at:frame+6,time:now,p:{...peer.server,authority:movementAuthority(peer.server)}});
+  if(frame%2===0)peer.up.push({at:frame+6+(frame%9===0?1:0),seq,m,report:peer.prediction.report()});
+  while(peer.up[0]?.at<=frame){const packet=peer.up.shift();peer.last=packet.m;stepPilotMovement(peer.server,1/30,packet.m,[],true);validateFlightReport(peer.server,packet.report,packet.seq,now*1000,packet.m);peer.server.inputAck=packet.seq;}
+  if(frame%2===0)peer.down.push({at:frame+6,time:now,p:{...peer.server,authority:movementAuthority(peer.server)}});
   while(peer.down[0]?.at<=frame){const packet=peer.down.shift(),p=packet.p;peer.view={player:p,ships:[p],rocks:[]};peer.prediction.receive(peer.view,packet.time,true);}
  }
  for(const peer of peers){assert.equal(peer.server.untrusted,undefined);assert.equal(movementAuthority(peer.server),1);assert.ok(peer.prediction.history.length<120);}

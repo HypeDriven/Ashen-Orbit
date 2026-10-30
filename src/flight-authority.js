@@ -17,7 +17,7 @@ export function validateFlightReport(p,report,seq,now,input,rocks=[]){
  const elapsed=Math.max(.001,(now-audit.at)/1000),st=pilotMotionStats(p);
  const cap=st.speed*(input.boost&&p.boost>0?440/225:1)*(p.cloaked?.65:1)*(input.tractor?.75:1),maxCap=st.speed*440/225;
  const allowance=p.untrusted?2:maxCap*.35,slack=p.untrusted?2:8;
- audit.credit=Math.min(maxCap*.4+allowance,audit.credit+cap*Math.min(Math.max(0,(now-(audit.fundedAt??audit.at))/1000),.5));
+ audit.credit=Math.min(maxCap*.4+allowance,audit.credit+Math.max(cap,Math.min(maxCap,Math.hypot(audit.vx,audit.vy)))*Math.min(Math.max(0,(now-(audit.fundedAt??audit.at))/1000),.5));
  audit.fundedAt=now;
  const finite=['x','y','vx','vy','a'].every(k=>Number.isFinite(report[k]));
  const travel=finite?Math.hypot(report.x-audit.x,report.y-audit.y):Infinity;
@@ -30,6 +30,7 @@ export function validateFlightReport(p,report,seq,now,input,rocks=[]){
  if(!finite)reason='non-finite';
  else if(Math.abs(report.x)>3200||Math.abs(report.y)>WORLD_Y)reason='world-bounds';
  else if(speed>maxCap*1.015+2)reason='speed';
+ else if(Number.isFinite(report.av)&&Math.abs(report.av)>st.turn*1.03+.03)reason='angular-speed';
  else if(travel>audit.credit+slack||travel>physicalDistance)reason='travel';
  else if(acceleration-Math.max(0,previousSpeed-speed)>maxCap*6*(span+jitter)+20)reason='acceleration';
  else if(turnDistance(report.a,audit.a)>st.turn*(span+jitter)+(p.untrusted?.04:.16))reason='turn';
@@ -57,7 +58,7 @@ export function validateFlightReport(p,report,seq,now,input,rocks=[]){
  let blocked=false;
  for(const rock of rocks){const dx=x-p.x,dy=y-p.y,length=dx*dx+dy*dy,t=length?Math.max(0,Math.min(1,((rock.x-p.x)*dx+(rock.y-p.y)*dy)/length)):0;if(Math.hypot(p.x+t*dx-rock.x,p.y+t*dy-rock.y)<rock.r+st.radius-2&&(Math.hypot(p.x-rock.x,p.y-rock.y)>=rock.r+st.radius-2||Math.hypot(x-rock.x,y-rock.y)<Math.hypot(p.x-rock.x,p.y-rock.y))){blocked=true;break;}}
  if(blocked){p.correctionSeq=(p.correctionSeq||0)+1;return {accepted:false,reason:'collision'};}
- p.x=x;p.y=y;p.a+=Math.atan2(Math.sin(report.a-p.a),Math.cos(report.a-p.a))*alpha;p.vx+=(report.vx-p.vx)*alpha;p.vy+=(report.vy-p.vy)*alpha;
+ p.x=x;p.y=y;p.a+=Math.atan2(Math.sin(report.a-p.a),Math.cos(report.a-p.a))*alpha;p.vx+=(report.vx-p.vx)*alpha;p.vy+=(report.vy-p.vy)*alpha;if(Number.isFinite(report.av))p.av=(p.av||0)+(report.av-(p.av||0))*alpha;
  audit.credit=round(Math.max(0,audit.credit-travel));audit.x=report.x;audit.y=report.y;audit.a=report.a;audit.vx=report.vx;audit.vy=report.vy;audit.at=now;
  return {accepted:true,authority:alpha};
 }

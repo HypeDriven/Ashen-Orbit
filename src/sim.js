@@ -1,5 +1,5 @@
 import {UPGRADES,TREES,shipStats,shipUpgradeStatus,shipHullStatus,shipFitStatus} from './shipyard.js';
-import {ROLES,fractureRock,driftRocks} from './universe-rules.js';
+import {ROLES,fractureRock,driftRocks,integratePilotThrust} from './universe-rules.js';
 import {emitVisual,stepVisuals,rememberTrail} from './effects.js';
 import {createBaseDefense,updateBaseDefense,interceptBaseShot} from './defenses.js';
 import {WEAPONS,COMPONENTS,HULLS,weapon,component,compatible,angleDelta,turnTowards,segmentDistance} from './arsenal.js';
@@ -121,9 +121,7 @@ export function update(s,dt,input){
  if(steering){if(Number.isFinite(input.aim))p.a=turnTowards(p.a,input.aim,st.turn*dt);else p.a+=(input.turn||0)*st.turn*dt;const strafe=Math.max(-1,Math.min(1,input.strafe||0));dx+=Math.cos(p.a)*throttle-Math.sin(p.a)*strafe;dy+=Math.sin(p.a)*throttle+Math.cos(p.a)*strafe;}
  let mag=Math.hypot(dx,dy);if(mag>1){dx/=mag;dy/=mag;}const boosting=input.boost&&s.boost>1&&mag>.1,towing=s.tractorOn&&s.energy>0,speed=(boosting?440:225)*(1+level(s,'engine')*.09)*st.speed*(towing?.74:1)*(p.cloaked?.65:1);
  s.boost=Math.max(0,Math.min(100,s.boost+dt*(boosting?-34/(1+level(s,'engine')*.2):19)));
- const drag=steering&&mag<.1?.3:4;
- if(steering){p.vx+=dx*speed*dt*2;p.vy+=dy*speed*dt*2;p.vx*=Math.max(0,1-drag*dt);p.vy*=Math.max(0,1-drag*dt);const v=Math.hypot(p.vx,p.vy);if(v>speed){p.vx*=speed/v;p.vy*=speed/v;}}
- else{p.vx+=(dx*speed-p.vx)*Math.min(1,dt*4);p.vy+=(dy*speed-p.vy)*Math.min(1,dt*4);if(mag>.1)p.a=Math.atan2(dy,dx);}
+ p.boost=s.boost;integratePilotThrust(p,dt,{...input,boost:boosting,tractor:towing},{speed:225*(1+level(s,'engine')*.09)*st.speed,turn:st.turn});
  if(!steering&&!selectedTarget(s))selectTarget(s);const target=selectedTarget(s);if(!steering&&mag<.1&&target)p.a=turnTowards(p.a,Math.atan2(target.y-p.y,target.x-p.x),st.turn*dt);
  s.heat=Math.max(0,s.heat-st.cooling*dt);if(s.heat>=100)s.overheated=true;if(s.overheated&&s.heat<35)s.overheated=false;
  fireMounts(s,dt,!!input.fire,target);
@@ -138,7 +136,7 @@ export function update(s,dt,input){
   else if(!target.hidden&&(target!==p||e.team)&&d<(e.team?850:850)&&e.cd<=0)shoot(s,e,a);
   if(e.team&&(e.kind===4||e.kind===2)){e.spawn-=dt;if(e.spawn<=0&&s.ships.filter(a=>a.team).length<32){e.spawn=e.kind===2?9:11;s.ships.push(makeShip(e.x+45,e.y+35,1,5),makeShip(e.x-45,e.y-35,1,5));}}
  }
- e.x+=e.vx*dt;e.y+=e.vy*dt;if(Math.hypot(e.x,e.y)>2850){const a=Math.atan2(e.y,e.x);e.x=Math.cos(a)*2840;e.y=Math.sin(a)*2840;}
+ if(e!==p){e.x+=e.vx*dt;e.y+=e.vy*dt;}if(Math.hypot(e.x,e.y)>2850){const a=Math.atan2(e.y,e.x);e.x=Math.cos(a)*2840;e.y=Math.sin(a)*2840;}
  for(const r of s.rocks){const d=dist(e,r),rr=r.r+(e.team?ENEMIES[e.kind].radius:e===p?HULLS[s.hull].radius:15);if(d<rr){const a=Math.atan2(e.y-r.y,e.x-r.x);e.x=r.x+Math.cos(a)*rr;e.y=r.y+Math.sin(a)*rr;e.vx*=.92;e.vy*=.92;}}
  }
  for(const boss of s.ships.filter(e=>e.team&&e.kind===2)){const phase=boss.hp<boss.max*.33?2:boss.hp<boss.max*.66?1:0;if(phase>(boss.phase||0)){boss.phase=phase;boss.shield=boss.maxShield=350;for(let i=0;i<3;i++)s.ships.push(makeShip(boss.x+(i-1)*100,boss.y+100,1,phase===1?3:4));notify(s,'DREADNOUGHT PHASE '+(phase+1)+' / REINFORCEMENTS');}if(phase===2)boss.cd-=dt*.6;}

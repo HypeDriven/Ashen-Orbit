@@ -54,7 +54,7 @@ function interceptBaseShot(d,b,ax,ay,bx,by){
 // All motion, damage, collection and score calculations happen here.
 function clamp(v,a,b){return Number.isFinite(v)?Math.max(a,Math.min(b,v)):0;}
 function distance(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
-function cleanMotion(m){if(!m||typeof m!=='object')return null;var result={spawnSeq:Number.isInteger(m.spawnSeq)?m.spawnSeq:-1};['x','y','vx','vy','a'].forEach(function(k){result[k]=Number.isFinite(m[k])?m[k]:null;});return result;}
+function cleanMotion(m){if(!m||typeof m!=='object')return null;var result={spawnSeq:Number.isInteger(m.spawnSeq)?m.spawnSeq:-1};['x','y','vx','vy','a','av'].forEach(function(k){result[k]=Number.isFinite(m[k])?m[k]:null;});return result;}
 function clean(m){return {steering:m.steering===true,turn:clamp(m.turn,-1,1),strafe:clamp(m.strafe,-1,1),thrust:clamp(m.thrust,-1,1),brake:m.brake===true,x:clamp(m.x,-1,1),y:clamp(m.y,-1,1),aim:Number.isFinite(m.aim)?clamp(m.aim,-Math.PI*2,Math.PI*2):null,fire:m.fire===true,tractor:m.tractor===true,boost:m.boost===true,voiceLevel:clamp(m.voiceLevel,0,1),motion:cleanMotion(m.motion),target:typeof m.target==='string'?m.target.slice(0,64):Number.isFinite(m.target)?m.target:null,seq:Number.isSafeInteger(m.seq)&&m.seq>0?Math.min(2147483647,m.seq):0};}
 function acceptPilotInput(p,data,now){var m=clean(data);if(m.seq&&m.seq<Math.max(p.inputAck||0,p.input.seq||0))return;p.input=m;p.lastInput=now;}
 function broadcast(s){return [{to:'all',data:{type:'snapshot',world:s}}];}
@@ -236,10 +236,40 @@ const sectorAt=y=>Math.max(0,Math.min(WORLD_SECTORS-1,Math.floor((y+WORLD_Y)/SEC
 const sectorY=id=>(id-4)*SECTOR_SPACING;
 function pilotMotionStats(p){const hull=p.hull||0,role=ROLES[p.role||0];if(p.loadout){const st=shipStats(p);return {speed:225*(1+shipLevel(p,'engine')*.09)*st.speed,turn:st.turn,radius:HULLS_MOTION_RADIUS[ hull ]};}return {speed:(250-hull*24)*role.speed,turn:(2.8-hull*.32)*role.turn,radius:22+hull*9};}
 const HULLS_MOTION_RADIUS=[24,31,40,52,66];
+// Force/torque integration shared by solo flight, server simulation and prediction.
+function integratePilotThrust(p,dt,input,st){
+ const steps=Math.max(1,Math.ceil(dt*120)),h=dt/steps,turnAcceleration=st.turn*9;
+ const thrust=flightClamp((input.thrust||0)-(input.brake?1:0),-1,1),strafe=flightClamp(input.strafe||0,-1,1);
+ const boosted=input.boost&&p.boost!==0,limit=st.speed*(boosted?440/225:1)*(p.cloaked?.65:1)*(input.tractor?.75:1);
+ for(let i=0;i<steps;i++){
+  let av=p.av||0,torque=0;
+  if(Number.isFinite(input.aim)){
+   const error=Math.atan2(Math.sin(input.aim-p.a),Math.cos(input.aim-p.a));
+   const wanted=Math.sign(error)*Math.min(st.turn,Math.sqrt(2*turnAcceleration*Math.abs(error)));
+   torque=flightClamp((wanted-av)/h,-turnAcceleration,turnAcceleration);
+  }else torque=flightClamp(input.turn||0,-1,1)*turnAcceleration;
+  const nextAv=flightClamp(av+torque*h,-st.turn,st.turn),angle=p.a+(av+nextAv)*h*.25;
+  let ax,ay;
+  if(input.steering){ax=Math.cos(angle)*thrust-Math.sin(angle)*strafe;ay=Math.sin(angle)*thrust+Math.cos(angle)*strafe;}
+  else {ax=flightClamp(input.x||0,-1,1);ay=flightClamp(input.y||0,-1,1);}
+  const magnitude=Math.max(1,Math.hypot(ax,ay)),acceleration=limit*3;
+  const vx=p.vx||0,vy=p.vy||0,oldSpeed=Math.hypot(vx,vy);
+  let nx=vx+ax/magnitude*acceleration*h,ny=vy+ay/magnitude*acceleration*h;
+  // A speed limit constrains engine acceleration, never erases existing momentum.
+  const cap=Math.max(limit,oldSpeed),speed=Math.hypot(nx,ny);if(speed>cap){nx*=cap/speed;ny*=cap/speed;}
+  p.x+=(vx+nx)*.5*h;p.y+=(vy+ny)*.5*h;p.vx=nx;p.vy=ny;
+  p.a=Math.atan2(Math.sin(p.a+(av+nextAv)*h*.5),Math.cos(p.a+(av+nextAv)*h*.5));p.av=nextAv;
+ }
+}
 // Used by the authoritative server, live prediction, and input replay. This
 // changes movement only: damage, weapons, resources and visibility stay on the server.
 function stepPilotMovement(p,dt,input,rocks=[],shared=true){
  if(p.hp<=0)return;
+ if(shared){
+  const st=pilotMotionStats(p);integratePilotThrust(p,dt,input,st);
+  for(const r of rocks){const d=Math.hypot(p.x-r.x,p.y-r.y),radius=r.r+st.radius;if(d<radius){const nx=d?(p.x-r.x)/d:1,ny=d?(p.y-r.y)/d:0,dot=p.vx*nx+p.vy*ny;p.x=r.x+nx*radius;p.y=r.y+ny*radius;if(dot<0){p.vx-=nx*dot*1.15;p.vy-=ny*dot*1.15;}}}
+  if(p.x>3200||p.x< -3200){p.x=flightClamp(p.x,-3200,3200);p.vx=0;}if(p.y>WORLD_Y||p.y< -WORLD_Y){p.y=flightClamp(p.y,-WORLD_Y,WORLD_Y);p.vy=0;}return;
+ }
  const m={steering:input.steering===true,turn:flightClamp(input.turn,-1,1),strafe:flightClamp(input.strafe,-1,1),thrust:flightClamp(input.thrust,-1,1),brake:input.brake===true,x:flightClamp(input.x,-1,1),y:flightClamp(input.y,-1,1),aim:Number.isFinite(input.aim)?input.aim:null,boost:input.boost===true,tractor:input.tractor===true};
  const st=shared?pilotMotionStats(p):{speed:215,turn:2.8,radius:25};
  if(m.aim!==null&&(shared||m.steering)){const delta=Math.atan2(Math.sin(m.aim-p.a),Math.cos(m.aim-p.a));p.a+=flightClamp(delta,-st.turn*dt,st.turn*dt);}else if(m.steering)p.a+=m.turn*st.turn*dt;
@@ -276,7 +306,7 @@ function validateFlightReport(p,report,seq,now,input,rocks=[]){
  const elapsed=Math.max(.001,(now-audit.at)/1000),st=pilotMotionStats(p);
  const cap=st.speed*(input.boost&&p.boost>0?440/225:1)*(p.cloaked?.65:1)*(input.tractor?.75:1),maxCap=st.speed*440/225;
  const allowance=p.untrusted?2:maxCap*.35,slack=p.untrusted?2:8;
- audit.credit=Math.min(maxCap*.4+allowance,audit.credit+cap*Math.min(Math.max(0,(now-(audit.fundedAt??audit.at))/1000),.5));
+ audit.credit=Math.min(maxCap*.4+allowance,audit.credit+Math.max(cap,Math.min(maxCap,Math.hypot(audit.vx,audit.vy)))*Math.min(Math.max(0,(now-(audit.fundedAt??audit.at))/1000),.5));
  audit.fundedAt=now;
  const finite=['x','y','vx','vy','a'].every(k=>Number.isFinite(report[k]));
  const travel=finite?Math.hypot(report.x-audit.x,report.y-audit.y):Infinity;
@@ -289,6 +319,7 @@ function validateFlightReport(p,report,seq,now,input,rocks=[]){
  if(!finite)reason='non-finite';
  else if(Math.abs(report.x)>3200||Math.abs(report.y)>WORLD_Y)reason='world-bounds';
  else if(speed>maxCap*1.015+2)reason='speed';
+ else if(Number.isFinite(report.av)&&Math.abs(report.av)>st.turn*1.03+.03)reason='angular-speed';
  else if(travel>audit.credit+slack||travel>physicalDistance)reason='travel';
  else if(acceleration-Math.max(0,previousSpeed-speed)>maxCap*6*(span+jitter)+20)reason='acceleration';
  else if(turnDistance(report.a,audit.a)>st.turn*(span+jitter)+(p.untrusted?.04:.16))reason='turn';
@@ -316,7 +347,7 @@ function validateFlightReport(p,report,seq,now,input,rocks=[]){
  let blocked=false;
  for(const rock of rocks){const dx=x-p.x,dy=y-p.y,length=dx*dx+dy*dy,t=length?Math.max(0,Math.min(1,((rock.x-p.x)*dx+(rock.y-p.y)*dy)/length)):0;if(Math.hypot(p.x+t*dx-rock.x,p.y+t*dy-rock.y)<rock.r+st.radius-2&&(Math.hypot(p.x-rock.x,p.y-rock.y)>=rock.r+st.radius-2||Math.hypot(x-rock.x,y-rock.y)<Math.hypot(p.x-rock.x,p.y-rock.y))){blocked=true;break;}}
  if(blocked){p.correctionSeq=(p.correctionSeq||0)+1;return {accepted:false,reason:'collision'};}
- p.x=x;p.y=y;p.a+=Math.atan2(Math.sin(report.a-p.a),Math.cos(report.a-p.a))*alpha;p.vx+=(report.vx-p.vx)*alpha;p.vy+=(report.vy-p.vy)*alpha;
+ p.x=x;p.y=y;p.a+=Math.atan2(Math.sin(report.a-p.a),Math.cos(report.a-p.a))*alpha;p.vx+=(report.vx-p.vx)*alpha;p.vy+=(report.vy-p.vy)*alpha;if(Number.isFinite(report.av))p.av=(p.av||0)+(report.av-(p.av||0))*alpha;
  audit.credit=round(Math.max(0,audit.credit-travel));audit.x=report.x;audit.y=report.y;audit.a=report.a;audit.vx=report.vx;audit.vy=report.vy;audit.at=now;
  return {accepted:true,authority:alpha};
 }
@@ -407,21 +438,21 @@ function uStats(p){var st=shipStats(p),motion=pilotMotionStats(p);return {hp:st.
 function uBase(f){return {x:FACTIONS[f].baseX,y:0};}
 function uFriendlyBase(s,p){var candidates=s.bases.filter(function(b){return b.faction===p.faction&&b.hp>0;});return candidates.sort(function(a,b){return distance(p,a)-distance(p,b);})[0]||null;}
 function uAtBase(s,p){var base=uFriendlyBase(s,p);return base&&distance(p,base)<280?base:null;}
-function uProfile(p){return {hull:p.hull,role:p.role,tech:p.tech,upgrades:p.upgrades,loadout:p.loadout,owned:p.owned,cleared:p.cleared,stance:p.stance||0,trust:{policy:3,untrusted:!!p.untrusted,violations:p.violations||0,authority:movementAuthority(p),reason:p.lastFlightReason||''}};}
+function uProfile(p){return {hull:p.hull,role:p.role,tech:p.tech,upgrades:p.upgrades,loadout:p.loadout,owned:p.owned,cleared:p.cleared,stance:p.stance||0,trust:{policy:4,untrusted:!!p.untrusted,violations:p.violations||0,authority:movementAuthority(p),reason:p.lastFlightReason||''}};}
 function uProfilePacket(p){return {to:[p.id],data:{type:'profile',profile:uProfile(p)}};}
 function uSaved(p,s){return Object.assign(uProfile(p),{world:s.worldId,scrap:p.scrap,faction:p.faction,total:p.total,day:s.day,dayScrap:p.dayScrap});}
-function uSave(s,ctx){var docs={};s.pilots.forEach(function(p){docs[p.id]=Object.assign({},ctx.playerStates&&ctx.playerStates[p.id]||{},{universe:uSaved(p,s),flightTrust:{policy:3,untrusted:!!p.untrusted,violations:p.violations||0}});});return docs;}
+function uSave(s,ctx){var docs={};s.pilots.forEach(function(p){docs[p.id]=Object.assign({},ctx.playerStates&&ctx.playerStates[p.id]||{},{universe:uSaved(p,s),flightTrust:{policy:4,untrusted:!!p.untrusted,violations:p.violations||0}});});return docs;}
 function uRecord(s,p){s.records[p.id]=[p.id,p.name,p.faction,p.kills||0,p.deaths||0,p.baseKills||0,Math.round(p.damage||0),p.total||0,p.shots||0,!!p.untrusted];}
 function uAdd(s,ctx,person){
  var parked=s.parked[person.id],stored=ctx.playerStates&&ctx.playerStates[person.id]||{},saved=parked||stored.universe||{},same=saved.world===s.worldId,trust=stored.flightTrust||saved.trust||{};
- var currentTrust=trust.policy===3||saved.trust&&saved.trust.policy===3;
- var p={id:person.id,pilot:true,flightPolicy:3,name:(person.displayName||person.name||'Pilot').slice(0,20),faction:saved.faction===1?1:saved.faction===0?0:-1,x:0,y:0,vx:0,vy:0,a:-Math.PI/2,hp:0,max:176,energy:100,boost:100,heat:0,overheated:false,cloaked:false,lock:0,mineCd:0,respawn:0,input:clean({}),inputAck:0,lastInput:ctx.now,choiceAt:-100,spawnSeq:0,hull:same?clamp(saved.hull,0,4)|0:0,role:same?clamp(saved.role,0,5)|0:0,scrap:same?clamp(saved.scrap,0,1000000):120,tech:same?clamp(saved.tech,0,10000):0,upgrades:same&&saved.upgrades||{gun:1,armor:0},loadout:same&&saved.loadout||defaultLoadout(),owned:same&&saved.owned||['cannon','drive','reactor','barrier'],cleared:same&&saved.cleared||[],total:same?saved.total||0:0,dayScrap:saved.day===s.day?saved.dayScrap||0:0,sector:4,untrusted:!!(currentTrust&&(trust.untrusted||saved.trust&&saved.trust.untrusted)),violations:currentTrust?Math.max(trust.violations||0,saved.trust&&saved.trust.violations||0):0,kills:0,deaths:0,baseKills:0,damage:0,shots:0,profileDirty:true};
+ var currentTrust=trust.policy===4||saved.trust&&saved.trust.policy===4;
+ var p={id:person.id,pilot:true,flightPolicy:4,name:(person.displayName||person.name||'Pilot').slice(0,20),faction:saved.faction===1?1:saved.faction===0?0:-1,x:0,y:0,vx:0,vy:0,a:-Math.PI/2,hp:0,max:176,energy:100,boost:100,heat:0,overheated:false,cloaked:false,lock:0,mineCd:0,respawn:0,input:clean({}),inputAck:0,lastInput:ctx.now,choiceAt:-100,spawnSeq:0,hull:same?clamp(saved.hull,0,4)|0:0,role:same?clamp(saved.role,0,5)|0:0,scrap:same?clamp(saved.scrap,0,1000000):120,tech:same?clamp(saved.tech,0,10000):0,upgrades:same&&saved.upgrades||{gun:1,armor:0},loadout:same&&saved.loadout||defaultLoadout(),owned:same&&saved.owned||['cannon','drive','reactor','barrier'],cleared:same&&saved.cleared||[],total:same?saved.total||0:0,dayScrap:saved.day===s.day?saved.dayScrap||0:0,sector:4,untrusted:!!(currentTrust&&(trust.untrusted||saved.trust&&saved.trust.untrusted)),violations:currentTrust?Math.max(trust.violations||0,saved.trust&&saved.trust.violations||0):0,kills:0,deaths:0,baseKills:0,damage:0,shots:0,profileDirty:true};
  p.loadout=HULLS[p.hull].mounts.map(function(m,i){return compatible(m,p.loadout[i])?p.loadout[i]||null:null;});
  if(s.records[p.id]){var row=s.records[p.id];p.kills=row[3];p.deaths=row[4];p.baseKills=row[5];p.damage=row[6];p.total=row[7];p.shots=row[8];}
  s.pilots.push(p);delete s.parked[p.id];if(p.faction>=0)uSpawn(s,p);
 }
 function uMigrate(s,ctx){
- s.pilots.forEach(function(p){if(p.flightPolicy!==3){p.flightPolicy=3;p.untrusted=false;p.violations=0;p.lastFlightReason='';if(p.audit)p.audit.score=0;p.profileDirty=true;}});
+ s.pilots.forEach(function(p){if(p.flightPolicy!==4){p.flightPolicy=4;p.untrusted=false;p.violations=0;p.lastFlightReason='';if(p.audit)p.audit.score=0;p.profileDirty=true;}});
  if(s.version===2)return;
  s.worldId=s.worldId||ctx.sessionId||'local';s.escorts=s.escorts||[];s.records=s.records||{};s.parked=s.parked||{};
  var old=s.bases||[];s.bases=[];s.beacons=[];
@@ -437,7 +468,7 @@ function uReconcile(s,ctx){
 }
 function uSpawn(s,p){
  var base=uFriendlyBase(s,p);if(!base){p.hp=0;p.respawn=0;return false;}
- var st=uStats(p);p.x=base.x;p.y=base.y+120;p.sector=base.sector;p.vx=p.vy=0;p.hp=p.max=st.hp;p.shield=p.maxShield=st.shield;p.energy=p.boost=100;p.heat=0;p.overheated=false;p.cloaked=false;p.respawn=0;p.lock=3;p.spawnSeq=(p.spawnSeq||0)+1;p.mounts=[];resetFlightAudit(p,s.now);return true;
+ var st=uStats(p);p.x=base.x;p.y=base.y+120;p.sector=base.sector;p.vx=p.vy=p.av=0;p.hp=p.max=st.hp;p.shield=p.maxShield=st.shield;p.energy=p.boost=100;p.heat=0;p.overheated=false;p.cloaked=false;p.respawn=0;p.lock=3;p.spawnSeq=(p.spawnSeq||0)+1;p.mounts=[];resetFlightAudit(p,s.now);return true;
 }
 function uCreate(ctx){
  if(ctx.players.filter(function(p){return !p.ai;}).length>WORLD_CAPACITY)return {ok:false,error:'Universe capacity reached.'};
@@ -461,7 +492,7 @@ function uFinish(s){
 }
 function uPilotRows(s,f,sector){var nearby=function(e){return sector===undefined||Math.abs(e.y-sectorY(sector))<2400;};
  var allies=s.pilots.filter(function(p){return p.faction===f&&p.hp>0;}),shown=s.pilots.filter(function(p){return p.faction>=0&&nearby(p)&&(!p.cloaked||p.faction===f||allies.some(function(a){return visibleShip(a,p);}));});
- var pilots=shown.map(function(p){return [p.id,p.name,p.faction,uRound(p.x),uRound(p.y),uRound(p.vx),uRound(p.vy),Math.round(p.a*1000)/1000,Math.ceil(p.hp),p.max,Math.round(p.shield||0),p.hull,p.role,p.cloaked,Math.round(p.energy),p.faction===f?p.scrap:0,uRound(p.respawn),s.mines.filter(function(m){return m.owner===p.id;}).length,p.hp>0&&s.now-p.lastInput<800?p.input.voiceLevel||0:0,p.inputAck||0,p.spawnSeq||0,movementAuthority(p),p.correctionSeq||0,p.sector,Math.round(p.boost),Math.round(p.heat)];});
+ var pilots=shown.map(function(p){return [p.id,p.name,p.faction,uRound(p.x),uRound(p.y),uRound(p.vx),uRound(p.vy),Math.round(p.a*1000)/1000,Math.ceil(p.hp),p.max,Math.round(p.shield||0),p.hull,p.role,p.cloaked,Math.round(p.energy),p.faction===f?p.scrap:0,uRound(p.respawn),s.mines.filter(function(m){return m.owner===p.id;}).length,p.hp>0&&s.now-p.lastInput<800?p.input.voiceLevel||0:0,p.inputAck||0,p.spawnSeq||0,movementAuthority(p),p.correctionSeq||0,p.sector,Math.round(p.boost),Math.round(p.heat),Math.round((p.av||0)*1000)/1000];});
  return pilots;
 }
 function uView(s,f,sector){
@@ -517,7 +548,7 @@ function uCommand(ctx){
  }else if(p.faction<0)return {ok:false,error:'Choose a faction first.'};
  else if(m.type==='cloak'){if(p.cloaked)p.cloaked=false;else{if(p.hp<=0||!uRole(p).cloak||p.energy<25||p.lock>0)return {ok:false,error:'Cloak unavailable: recharge or change role.'};p.cloaked=true;}}
  else if(m.type==='mine'){if(p.hp<=0||p.cloaked||p.mineCd>0||p.energy<25||s.mines.filter(function(a){return a.owner===p.id;}).length>=uRole(p).mines||s.mines.length>=64)return {ok:false,error:'Mine rack or capacitor unavailable.'};p.energy-=25;p.mineCd=2.5;s.mines.push({id:s.next++,x:uRound(p.x-Math.cos(p.a)*45),y:uRound(p.y-Math.sin(p.a)*45),faction:p.faction,owner:p.id,arm:1.2,t:90,dmg:p.role===3?140:95});}
- else if(m.type==='jump-sector'){var destination=s.bases.find(function(b){return b.faction===p.faction&&b.sector===m.sector&&b.hp>0;});if(!uAtBase(s,p)||!destination||p.hp<=0)return {ok:false,error:'Jump from a surviving friendly base to another friendly base.'};p.x=destination.x;p.y=destination.y+120;p.sector=destination.sector;p.vx=p.vy=0;p.spawnSeq++;resetFlightAudit(p,s.now);}
+ else if(m.type==='jump-sector'){var destination=s.bases.find(function(b){return b.faction===p.faction&&b.sector===m.sector&&b.hp>0;});if(!uAtBase(s,p)||!destination||p.hp<=0)return {ok:false,error:'Jump from a surviving friendly base to another friendly base.'};p.x=destination.x;p.y=destination.y+120;p.sector=destination.sector;p.vx=p.vy=p.av=0;p.spawnSeq++;resetFlightAudit(p,s.now);}
  else if(m.type==='stance'){p.stance=p.stance?0:1;}
  else if(m.type==='pulse'){if(p.hp<=0||p.pulse>0)return {ok:false,error:'EMP is recharging.'};p.pulse=14-shipLevel(p,'emp')*2;var range=420+shipLevel(p,'emp')*70,amount=110+shipLevel(p,'emp')*40;uTargets(s).forEach(function(t){if(t.hp>0&&t.faction!==p.faction&&distance(p,t)<range)uDamage(s,t,amount,p.id,{});});s.bullets=s.bullets.filter(function(b){return b.faction===p.faction||distance(p,b)>range;});serverVisual(s,'pulse',p.x,p.y,{max:.65,size:range});}
  else if(['hull','role','fit','upgrade'].indexOf(m.type)>=0){var error=uShipyard(s,p,m);if(error)return {ok:false,error:error};}
@@ -560,5 +591,5 @@ function uTick(ctx){
  if(s.tick%100===0||s.ended||s.trustDirty){s.trustDirty=false;var scores={};s.pilots.forEach(function(p){scores[p.id]=p.dayScrap;});out.scores={'daily-scrap':scores};out.playerStates=uSave(s,ctx);}
  if(s.ended)out.result={kind:'world-victory',winner:s.winner,statistics:s.results};return out;
 }
-globalThis.game={persistent:true,tickRateHz:20,replays:false,queues:universeLegacy.queues,createSession:function(ctx){return ctx.room&&ctx.room.metadata&&ctx.room.metadata.universe?uCreate(ctx):universeLegacy.createSession(ctx);},onMembershipChange:function(ctx){return {ok:!!(ctx.sessionState&&ctx.sessionState.kind==='universe'&&!ctx.sessionState.ended&&ctx.players.filter(function(p){return !p.ai;}).length<=WORLD_CAPACITY)};},onPlayerMessage:function(ctx){return ctx.sessionState&&ctx.sessionState.kind==='universe'?uCommand(ctx):universeLegacy.onPlayerMessage(ctx);},onTick:function(ctx){return ctx.sessionState&&ctx.sessionState.kind==='universe'?uTick(ctx):universeLegacy.onTick(ctx);}};
+globalThis.game={persistent:true,tickRateHz:30,replays:false,queues:universeLegacy.queues,createSession:function(ctx){return ctx.room&&ctx.room.metadata&&ctx.room.metadata.universe?uCreate(ctx):universeLegacy.createSession(ctx);},onMembershipChange:function(ctx){return {ok:!!(ctx.sessionState&&ctx.sessionState.kind==='universe'&&!ctx.sessionState.ended&&ctx.players.filter(function(p){return !p.ai;}).length<=WORLD_CAPACITY)};},onPlayerMessage:function(ctx){return ctx.sessionState&&ctx.sessionState.kind==='universe'?uCommand(ctx):universeLegacy.onPlayerMessage(ctx);},onTick:function(ctx){return ctx.sessionState&&ctx.sessionState.kind==='universe'?uTick(ctx):universeLegacy.onTick(ctx);}};
 // END GENERATED UNIVERSE

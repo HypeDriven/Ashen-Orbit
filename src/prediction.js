@@ -1,19 +1,21 @@
 import {stepPilotMovement} from './universe-rules.js';
 
 const angleDelta=(a,b)=>Math.atan2(Math.sin(a-b),Math.cos(a-b));
-const pose=p=>({x:p.x,y:p.y,a:p.a,vx:p.vx||0,vy:p.vy||0});
+const pose=p=>({x:p.x,y:p.y,a:p.a,vx:p.vx||0,vy:p.vy||0,av:p.av||0});
 const discontinuity=(a,b)=>a.id!==b.id||a.faction!==b.faction||a.hull!==b.hull||a.role!==b.role||a.spawnSeq!==b.spawnSeq||(a.hp>0)!==(b.hp>0)||Math.hypot(a.x-b.x,a.y-b.y)>300;
 const blend=(a,b,t)=>({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,a:a.a+angleDelta(b.a,a.a)*t,vx:a.vx+(b.vx-a.vx)*t,vy:a.vy+(b.vy-a.vy)*t});
 
 export class FlightPrediction {
  constructor(){this.reset();}
- reset(){this.clock=0;this.sequence=0;this.history=[];this.local=null;this.error={x:0,y:0,a:0};this.remote=new Map();this.latestTime=-1;this.arrival=0;this.renderTime=null;this.shared=true;}
+ reset(){this.clock=0;this.sequence=0;this.history=[];this.local=null;this.error={x:0,y:0,a:0};this.remote=new Map();this.latestTime=-1;this.arrival=0;this.renderTime=null;this.shared=true;this.oneWay=0;this.lastAck=0;}
  receive(s,serverTime,shared,partial=false){
   // Command replies can repeat a tick; an older frame cannot rewind motion.
   if(serverTime<this.latestTime)return;
   const first=this.local===null,old=s.player;
   const changed=first||this.shared!==shared||(this.local.id!==old.id||this.local.faction!==old.faction||this.local.hull!==old.hull||this.local.role!==old.role||this.local.spawnSeq!==old.spawnSeq||(this.local.hp>0)!==(old.hp>0)||!shared&&Math.hypot(this.local.x-old.x,this.local.y-old.y)>300);
   const display=this.display;
+  if((old.inputAck||0)>this.lastAck){const sent=this.history.find(f=>f.seq===old.inputAck);if(sent){const lag=Math.min(.1,Math.max(0,(this.clock-sent.at)*.5));this.oneWay=this.oneWay*.75+lag*.25;}this.lastAck=old.inputAck;}
+
   this.shared=shared;this.sequence=Math.max(this.sequence,old.inputAck||0);
   if(changed){this.history=[];this.error={x:0,y:0,a:0};}
   else if(Number.isFinite(old.inputAck))this.history=this.history.filter(f=>f.seq>old.inputAck);
@@ -32,9 +34,13 @@ export class FlightPrediction {
   if(first)this.renderTime=serverTime-.08;
   const present=new Set();
   for(const ship of s.ships){if(ship===s.player||partial&&!ship.pilot)continue;present.add(ship.id);let track=this.remote.get(ship.id);
-   if(!track||discontinuity(track.meta,ship)){track={meta:{...ship},samples:[]};this.remote.set(ship.id,track);}
+   if(!track||discontinuity(track.meta,ship)){track={meta:{...ship},samples:[],arrived:this.clock,error:{x:0,y:0,a:0},display:null};this.remote.set(ship.id,track);}
    const sample={...pose(ship),time:serverTime};const last=track.samples.at(-1);
    if(last?.time===serverTime)track.samples[track.samples.length-1]=sample;else track.samples.push(sample);
+   if(shared&&(!last||serverTime>last.time)){
+    const lead=this.oneWay,oldDisplay=track.display;
+    track.arrived=this.clock;track.error=oldDisplay?{x:oldDisplay.x-ship.x-ship.vx*lead,y:oldDisplay.y-ship.y-ship.vy*lead,a:angleDelta(oldDisplay.a,ship.a+(ship.av||0)*lead)}:{x:0,y:0,a:0};
+   }
    if(track.samples.length>12)track.samples.shift();track.meta={...ship};
   }
   // Hidden cloaked enemies and destroyed/despawned ships disappear immediately.
@@ -48,18 +54,27 @@ export class FlightPrediction {
   this.clock+=dt;if(!this.local)return this.sequence;
   const seq=++this.sequence;
   if(this.local.hp>0&&this.clock-this.arrival<(this.shared?1:.5)){
-   this.history.push({seq,dt,input:{...input}});if(this.history.length>120)this.history.shift();
+   this.history.push({seq,dt,at:this.clock,input:{...input}});if(this.history.length>120)this.history.shift();
    stepPilotMovement(this.local,dt,input,s.rocks,this.shared);
   }
   const decay=Math.exp(-dt*14);this.error.x*=decay;this.error.y*=decay;this.error.a*=decay;
   const target=this.latestTime+(this.clock-this.arrival)-.08;
   if(this.renderTime!==null)this.renderTime+=dt+Math.max(-dt*.5,Math.min(dt*.5,(target-this.renderTime)*dt*6));
+  for(const track of this.remote.values()){if(track.error){track.error.x*=decay;track.error.y*=decay;track.error.a*=decay;}}
   this.write(s);return seq;
  }
  write(s){
   if(this.local&&this.display)Object.assign(s.player,this.display,{vx:this.local.vx,vy:this.local.vy});
   for(const ship of s.ships){if(ship===s.player)continue;const track=this.remote.get(ship.id);if(!track)continue;
-   const samples=track.samples,time=this.renderTime;let result=samples[0];
+   const samples=track.samples,time=this.renderTime;
+   if(this.shared){
+    const last=samples.at(-1),previous=samples.at(-2),span=previous?last.time-previous.time:0;
+    const vx=last.vx||(!ship.pilot&&span>0?(last.x-previous.x)/span:0),vy=last.vy||(!ship.pilot&&span>0?(last.y-previous.y)/span:0);
+    const av=last.av||(!ship.pilot&&span>0?angleDelta(last.a,previous.a)/span:0),age=Math.min(.25,Math.max(0,this.clock-track.arrived+this.oneWay));
+    const result={...last,x:last.x+vx*age+track.error.x,y:last.y+vy*age+track.error.y,a:last.a+av*age+track.error.a};
+    track.display={...result};Object.assign(ship,pose(result));continue;
+   }
+   let result=samples[0];
    for(let i=1;i<samples.length;i++){const a=samples[i-1],b=samples[i];if(time<=b.time){result=blend(a,b,Math.max(0,Math.min(1,(time-a.time)/(b.time-a.time||1))));break;}result=b;}
    const last=samples.at(-1);
    if(time>last.time){const extra=Math.min(.15,time-last.time),previous=samples.at(-2),span=previous?last.time-previous.time:0;
