@@ -94,3 +94,19 @@ Run `node scripts/perf-universe.mjs` and add `--clustered` for a concentrated
 32-pilot battle with 160 escorts and 96 asteroids. The report includes Node VM
 tick/serialization timings, estimated aggregate payload traffic, and largest
 packet size; it does not measure platform hosting or real internet latency.
+
+Live performance validation (2026-10-30): two headless browser clients measured
+16.7 ms median and 16.8 ms p95 animation frames after cached-starfield/native-arc
+rendering, versus 66.6 ms median before that rendering change. Both clients passed
+movement, firing, cloak, mine and trust checks. Forty-eight automated tests pass,
+including 32 prediction clients under a 200 ms round trip with jitter and 32 pilots
+firing concurrently. The VM benchmark exercises 32 pilots, 160 escorts, and 96
+asteroids; it is a synthetic load test, not a live 32-account network test.
+
+Hosting limitation observed in the same live check: owner diagnostics reports an
+effective 20 Hz tick rate, but snapshot tick counters advance at approximately
+10 Hz (full combat snapshots approximately 5 Hz), with simulation time tracking
+wall time. Client rendering/control remain at 60 Hz. Achieving the requested real
+server cadence requires investigation of the platform scheduler; increasing client
+authority alone does not fix that discrepancy. Owner diagnostics is available at
+`GET /api/v1/games/{slug}/diagnostics`.
