@@ -1,4 +1,5 @@
-import {stepPilotMovement} from './universe-rules.js';
+import {InputTimeline,projectPilotMotion} from './input-timeline.js';
+import {integratePilotThrust,stepPilotMovement} from './universe-rules.js';
 
 const angleDelta=(a,b)=>Math.atan2(Math.sin(a-b),Math.cos(a-b));
 const pose=p=>({x:p.x,y:p.y,a:p.a,vx:p.vx||0,vy:p.vy||0,av:p.av||0});
@@ -7,8 +8,8 @@ const blend=(a,b,t)=>({x:a.x+(b.x-a.x)*t,y:a.y+(b.y-a.y)*t,a:a.a+angleDelta(b.a,
 
 export class FlightPrediction {
  constructor(){this.reset();}
- reset(){this.clock=0;this.sequence=0;this.history=[];this.local=null;this.error={x:0,y:0,a:0};this.remote=new Map();this.latestTime=-1;this.arrival=0;this.renderTime=null;this.shared=true;this.oneWay=0;this.lastAck=0;}
- receive(s,serverTime,shared,partial=false){
+ reset(){this.clock=0;this.sequence=0;this.history=[];this.local=null;this.error={x:0,y:0,a:0};this.remote=new Map();this.latestTime=-1;this.arrival=0;this.renderTime=null;this.shared=true;this.timeline=new InputTimeline();this.appliedInput=this.timeline.held;this.oneWay=0;this.lastAck=0;}
+ receive(s,serverTime,shared,partial=false,updatedIds=null){
   // Command replies can repeat a tick; an older frame cannot rewind motion.
   if(serverTime<this.latestTime)return;
   const first=this.local===null,old=s.player;
@@ -17,7 +18,7 @@ export class FlightPrediction {
   if((old.inputAck||0)>this.lastAck){const sent=this.history.find(f=>f.seq===old.inputAck);if(sent){const lag=Math.min(.1,Math.max(0,(this.clock-sent.at)*.5));this.oneWay=this.oneWay*.75+lag*.25;}this.lastAck=old.inputAck;}
 
   this.shared=shared;this.sequence=Math.max(this.sequence,old.inputAck||0);
-  if(changed){this.history=[];this.error={x:0,y:0,a:0};}
+  if(changed){this.timeline=new InputTimeline();this.appliedInput=this.timeline.held;this.history=[];this.error={x:0,y:0,a:0};}
   else if(Number.isFinite(old.inputAck))this.history=this.history.filter(f=>f.seq>old.inputAck);
   else this.history=[]; // Compatible with a session running an older server.
   const keepLocal=!changed&&shared&&old.authority===1&&old.correctionSeq===this.local.correctionSeq;
@@ -33,30 +34,33 @@ export class FlightPrediction {
   if(first||serverTime>this.latestTime){this.latestTime=serverTime;this.arrival=this.clock;}
   if(first)this.renderTime=serverTime-.08;
   const present=new Set();
-  for(const ship of s.ships){if(ship===s.player||partial&&!ship.pilot)continue;present.add(ship.id);let track=this.remote.get(ship.id);
+  for(const ship of s.ships){if(ship===s.player||partial&&(!ship.pilot||updatedIds&&!updatedIds.has(ship.id)))continue;present.add(ship.id);let track=this.remote.get(ship.id);
    if(!track||discontinuity(track.meta,ship)){track={meta:{...ship},samples:[],arrived:this.clock,error:{x:0,y:0,a:0},display:null};this.remote.set(ship.id,track);}
    const sample={...pose(ship),time:serverTime};const last=track.samples.at(-1);
    if(last?.time===serverTime)track.samples[track.samples.length-1]=sample;else track.samples.push(sample);
    if(shared&&(!last||serverTime>last.time)){
-    const lead=this.oneWay,oldDisplay=track.display;
-    track.arrived=this.clock;track.error=oldDisplay?{x:oldDisplay.x-ship.x-ship.vx*lead,y:oldDisplay.y-ship.y-ship.vy*lead,a:angleDelta(oldDisplay.a,ship.a+(ship.av||0)*lead)}:{x:0,y:0,a:0};
+    const lead=this.oneWay,oldDisplay=track.display,projected=projectPilotMotion(sample,ship,lead,integratePilotThrust);
+    track.arrived=this.clock;track.error=oldDisplay?{x:oldDisplay.x-projected.x,y:oldDisplay.y-projected.y,a:angleDelta(oldDisplay.a,projected.a)}:{x:0,y:0,a:0};
    }
    if(track.samples.length>12)track.samples.shift();track.meta={...ship};
   }
   // Hidden cloaked enemies and destroyed/despawned ships disappear immediately.
-  for(const id of this.remote.keys())if(!present.has(id)&&(!partial||this.remote.get(id).meta.pilot))this.remote.delete(id);
+  for(const id of this.remote.keys())if(!partial&&!present.has(id))this.remote.delete(id);
   this.write(s);
  }
  applyProfile(profile){if(this.local)Object.assign(this.local,profile);}
  report(){if(!this.local)return null;return {...pose(this.local),a:Math.atan2(Math.sin(this.local.a),Math.cos(this.local.a)),spawnSeq:this.local.spawnSeq};}
  get display(){return this.local?{x:this.local.x+this.error.x,y:this.local.y+this.error.y,a:this.local.a+this.error.a}:null;}
  step(dt,input,s){
-  this.clock+=dt;if(!this.local)return this.sequence;
-  const seq=++this.sequence;
-  if(this.local.hp>0&&this.clock-this.arrival<(this.shared?1:.5)){
-   this.history.push({seq,dt,at:this.clock,input:{...input}});if(this.history.length>120)this.history.shift();
-   stepPilotMovement(this.local,dt,input,s.rocks,this.shared);
-  }
+  const start=this.clock;this.clock+=dt;if(!this.local)return this.sequence;
+  const seq=++this.sequence,serverTime=this.latestTime+(start-this.arrival)+this.oneWay;
+  this.timeline.capture(seq,input,start,serverTime);
+  this.timeline.advance(start,this.clock,(span,held,eventSeq)=>{
+   if(this.local.hp>0&&this.clock-this.arrival<(this.shared?1:.5)){
+    this.history.push({seq:eventSeq,dt:span,at:this.clock,input:{...held}});if(this.history.length>240)this.history.shift();
+    stepPilotMovement(this.local,span,held,s.rocks,this.shared);
+   }
+  });this.appliedInput=this.timeline.held;
   const decay=Math.exp(-dt*14);this.error.x*=decay;this.error.y*=decay;this.error.a*=decay;
   const target=this.latestTime+(this.clock-this.arrival)-.08;
   if(this.renderTime!==null)this.renderTime+=dt+Math.max(-dt*.5,Math.min(dt*.5,(target-this.renderTime)*dt*6));
@@ -71,7 +75,7 @@ export class FlightPrediction {
     const last=samples.at(-1),previous=samples.at(-2),span=previous?last.time-previous.time:0;
     const vx=last.vx||(!ship.pilot&&span>0?(last.x-previous.x)/span:0),vy=last.vy||(!ship.pilot&&span>0?(last.y-previous.y)/span:0);
     const av=last.av||(!ship.pilot&&span>0?angleDelta(last.a,previous.a)/span:0),age=Math.min(.25,Math.max(0,this.clock-track.arrived+this.oneWay));
-    const result={...last,x:last.x+vx*age+track.error.x,y:last.y+vy*age+track.error.y,a:last.a+av*age+track.error.a};
+    const predicted=projectPilotMotion({...last,vx,vy,av},track.meta,age,integratePilotThrust);const result={...predicted,x:predicted.x+track.error.x,y:predicted.y+track.error.y,a:predicted.a+track.error.a};
     track.display={...result};Object.assign(ship,pose(result));continue;
    }
    let result=samples[0];

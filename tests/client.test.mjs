@@ -8,7 +8,7 @@ async function client(file,platform){
  let source=stripTypeScriptTypes(readFileSync(new URL('../src/'+file,import.meta.url),'utf8'))
   .replace("import * as platform from 'starhermit:platform';",'const platform=globalThis.__frontierTestPlatform;')
   .replace(/import \{\s*stopVoice\s*\} from '\.\/comms\.js';/,'const stopVoice=async()=>{};');
- for(const name of ['sim','universe-rules','prediction','fire-feedback','wire'])source=source.replaceAll(`'./${name}.js'`,JSON.stringify(new URL(`../src/${name}.js`,import.meta.url).href));
+ for(const name of ['sim','universe-rules','prediction','fire-feedback','wire','input-timeline'])source=source.replaceAll(`'./${name}.js'`,JSON.stringify(new URL(`../src/${name}.js`,import.meta.url).href));
  return import('data:text/javascript;base64,'+Buffer.from(source).toString('base64')+'#'+Math.random());
 }
 function frozen(value){if(value&&typeof value==='object'){for(const v of Object.values(value))frozen(v);Object.freeze(value);}return value;}
@@ -20,7 +20,7 @@ test('online updates predict movement between packets and send sequence numbers 
  const world={kind:'universe',pilots:[['me','Pilot',0,0,0,0,0,0,176,176,0,0,0,false,100,120,0,0,0,0,1]],enemies:[],rocks:[],mines:[],bases:[],fx:[],beacons:[],core:{x:-2200,y:0},bullets:[],loot:[],time:0,message:'Shared frontier',progress:0,goal:10000,ended:false};
  sock.events.game(frozen({type:'snapshot',world}));
  const input={steering:true,thrust:1,turn:0,strafe:0,x:0,y:0,aim:0,fire:false,boost:false,tractor:false};
- mod.updateOnline(1/60,input);assert.ok(mod.online.view.player.x>0);assert.equal(sent.length,0);
+ mod.updateOnline(1/60,input);assert.equal(mod.online.view.player.x,0);assert.equal(sent.length,0);
  for(let i=1;i<60;i++)mod.updateOnline(1/60,input);
  assert.equal(sent.length,30);assert.ok(sent.every((p,i)=>p.seq===(i+1)*2));
  const position=mod.online.view.player.x;

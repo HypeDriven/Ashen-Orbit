@@ -126,3 +126,24 @@ both browser clients measured approximately 29.5 actual server ticks/sec,
 release, movement, firing, cloak, mines, and normal trust status all passed.
 The earlier 20 Hz measurements above describe the scheduler repair, before this
 flight update raised the requested cadence to 30 Hz.
+
+Projectiles inherit the launch point's full linear velocity and rotational mount
+velocity in solo and multiplayer. Homing weapons retain that inherited drift.
+Starbase guns solve an intercept using target velocity and observed acceleration,
+including the barrel's launch offset and projectile lifetime.
+
+Flight controls, firing and combat abilities enter a **32 ms future input window**,
+including local simulation. Input batches preserve brief presses and releases;
+server acknowledgements track applied events, duplicates are ignored, and future
+controls travel in bounded snapshots so remote dead reckoning can apply them.
+This window gives low-latency events time to propagate; packets arriving after
+it cannot be made simultaneous retroactively.
+
+When everyone is offline, five server-owned pilots cover all five hulls. They
+remain when humans return while capacity allows, and yield seats to human players
+at the 32-player limit. They mine/capture/fight for normal rewards, return to a
+surviving base, buy roles/equipment/upgrades through the same shipyard gates, and
+use role behaviors (prospecting, attack runs, defense, mine laying, and support).
+Synthetic pilots never create platform accounts or player-state writes. Public
+common-universe simulation is enabled through the backend operator's
+`Games:AlwaysRunningWorlds` selection; private rooms still pause when empty.

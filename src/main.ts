@@ -1,3 +1,4 @@
+import {InputTimeline} from './input-timeline.js';
 import {FACTIONS,ROLES,driftRocks,sectorY} from './universe-rules.js';
 import {comms,toggleVoice,transmit,updateVoice,voiceLevel} from './comms.js';
 import {resetExpedition,saveExpedition,savedExpedition} from './campaign.js';
@@ -16,6 +17,7 @@ import {createGame,update,emp,interact,upgrade,jump,clear,dist,SECTORS,SECTOR_IN
 import {online,onSnapshot,refresh,signIn,host,join,start,daily,leave,updateOnline,resumeLaunch,enterUniverse,universeCommand} from './online.js';
 const ink='#dedbc5',dim='#8a8d83',line='#3b403c',black='#101516',accent='#c2b698',danger='#cf9c89';
 const camera=new PerspectiveCamera(50,1,.1,100);camera.position.z=10;renderer.camera=camera;scene.background=new Color(0x101516);
+let soloTimeline=new InputTimeline(),soloSequence=0,replayingAction=false;const soloActions:{id:string;at:number}[]=[];
 let flightSource='keyboard',selectedFaction=0;
 let state=createGame(),soloState=state,mode='title',paused=false,muted=false,showHelp=false,tree=0,coopTractor=false,mountSlot=0,weaponPage=0,routePage=0;
 const worldMenus=['worldrefit','worldoutfit','worldroles','worldchart'];
@@ -37,7 +39,8 @@ function button(id:string,label:string,x:number,y:number,w:number,h=42,primary=f
 function save(){if(!online.shared&&mode!=='coop_play'&&mode!=='lobby')saveExpedition(storage,state);}
 function paragraph(t:string,x:number,y:number,w:number,size=11,c=dim){draw.text(t,ox+x*K,oy+y*K,{size:size*K,color:c,font:'monospace',maxWidth:w*K});}
 function act(id:string){
- if(id==='launch'||id==='new'||id==='reset'){if(online.busy)return;const restarting=id!=='launch';if(restarting&&(online.shared||mode==='coop_play'||mode==='lobby'))return;state=restarting?resetExpedition(storage,selectedFaction):createGame(savedExpedition(storage,selectedFaction));if(!restarting&&!savedExpedition(storage,selectedFaction)){state.faction=selectedFaction;state.player.faction=selectedFaction;}soloState=state;mode='play';cx=state.player.x;cy=state.player.y;paused=false;showHelp=false;saveClock=0;shake=0;tree=0;mountSlot=0;weaponPage=0;routePage=0;coopTractor=false;if(restarting)zoom=1;return;}
+ if(!online.shared&&mode==='play'&&!replayingAction&&['cloak','mine','pulse','fleet'].includes(id)){soloActions.push({id,at:state.time+.032});return;}
+ if(id==='launch'||id==='new'||id==='reset'){if(online.busy)return;const restarting=id!=='launch';if(restarting&&(online.shared||mode==='coop_play'||mode==='lobby'))return;state=restarting?resetExpedition(storage,selectedFaction):createGame(savedExpedition(storage,selectedFaction));if(!restarting&&!savedExpedition(storage,selectedFaction)){state.faction=selectedFaction;state.player.faction=selectedFaction;}soloState=state;soloTimeline=new InputTimeline();soloSequence=0;soloActions.length=0;mode='play';cx=state.player.x;cy=state.player.y;paused=false;showHelp=false;saveClock=0;shake=0;tree=0;mountSlot=0;weaponPage=0;routePage=0;coopTractor=false;if(restarting)zoom=1;return;}
  if(id.startsWith('faction:')){selectedFaction=Number(id.slice(8));return;}
  if(id==='universe'){soloState=state;enterUniverse(selectedFaction);return;}
  if(id==='voice'){toggleVoice(online.sessionId);return;}
@@ -87,7 +90,7 @@ onFixedUpdate(dt=>{
  updateOnline(dt,(worldMenus.includes(mode)||mode==='worldresults'||mode==='lobby')?{...controls,fire:false,thrust:0,turn:0,strafe:0,x:0,y:0,boost:false}:controls);updateVoice(dt,state);
  if(onlineMode()){state.fx=stepVisuals(state.fx,dt);state.time+=dt;for(const b of state.bullets){b.x+=b.vx*dt;b.y+=b.vy*dt;b.t-=dt;}state.bullets=state.bullets.filter(b=>b.t>0);driftRocks(state.rocks,dt);cx=state.player.x;cy=state.player.y;return;}
  if(mode!=='play'||paused||showHelp||state.dead||state.won)return;
- update(state,dt,controls);for(const e of state.events){audio(e);if(e==='boom')shake=5;}cx+=(state.player.x-cx)*dt*5;cy+=(state.player.y-cy)*dt*5;shake=Math.max(0,shake-dt*22);saveClock+=dt;if(saveClock>12){saveClock=0;save();}
+ while(soloActions.length&&soloActions[0].at<=state.time){replayingAction=true;act(soloActions.shift()!.id);replayingAction=false;}soloTimeline.capture(++soloSequence,controls,state.time,state.time);soloTimeline.advance(state.time,state.time+dt,(span,held)=>update(state,span,held));for(const e of state.events){audio(e);if(e==='boom')shake=5;}cx+=(state.player.x-cx)*dt*5;cy+=(state.player.y-cy)*dt*5;shake=Math.max(0,shake-dt*22);saveClock+=dt;if(saveClock>12){saveClock=0;save();}
 });
 function world(){let z=zoom;const painter=createEffectPainter({line:ln,arc:(x,y,r,c,width,start,end)=>draw.strokeArc(ox+x*K,oy+y*K,r*K,start,end,c,width*K),disc:(x,y,r,c)=>draw.circle(ox+x*K,oy+y*K,r*K,c),polygon:(points,c)=>draw.polygon(points.map(q=>[ox+q[0]*K,oy+q[1]*K] as [number,number]),c),path:(points,c,width)=>{for(let i=1;i<points.length;i++)ln(points[i-1][0],points[i-1][1],points[i][0],points[i][1],c,width);}},{zoom:z,scale:K,cx,cy,width:W,height:H});const sx=(x:number)=>(x-cx)*z+W/2;const sy=(y:number)=>(y-cy)*z+H/2;const visible=(x:number,y:number,r=100)=>sx(x)>-r&&sx(x)<W+r&&sy(y)>70-r&&sy(y)<H-65+r;
 if(starTile){const tile=512*z,x0=((-cx*.25*z)%tile+tile)%tile-tile,y0=((-cy*.25*z)%tile+tile)%tile-tile;for(let xx=x0;xx<W;xx+=tile)for(let yy=y0;yy<H;yy+=tile)draw.image(starTile,ox+xx*K,oy+yy*K,tile*K,tile*K);}for(let i=0;i<4;i++){let x=((i*700-cx)*z+W/2)%W;ln(x,100,x,H-86,'#1a211f');}let x=sx(0),y=sy(0);if(!online.shared&&visible(0,0,320)){circle(x,y,285*z,'#303b35');circle(x,y,265*z,'#26332d');img(station,x-185*z,y-185*z,370*z,370*z);text(state.faction===1?'REBEL GARRISON':'REPUBLIC GARRISON',x,y+208*z,10,dim,'monospace','center');if(mode==='play'&&dist(state.player,{x:0,y:0})<285)text('[ E ] DOCK / REFIT',x,y+227*z,11,ink,'monospace','center');}

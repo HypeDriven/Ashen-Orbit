@@ -42,13 +42,13 @@ function uFireMounts(s,p,dt,m){
   if(rock){rock.hp-=dmg*(p.role===2?1.6:1);rock.hitX=x;rock.hitY=y;}
   if(victim){uDamage(s,victim,dmg,p.id,w);var previous=victim,struck=[victim.id];for(var j=0;j<(w.chain||0);j++){var next=uTargets(s).find(function(t){return t.hp>0&&t.faction!==p.faction&&t.faction>=0&&struck.indexOf(t.id)<0&&distance(t,previous)<230;});if(!next)break;uDamage(s,next,dmg*.55,p.id,w);struck.push(next.id);serverVisual(s,'beam',previous.x,previous.y,{beam:true,x2:next.x,y2:next.y,max:.13,weapon:w.id});previous=next;}}
   serverVisual(s,'beam',x,y,{beam:true,x2:victim?victim.x:rock?rock.x:bx,y2:victim?victim.y:rock?rock.y:by,max:.13,weapon:w.id});
- }else{var count=(w.count||1)+(w.id==='cannon'?shipLevel(p,'multishot'):0);for(var n=0;n<count&&ownedShots<32&&s.bullets.length<1536;n++){var a=state.a+(count>1?(n-(count-1)/2)*(w.spread||.075):(w.spread||0)*(Math.random()-.5));ownedShots++;s.bullets.push({id:s.next++,x:uRound(x),y:uRound(y),vx:uRound(Math.cos(a)*w.speed),vy:uRound(Math.sin(a)*w.speed),t:w.life,faction:p.faction,dmg:uRound(dmg),weapon:w.id,owner:p.id,pierce:(w.pierce||0)+(w.id==='cannon'?shipLevel(p,'pierce'):0),hits:[],arm:w.mine?1:0,target:m.target||null});}}
+ }else{var count=(w.count||1)+(w.id==='cannon'?shipLevel(p,'multishot'):0);for(var n=0;n<count&&ownedShots<32&&s.bullets.length<1536;n++){var a=state.a+(count>1?(n-(count-1)/2)*(w.spread||.075):(w.spread||0)*(Math.random()-.5));ownedShots++;var velocity=launchVelocity(p,a,w.speed,x,y);s.bullets.push({id:s.next++,x:uRound(x),y:uRound(y),vx:uRound(velocity.vx),vy:uRound(velocity.vy),driftX:velocity.vx-Math.cos(a)*w.speed,driftY:velocity.vy-Math.sin(a)*w.speed,t:w.life,faction:p.faction,dmg:uRound(dmg),weapon:w.id,owner:p.id,pierce:(w.pierce||0)+(w.id==='cannon'?shipLevel(p,'pierce'):0),hits:[],arm:w.mine?1:0,target:m.target||null});}}
  });
 }
 function uProjectiles(s,dt){
  var targets=uTargets(s).filter(function(t){return t.hp>0;}).map(function(t){return {ship:t,x:t.x,y:t.y,r:uRadius(t)};}),grid=uGrid(targets),rockGrid=uGrid(s.rocks);
  s.bullets.forEach(function(b){if(b.t<=0)return;var w=weapon(b.weapon)||{},ax=b.x,ay=b.y;b.hits=b.hits||[];
-  if(w.homing&&b.target){var target=uTargets(s).find(function(t){return t.id===b.target&&t.hp>0&&t.faction!==b.faction;});if(target){var a=turnTowards(Math.atan2(b.vy,b.vx),Math.atan2(target.y-b.y,target.x-b.x),w.homing*dt);b.vx=uRound(Math.cos(a)*w.speed);b.vy=uRound(Math.sin(a)*w.speed);}}
+  if(w.homing&&b.target){var target=uTargets(s).find(function(t){return t.id===b.target&&t.hp>0&&t.faction!==b.faction;});if(target){var a=turnTowards(Math.atan2(b.vy-(b.driftY||0),b.vx-(b.driftX||0)),Math.atan2(target.y-b.y,target.x-b.x),w.homing*dt);b.vx=uRound(Math.cos(a)*w.speed+(b.driftX||0));b.vy=uRound(Math.sin(a)*w.speed+(b.driftY||0));}}
   b.x=uRound(b.x+b.vx*dt);b.y=uRound(b.y+b.vy*dt);b.t=Math.round((b.t-dt)*1000)/1000;b.arm=Math.max(0,(b.arm||0)-dt);
   var contacts=[];uQuery(grid,ax,ay,b.x,b.y,200).forEach(function(entry){var t=entry.ship,r=entry.r+(w.mine?45:0);if(Math.abs(t.x-b.x)>Math.abs(b.x-ax)+r||Math.abs(t.y-b.y)>Math.abs(b.y-ay)+r)return;if(t.hp<=0||t.faction===b.faction||t.faction<0||b.hits.indexOf(t.id)>=0||b.arm>0)return;if(sweptHit(ax,ay,b.x,b.y,t.x,t.y,r))contacts.push({kind:'ship',target:t,d:Math.hypot(t.x-ax,t.y-ay)});});
   uQuery(rockGrid,ax,ay,b.x,b.y,100).forEach(function(r){if(r.hp>0&&sweptHit(ax,ay,b.x,b.y,r.x,r.y,r.r))contacts.push({kind:'rock',target:r,d:Math.hypot(r.x-ax,r.y-ay)});});contacts.sort(function(a,b){return a.d-b.d;});
@@ -61,7 +61,7 @@ function uProjectiles(s,dt){
 function uBaseDefenses(s,dt){
  s.bases.forEach(function(base){if(base.hp<=0)return;base.cd=Math.max(0,(base.cd||0)-dt);if(base.cd>0)return;
   var target=null,dd=560; s.pilots.concat(s.enemies,s.escorts).forEach(function(p){if(p.hp<=0||p.faction<0||p.faction===base.faction||!visibleShip(base,p))return;var d=distance(p,base);if(d<dd){dd=d;target=p;}});
-  if(target&&s.bullets.length<1536){base.cd=2;base.a=Math.atan2(target.y-base.y,target.x-base.x);s.bullets.push({id:s.next++,x:uRound(base.x+Math.cos(base.a)*155),y:uRound(base.y+Math.sin(base.a)*155),vx:uRound(Math.cos(base.a)*390),vy:uRound(Math.sin(base.a)*390),t:1.8,faction:base.faction,dmg:8,weapon:'cannon',owner:base.id,hits:[]});serverVisual(s,'muzzle',base.x,base.y,{max:.12,size:12,a:base.a});}
+  if(target&&s.bullets.length<1536){base.cd=2;var aim=interceptPoint(base,target,390,1.8,155);base.a=Math.atan2(aim.y-base.y,aim.x-base.x);s.bullets.push({id:s.next++,x:uRound(base.x+Math.cos(base.a)*155),y:uRound(base.y+Math.sin(base.a)*155),vx:uRound(Math.cos(base.a)*390),vy:uRound(Math.sin(base.a)*390),t:1.8,faction:base.faction,dmg:8,weapon:'cannon',owner:base.id,hits:[]});serverVisual(s,'muzzle',base.x,base.y,{max:.12,size:12,a:base.a});}
  });
 }
 function uEscorts(s,dt){
@@ -71,7 +71,7 @@ function uEscorts(s,dt){
   uQuery(grid,e.x,e.y,e.x,e.y,650).forEach(function(t){if(t.hp>0&&t.faction>=0&&t.faction!==e.faction&&visibleShip(e,t)){var d=distance(e,t);if(d<dd){dd=d;target=t;}}});
   var a=(e.slot||0)*Math.PI*.4+s.time*.3,tx=owner.x+Math.cos(a)*95,ty=owner.y+Math.sin(a)*95;
   if(target&&owner.stance){tx=target.x-Math.cos(e.a)*170;ty=target.y-Math.sin(e.a)*170;}
-  var dx=tx-e.x,dy=ty-e.y,d=Math.hypot(dx,dy),step=Math.min(d,dt*240*(e.jam>0?.4:1));if(d>.01){e.a=Math.atan2(dy,dx);e.x=uRound(e.x+dx/d*step);e.y=uRound(e.y+dy/d*step);}
-  if(target&&e.cd===0&&s.bullets.length<1536){var aa=Math.atan2(target.y-e.y,target.x-e.x);e.cd=.6;s.bullets.push({id:s.next++,x:e.x,y:e.y,vx:uRound(Math.cos(aa)*620),vy:uRound(Math.sin(aa)*620),t:1.2,faction:e.faction,dmg:uRound(16*(1+shipLevel(owner,'wingguns')*.4)),weapon:'cannon',owner:owner.id,hits:[]});}
+  var dx=tx-e.x,dy=ty-e.y,d=Math.hypot(dx,dy),step=Math.min(d,dt*240*(e.jam>0?.4:1));e.vx=dt>0&&d>.01?dx/d*step/dt:0;e.vy=dt>0&&d>.01?dy/d*step/dt:0;if(d>.01){e.a=Math.atan2(dy,dx);e.x=uRound(e.x+dx/d*step);e.y=uRound(e.y+dy/d*step);}
+  if(target&&e.cd===0&&s.bullets.length<1536){var aa=Math.atan2(target.y-e.y,target.x-e.x);e.cd=.6;s.bullets.push({id:s.next++,x:e.x,y:e.y,vx:uRound(Math.cos(aa)*620+(e.vx||0)),vy:uRound(Math.sin(aa)*620+(e.vy||0)),t:1.2,faction:e.faction,dmg:uRound(16*(1+shipLevel(owner,'wingguns')*.4)),weapon:'cannon',owner:owner.id,hits:[]});}
  });
 }

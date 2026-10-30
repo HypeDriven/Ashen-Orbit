@@ -4,3 +4,5 @@ src/universe-server.js
 src/universe-combat.js
 package.json
 README.md
+
+src/universe-ai.js

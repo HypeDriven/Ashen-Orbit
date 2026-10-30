@@ -1,3 +1,4 @@
+import {launchVelocity} from './ballistics.js';
 import {HULLS,weapon} from './arsenal.js';
 import {shipLevel} from './shipyard.js';
 // Cosmetic only. Hit detection, damage, ammunition and heat stay on the server.
@@ -13,7 +14,7 @@ export class FireFeedback {
    const a=p.a,x=p.x+Math.cos(a)*mount.x-Math.sin(a)*mount.y,y=p.y+Math.sin(a)*mount.x+Math.cos(a)*mount.y;
    s.fx.push({effect:'muzzle',x,y,a,vx:0,vy:0,t:.12,max:.12,size:9,weapon:w.id,seed:i});
    // Short tracers bridge the first network round trip; they never apply hits.
-   if(!w.beam)s.fx.push({effect:'beam',beam:true,x,y,x2:x+Math.cos(a)*Math.min(110,w.speed*.08),y2:y+Math.sin(a)*Math.min(110,w.speed*.08),t:.065,max:.065,weapon:w.id});
+   const velocity=launchVelocity(p,a,w.speed,x,y),span=Math.min(.08,110/(Math.hypot(velocity.vx,velocity.vy)||1));if(!w.beam)s.fx.push({effect:'beam',beam:true,x,y,x2:x+velocity.vx*span,y2:y+velocity.vy*span,t:.065,max:.065,weapon:w.id});
   });
  }
 }

@@ -89,7 +89,7 @@ test('32 pilots and a crowded universe fit network frames without dropping aster
  for(const p of w.s.pilots){p.name='界'.repeat(20);p.scrap=999999;}
  for(let faction=0;faction<2;faction++){
   const r=w.cmd(faction,{type:'resync'}),view=r.broadcast.find(packet=>packet.data.type==='snapshot').data.world;
-  assert.equal(r.broadcast.filter(p=>p.data.type==='entity-part'&&p.data.kind==='rocks').reduce((n,p)=>n+p.data.values.length,view.rocks.length),96);assert.equal(view.pilots.length,32);
+  assert.equal(r.broadcast.filter(p=>p.data.type==='entity-part'&&p.data.kind==='rocks').reduce((n,p)=>n+p.data.values.length,view.rocks.length),96);assert.equal(r.broadcast.filter(p=>p.data.type==='entity-part'&&p.data.kind==='pilots').reduce((n,p)=>n+p.data.values.length,view.pilots.length),32);
   assert.ok(Buffer.byteLength(JSON.stringify(w.tick()))<262144,'Tick result must fit the platform result budget');
   for(const packet of r.broadcast)assert.ok(Buffer.byteLength(JSON.stringify(packet.data))<16000);
  }
@@ -164,4 +164,35 @@ test('all 32 pilots can sustain fire together and every network packet stays bou
  const w=world(32);w.s.rocks=[];w.s.spawn=1e9;for(let i=0;i<32;i++){w.cmd(i,{type:'choose',faction:i%2});const p=w.s.pilots[i];p.x=(i%8)*180-600;p.y=Math.floor(i/8)*160-250;p.hp=p.max=1e6;p.loadout[0]='gatling';}
  let peak=0;for(let tick=0;tick<100;tick++){const r=w.tick(1,w.s.pilots.map((p,i)=>({from:p.id,data:{seq:tick+1,fire:true,steering:true,aim:i*.4}})));peak=Math.max(peak,w.s.bullets.length);for(const packet of r.broadcast)assert.ok(Buffer.byteLength(JSON.stringify(packet.data))<16000,'bounded frame');}
  assert.ok(peak>64);for(const p of w.s.pilots)assert.ok(p.shots>=40,'all players retain firing capacity');
+});
+
+test('empty worlds field an AI pilot in every hull and do not persist or address synthetic accounts',()=>{
+ const w=world(0);assert.equal(w.s.pilots.length,5);assert.deepEqual(Array.from(w.s.pilots.map(p=>p.hull)).sort(),[0,1,2,3,4]);assert.ok(w.s.pilots.every(p=>p.ai&&p.hp>0));const r=w.tick(120);assert.equal(r.broadcast.length,0);assert.equal(Object.keys(w.sandbox.uSave(w.s,w.ctx)).length,0);
+});
+test('offline presence activates AI and bots spend earned scrap through role and upgrade gates',()=>{
+ const w=world(1);w.cmd(0,{type:'choose',faction:0});w.ctx.presence={[w.ctx.players[0].id]:{online:false}};w.tick();assert.equal(w.s.pilots.filter(p=>p.ai).length,5);const bot=w.s.pilots.find(p=>p.ai&&p.hull===4);bot.scrap=1000;bot.tech=10;const before=bot.scrap;w.sandbox.uBotThink(w.s,bot,w.ctx);assert.equal(bot.role,1);assert.ok(bot.scrap<before-280);assert.ok(bot.upgrades.armor>0);
+});
+test('timed controls wait until their timestamp and duplicate batches never apply twice',()=>{
+ const w=world(1);w.cmd(0,{type:'choose',faction:0});const p=w.s.pilots[0],packet={type:'input',seq:1,events:[[w.s.time+.032,1,1,0,0,1,0,0,0,1,0,0,null,0,0]]};w.cmd(0,packet);assert.equal(p.input.fire,false);w.ctx.now+=20;w.game.onTick(w.ctx);assert.equal(p.inputAck,0);w.ctx.now+=20;w.game.onTick(w.ctx);assert.equal(p.inputAck,1);assert.equal(p.input.fire,true);w.cmd(0,packet);assert.equal(p.pendingInputs.length,0);
+});
+test('ship projectiles inherit launch velocity and starbases lead accelerated targets',()=>{
+ const w=world(1);w.cmd(0,{type:'choose',faction:0});const p=w.s.pilots[0];p.a=0;p.vx=500;p.vy=100;p.av=0;w.sandbox.uFireMounts(w.s,p,.05,{fire:true});assert.equal(w.s.bullets[0].vx,1220);assert.equal(w.s.bullets[0].vy,100);
+ const base=w.s.bases.find(b=>b.faction===1&&b.sector===4);p.x=base.x-450;p.y=base.y;p.vx=0;p.vy=100;p.ax=0;p.ay=80;w.s.bullets=[];w.sandbox.uBaseDefenses(w.s,.05);const shot=w.s.bullets.find(b=>b.owner===base.id);assert.ok(shot&&shot.vy>0);
+});
+
+test('AI pilots collect actual salvage and buy their chosen role with those earnings',()=>{
+ const w=world(0),bot=w.s.pilots.find(p=>p.ai&&p.hull===0);w.s.loot=[{x:bot.x,y:bot.y,v:300}];w.tick(6);assert.equal(bot.total,300);assert.equal(bot.role,2);assert.ok(bot.scrap<420-220,'upgrade spending follows role purchase');
+});
+
+test('32 players with queued future controls still fit every transport frame',()=>{
+ const w=world(32);for(let i=0;i<32;i++){w.cmd(i,{type:'choose',faction:i%2});const p=w.s.pilots[i];p.name='界'.repeat(20);p.x=i*10;p.y=0;w.cmd(i,{type:'input',seq:8,events:Array.from({length:8},(_,j)=>[w.s.time+.1+j*.01,j+1,1,0,.5,1,0,0,Math.PI,1,1,1,p.id,0,.7])});}
+ const r=w.tick();for(const packet of r.broadcast)assert.ok(Buffer.byteLength(JSON.stringify(packet.data))<16000);
+});
+
+test('queued combat actions apply once after the window and allow fresh clients to reconnect',()=>{
+ const w=world(1);w.cmd(0,{type:'choose',faction:0});const command={type:'scheduled-action',id:'first:1',at:w.s.time+.032,command:{type:'mine'}};assert.equal(w.cmd(0,command).ok,true);assert.equal(w.cmd(0,command).ok,true);assert.equal(w.s.mines.length,0);w.tick();assert.equal(w.s.mines.length,1);const p=w.s.pilots[0];p.mineCd=0;p.energy=100;assert.equal(w.cmd(0,{...command,id:'reconnected:1',at:w.s.time+.032}).ok,true);w.tick();assert.equal(w.s.mines.length,2);
+});
+
+test('AI pilots yield their slots when 32 humans join the world',()=>{
+ const w=world(0);assert.equal(w.s.pilots.filter(p=>p.ai).length,5);w.ctx.players=Array.from({length:32},(_,i)=>({id:'human-'+i,name:'Human '+i,ai:false}));w.tick();assert.equal(w.s.pilots.length,32);assert.equal(w.s.pilots.some(p=>p.ai),false);
 });
