@@ -168,3 +168,10 @@ weaving bolts), Seeker swarm (three automatic target-seeking missiles), Cluster
 bomb (eight bounded fragments on impact or timed detonation), and Breach torpedo
 (triple structural damage, with a slow reload). All use the existing scrap,
 research, sector, mount, energy and heat gates.
+
+Warp/arsenal validation: 81 game tests and 1,584 backend game/room tests pass.
+Both native clients pass their join/refit/departure/rejoin scripts. Live browsers
+verified natural pilot names, observer-visible warp-out, immediate room-seat
+release, and warp-in with a new ship life in the same world. The public world
+also stayed running with all five AI hulls after every human seat was released.
+Parked pilots save once on departure, avoiding background account-state writes.

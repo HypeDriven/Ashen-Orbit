@@ -237,3 +237,7 @@ test('32 pilots using the expanded arsenal retain bounded combat and warp frames
  const w=world(32);for(let i=0;i<32;i++){w.cmd(i,{type:'choose',faction:i%2});const p=w.s.pilots[i];p.x=(i%8)*120-450;p.y=Math.floor(i/8)*150;p.a=i%2?Math.PI:0;p.loadout[0]=['needle','helix','swarm','cluster','breach'][i%5];p.hp=p.max=100000;}w.s.rocks=[];w.s.spawn=1e9;
  for(let t=0;t<120;t++){const result=w.tick(1,w.s.pilots.map(p=>({from:p.id,data:{seq:t+1,steering:true,fire:true}})));assert.ok(w.s.bullets.length<=1536);for(const p of w.s.pilots)assert.ok(w.s.bullets.filter(b=>b.owner===p.id).length<=32);for(const m of result.broadcast)assert.ok(Buffer.byteLength(JSON.stringify(m.data))<16000);}
 });
+
+test('parked ships save their final progression once and stop rewriting offline account state',()=>{
+ const w=world(2);w.cmd(0,{type:'choose',faction:0});const p=w.s.pilots[0],id=p.id;p.scrap=777;w.ctx.presence=Object.fromEntries(w.ctx.players.map(p=>[p.id,{online:true}]));w.ctx.presence[id].online=false;assert.equal(w.tick().playerStates[id].universe.scrap,777);let savedAgain=false;for(let i=0;i<100;i++){const out=w.tick();if(out.playerStates?.[id])savedAgain=true;}assert.equal(savedAgain,false,'an offline world must not overwrite progression or trust from a different session');
+});

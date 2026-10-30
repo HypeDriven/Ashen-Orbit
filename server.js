@@ -538,7 +538,7 @@ function uAtBase(s,p){var base=uFriendlyBase(s,p);return base&&distance(p,base)<
 function uProfile(p){return {hull:p.hull,role:p.role,tech:p.tech,upgrades:p.upgrades,loadout:p.loadout,owned:p.owned,cleared:p.cleared,stance:p.stance||0,trust:{policy:4,untrusted:!!p.untrusted,violations:p.violations||0,authority:movementAuthority(p),reason:p.lastFlightReason||''}};}
 function uProfilePacket(p){return {to:[p.id],data:{type:'profile',profile:uProfile(p)}};}
 function uSaved(p,s){return Object.assign(uProfile(p),{world:s.worldId,scrap:p.scrap,faction:p.faction,total:p.total,day:s.day,dayScrap:p.dayScrap,spawnSeq:p.spawnSeq||0});}
-function uSave(s,ctx){var docs={};Object.keys(s.parked||{}).forEach(function(id){if(ctx.players.some(function(p){return p.id===id;}))docs[id]=Object.assign({},ctx.playerStates&&ctx.playerStates[id]||{},{universe:s.parked[id],flightTrust:s.parked[id].trust});});s.pilots.filter(function(p){return !p.ai;}).forEach(function(p){docs[p.id]=Object.assign({},ctx.playerStates&&ctx.playerStates[p.id]||{},{universe:uSaved(p,s),flightTrust:{policy:4,untrusted:!!p.untrusted,violations:p.violations||0}});});return docs;}
+function uSave(s,ctx){var docs={};Object.keys(s.parked||{}).forEach(function(id){if(s.parkedDirty&&s.parkedDirty[id]&&ctx.players.some(function(p){return p.id===id;})){delete s.parkedDirty[id];docs[id]=Object.assign({},ctx.playerStates&&ctx.playerStates[id]||{},{universe:s.parked[id],flightTrust:s.parked[id].trust});}});s.pilots.filter(function(p){return !p.ai;}).forEach(function(p){docs[p.id]=Object.assign({},ctx.playerStates&&ctx.playerStates[p.id]||{},{universe:uSaved(p,s),flightTrust:{policy:4,untrusted:!!p.untrusted,violations:p.violations||0}});});return docs;}
 function uRecord(s,p){s.records[p.id]=[p.id,p.name,p.faction,p.kills||0,p.deaths||0,p.baseKills||0,Math.round(p.damage||0),p.total||0,p.shots||0,!!p.untrusted];}
 function uAdd(s,ctx,person){
  var parked=s.parked[person.id],stored=ctx.playerStates&&ctx.playerStates[person.id]||{},saved=parked||stored.universe||{},same=saved.world===s.worldId,trust=stored.flightTrust||saved.trust||{};
@@ -546,7 +546,7 @@ function uAdd(s,ctx,person){
  var p={id:person.id,pilot:true,flightPolicy:4,name:(person.displayName||person.name||'Pilot').slice(0,20),faction:saved.faction===1?1:saved.faction===0?0:-1,x:0,y:0,vx:0,vy:0,a:-Math.PI/2,hp:0,max:176,energy:100,boost:100,heat:0,overheated:false,cloaked:false,lock:0,mineCd:0,respawn:0,input:clean({}),inputAck:0,lastInput:ctx.now,choiceAt:-100,spawnSeq:same?saved.spawnSeq||0:0,hull:same?clamp(saved.hull,0,4)|0:0,role:same?clamp(saved.role,0,5)|0:0,scrap:same?clamp(saved.scrap,0,1000000):120,tech:same?clamp(saved.tech,0,10000):0,upgrades:same&&saved.upgrades||{gun:1,armor:0},loadout:same&&saved.loadout||defaultLoadout(),owned:same&&saved.owned||['cannon','drive','reactor','barrier'],cleared:same&&saved.cleared||[],total:same?saved.total||0:0,dayScrap:saved.day===s.day?saved.dayScrap||0:0,sector:4,untrusted:!!(currentTrust&&(trust.untrusted||saved.trust&&saved.trust.untrusted)),violations:currentTrust?Math.max(trust.violations||0,saved.trust&&saved.trust.violations||0):0,kills:0,deaths:0,baseKills:0,damage:0,shots:0,profileDirty:true};
  p.loadout=HULLS[p.hull].mounts.map(function(m,i){return compatible(m,p.loadout[i])?p.loadout[i]||null:null;});
  if(s.records[p.id]){var row=s.records[p.id];p.kills=row[3];p.deaths=row[4];p.baseKills=row[5];p.damage=row[6];p.total=row[7];p.shots=row[8];}
- s.pilots.push(p);delete s.parked[p.id];if(p.faction>=0)uSpawn(s,p);
+ s.pilots.push(p);delete s.parked[p.id];if(s.parkedDirty)delete s.parkedDirty[p.id];if(p.faction>=0)uSpawn(s,p);
 }
 function uMigrate(s,ctx){
  s.pilots.forEach(function(p){if(p.flightPolicy!==4){p.flightPolicy=4;p.untrusted=false;p.violations=0;p.lastFlightReason='';if(p.audit)p.audit.score=0;p.profileDirty=true;}});
@@ -558,12 +558,12 @@ function uMigrate(s,ctx){
 }
 function uOnline(ctx,id){return !ctx.presence||!!(ctx.presence[id]&&ctx.presence[id].online);}
 function uWarp(s,p,out){if(p.hp<=0||p.faction<0)return;serverVisual(s,'warp',p.x,p.y,{max:.85,size:uStats(p).radius,a:p.a,out:!!out,hull:p.hull,role:p.role,faction:p.faction});}
-function uDepart(s,p){uWarp(s,p,true);uRecord(s,p);if(!p.ai)s.parked[p.id]=uSaved(p,s);s.escorts=s.escorts.filter(function(e){return e.owner!==p.id;});s.rosterDirty=true;}
+function uDepart(s,p){uWarp(s,p,true);uRecord(s,p);if(!p.ai){s.parked[p.id]=uSaved(p,s);s.parkedDirty=s.parkedDirty||{};s.parkedDirty[p.id]=true;}s.escorts=s.escorts.filter(function(e){return e.owner!==p.id;});s.rosterDirty=true;}
 function uReconcile(s,ctx){
  uMigrate(s,ctx);s.parked=s.parked||{};s.records=s.records||{};s.exited=s.exited||{};
  var humans=ctx.players.filter(function(p){if(!uOnline(ctx,p.id)){delete s.exited[p.id];return false;}return !p.ai&&!s.exited[p.id];}),ids=humans.map(function(p){return p.id;});
  s.pilots=s.pilots.filter(function(p){if(p.ai||ids.indexOf(p.id)>=0)return true;uDepart(s,p);return false;});
- while(Object.keys(s.parked).length>100)delete s.parked[Object.keys(s.parked)[0]];
+ while(Object.keys(s.parked).length>100){var oldest=Object.keys(s.parked)[0];delete s.parked[oldest];if(s.parkedDirty)delete s.parkedDirty[oldest];}
  while(Object.keys(s.records).length>64)delete s.records[Object.keys(s.records)[0]];
  humans.forEach(function(person){if(!s.pilots.some(function(p){return p.id===person.id;})&&s.pilots.filter(function(p){return !p.ai;}).length<WORLD_CAPACITY)uAdd(s,ctx,person);});s.pilots.forEach(function(p){p.online=true;});uBotPopulation(s,ctx);
 }
