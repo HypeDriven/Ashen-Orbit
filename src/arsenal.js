@@ -16,7 +16,12 @@ export const WEAPONS=[
  {id:'flame',name:'Thermite jet',desc:'Burns hull over time; dangerous close approach required.',cost:270,research:2,tier:2,power:4,energy:2,heat:5,rate:.13,speed:450,life:.38,damage:10,burn:3,spread:.2,color:'#f2a46c'},
  {id:'mine',name:'Proximity mines',desc:'Stationary area denial; one-second arming delay.',cost:250,research:2,tier:1,power:3,energy:6,heat:10,rate:1.4,speed:0,life:9,damage:95,splash:140,mine:true,self:true,color:'#df9ca9'},
  {id:'siege',name:'Antimatter torpedo',desc:'Huge warhead; slow, high drain, and dangerous blast.',cost:550,research:4,tier:4,power:8,energy:28,heat:38,rate:3.8,speed:190,life:5,damage:250,splash:210,self:true,color:'#e6a8f5'},
- {id:'siphon',name:'Siphon beam',desc:'Heals 20% hull damage dealt; costly low DPS.',cost:360,research:3,tier:3,power:5,energy:14,heat:12,rate:.8,speed:0,life:0,damage:35,range:420,beam:true,heal:.2,color:'#9bd1b0'}
+ {id:'siphon',name:'Siphon beam',desc:'Heals 20% hull damage dealt; costly low DPS.',cost:360,research:3,tier:3,power:5,energy:14,heat:12,rate:.8,speed:0,life:0,damage:35,range:420,beam:true,heal:.2,color:'#9bd1b0'},
+ {id:'needle',name:'Needle repeater',desc:'Fast accurate needles pierce a second ship; weak shields.',cost:160,research:1,tier:0,power:3,energy:1,heat:3,rate:.09,speed:1250,life:.65,damage:8,pierce:1,shield:.5,color:'#c5e6dc'},
+ {id:'helix',name:'Helix projector',desc:'Twin weaving bolts cover a widening lane; moderate reach.',cost:230,research:2,tier:1,power:4,energy:5,heat:10,rate:.4,speed:650,life:1.15,damage:20,count:2,spread:.035,weave:24,color:'#81ddd2'},
+ {id:'swarm',name:'Seeker swarm',desc:'Three agile seekers acquire nearby targets; low hull damage.',cost:310,research:2,tier:2,power:5,energy:9,heat:18,rate:1.4,speed:380,life:2.6,damage:22,count:3,spread:.22,homing:3.6,seek:850,color:'#f1d396'},
+ {id:'cluster',name:'Cluster bomb',desc:'Splits after 0.7s or impact into eight short-range fragments.',cost:290,research:2,tier:2,power:5,energy:10,heat:20,rate:1.6,speed:310,life:.7,damage:24,fragments:8,fragmentSpeed:430,color:'#efad8d'},
+ {id:'breach',name:'Breach torpedo',desc:'3x damage to bases and outposts; slow and poor against ships.',cost:380,research:3,tier:3,power:6,energy:16,heat:26,rate:2.2,speed:340,life:3,damage:65,structure:3,color:'#d7b4f3'}
 ];
 export const COMPONENTS=[
  {id:'radiator',name:'Radiator',type:'utility',power:1,cost:140,research:1,desc:'+14 heat cooling/sec.'},

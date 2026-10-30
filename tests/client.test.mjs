@@ -44,12 +44,12 @@ test('immutable snapshots decode compact pilots and never substitute another pla
  sock.events.game({type:'choose-faction'});assert.equal(sock.sent.at(-1).faction,1);
 });
 
-test('the final pilot exits without closing the common universe',async()=>{
+test('the final pilot releases their room seat and detaches from the common universe',async()=>{
  const sock=socket();let leaves=0;
  const room={id:'world',metadata:{universe:true},hostUserId:'me',gameSessionId:'session',participants:[{userId:'me'}]};
  const mod=await client('online.ts',{player:()=>({userId:'me'}),connectGame:()=>sock,rooms:{mine:async()=>room,connect:()=>socket(),get:async()=>room,leave:async()=>{leaves++;}}});
  await mod.enterUniverse(0);await mod.leave();
- assert.equal(leaves,0);assert.equal(sock.state,'closed');assert.equal(mod.online.active,false);assert.equal(mod.online.room,null);
+ assert.equal(leaves,1);assert.equal(sock.state,'closed');assert.equal(mod.online.active,false);assert.equal(mod.online.room,null);
 });
 
 test('finished missions detach their sockets and ignore already-left membership errors',async()=>{
@@ -97,4 +97,8 @@ test('joining the next world leaves a completed world and preserves the chosen f
  let leaves=0,created=0;const sock=socket(),room={id:'old',metadata:{universe:true},hostUserId:'me',gameSessionId:'finished',participants:[]},next={...room,id:'new',gameSessionId:'new-session',joinCode:'new'};
  const mod=await client('online.ts',{player:()=>({userId:'me'}),sessions:{get:async()=>({status:'finished'})},connectGame:()=>sock,rooms:{mine:async()=>room,leave:async()=>{leaves++;},browse:async()=>[],create:async()=>{created++;return next;},open:async()=>next,connect:()=>socket()}});
  await mod.enterUniverse(1);assert.equal(leaves,1);assert.equal(created,1);assert.equal(mod.online.sessionId,'new-session');sock.events.open();assert.equal(sock.sent[0].faction,1);
+});
+
+test('quitting issues a seat-release write synchronously for runtime keepalive delivery',async()=>{
+ const room={id:'world',metadata:{universe:true},gameSessionId:'session',hostUserId:'me',participants:[{userId:'me'}]};let leaves=0;const mod=await client('online.ts',{player:()=>({userId:'me'}),connectGame:()=>socket(),rooms:{mine:async()=>room,connect:()=>socket(),leave:async id=>{assert.equal(id,'world');leaves++;}}});await mod.enterUniverse(0);mod.quitOnline();assert.equal(leaves,1);
 });

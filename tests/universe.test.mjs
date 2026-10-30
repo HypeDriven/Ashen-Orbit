@@ -196,3 +196,44 @@ test('queued combat actions apply once after the window and allow fresh clients 
 test('AI pilots yield their slots when 32 humans join the world',()=>{
  const w=world(0);assert.equal(w.s.pilots.filter(p=>p.ai).length,5);w.ctx.players=Array.from({length:32},(_,i)=>({id:'human-'+i,name:'Human '+i,ai:false}));w.tick();assert.equal(w.s.pilots.length,32);assert.equal(w.s.pilots.some(p=>p.ai),false);
 });
+
+test('disconnect warps the ship out once, saves progression and restores a warp-in at a live base',()=>{
+ const w=world(2);w.cmd(0,{type:'choose',faction:0});w.cmd(1,{type:'choose',faction:1});const p=w.s.pilots[0],id=p.id;p.x=-700;p.scrap=777;p.tech=4;p.hull=1;p.role=2;w.ctx.presence=Object.fromEntries(w.ctx.players.map(p=>[p.id,{online:true}]));w.ctx.presence[id].online=false;
+ const result=w.tick();assert.ok(!w.s.pilots.some(p=>p.id===id));assert.equal(result.playerStates[id].universe.scrap,777);const out=w.s.fx.find(f=>f.effect==='warp'&&f.out);assert.equal(out.x,-700);assert.equal(out.hull,1);const seed=out.seed;w.tick(3);assert.equal(w.s.fx.filter(f=>f.effect==='warp'&&f.out).length,1);assert.equal(w.s.fx.find(f=>f.out).seed,seed);
+ w.ctx.presence[id].online=true;w.tick();const returned=w.s.pilots.find(p=>p.id===id);assert.equal(returned.scrap,777);assert.equal(returned.role,2);assert.equal(returned.x,-2200);assert.equal(returned.warpAt,w.s.time);assert.ok(w.s.fx.some(f=>f.effect==='warp'&&!f.out&&f.hull===1));assert.equal(returned.untrusted,false);
+});
+test('a disconnect immediately frees one of 32 active seats even before stale membership is reclaimed',()=>{
+ const w=world(32);w.ctx.presence=Object.fromEntries(w.ctx.players.map(p=>[p.id,{online:true}]));const old=w.ctx.players[0].id;w.cmd(0,{type:'choose',faction:0});w.ctx.players.push({id:'replacement',name:'Fresh pilot',ai:false});w.ctx.membership={change:'joined',userId:'replacement'};assert.equal(w.game.onMembershipChange(w.ctx).ok,false);
+ w.ctx.presence[old].online=false;assert.equal(w.game.onMembershipChange(w.ctx).ok,true);w.ctx.presence.replacement={online:true};w.tick();assert.equal(w.s.pilots.filter(p=>!p.ai).length,32);assert.ok(!w.s.pilots.some(p=>p.id===old));assert.equal(w.cmd(32,{type:'choose',faction:1}).ok,true);
+ w.ctx.presence[old].online=true;assert.equal(w.cmd(0,{type:'choose',faction:0}).ok,false);assert.equal(w.s.pilots.filter(p=>!p.ai).length,32);
+});
+test('explicit departure frees the ship while the socket is closing and does not resurrect on the next tick',()=>{
+ const w=world(2);w.cmd(0,{type:'choose',faction:0});const id=w.s.pilots[0].id;assert.equal(w.cmd(0,{type:'leave'}).ok,true);w.tick(2);assert.ok(!w.s.pilots.some(p=>p.id===id));assert.ok(w.s.fx.some(f=>f.effect==='warp'&&f.out));w.cmd(0,{type:'resync'});assert.ok(w.s.pilots.some(p=>p.id===id));
+});
+test('destroyed pilots respawn through a bounded warp-in without resetting their upgrades',()=>{
+ const w=world(1);w.cmd(0,{type:'choose',faction:0});const p=w.s.pilots[0],seq=p.spawnSeq;p.upgrades.armor=2;w.sandbox.uDamage(w.s,p,10000,'hostile',{});w.tick(159);assert.equal(p.hp,0);w.tick(2);assert.ok(p.hp>0);assert.equal(p.spawnSeq,seq+1);assert.equal(p.upgrades.armor,2);assert.ok(w.s.time-p.warpAt<.1);assert.ok(w.s.fx.some(f=>f.effect==='warp'&&!f.out));
+});
+test('AI pilot names are unique natural names and old hull labels migrate',()=>{
+ const w=world(0);assert.equal(new Set(w.s.pilots.map(p=>p.name)).size,5);assert.ok(w.s.pilots.every(p=>!/^AI |SKIFF|CORVETTE|FRIGATE|CRUISER|DREADNOUGHT/.test(p.name)));w.s.pilots[0].name='AI SKIFF';w.tick();assert.ok(!w.s.pilots[0].name.startsWith('AI '));
+});
+test('all five new weapons are purchasable and fire through the same solo and shared catalogs',()=>{
+ for(const id of ['needle','helix','swarm','cluster','breach']){
+  const w=world(1);w.cmd(0,{type:'choose',faction:0});const p=w.s.pilots[0];p.scrap=5000;p.tech=20;p.cleared=[0,1,2,3];assert.equal(w.cmd(0,{type:'fit',slot:0,item:id}).ok,true,id);w.s.bullets=[];w.sandbox.uFireMounts(w.s,p,.05,{fire:true});assert.ok(w.s.bullets.some(b=>b.weapon===id),id);assert.ok(p.energy<100);
+  const s=createGame();s.scrap=5000;s.tech=20;s.cleared=[0,1,2,3];s.loadout[0]=id;s.ships=[s.player];s.rocks=[];s.nests=[];s.objectives=[];s.player.x=600;s.player.y=300;update(s,.02,{steering:true,thrust:0,aim:0,fire:true,boost:false,tractor:false});assert.ok(s.bullets.some(b=>b.weapon===id),'solo '+id);
+ }
+});
+test('swarm seekers acquire an off-axis enemy without target selection and keep inherited drift',()=>{
+ const w=world(1);w.cmd(0,{type:'choose',faction:0});const p=w.s.pilots[0];p.x=p.y=p.a=0;p.vx=100;p.loadout[0]='swarm';w.s.rocks=[];w.s.enemies=[{id:'enemy',x:350,y:250,vx:0,vy:0,hp:500,max:500,faction:1,kind:0}];w.sandbox.uFireMounts(w.s,p,.05,{fire:true});w.sandbox.uProjectiles(w.s,.05);assert.ok(w.s.bullets.every(b=>b.target==='enemy'));assert.ok(w.s.bullets.some(b=>b.vy>0));assert.ok(w.s.bullets.every(b=>Math.abs(b.driftX-100)<.001));
+});
+test('cluster bombs split on expiry and contact with bounded fragments that can damage enemies',()=>{
+ for(const hit of [false,true]){const w=world(1);w.cmd(0,{type:'choose',faction:0});w.s.rocks=[];w.s.enemies=hit?[{id:'target',x:10,y:0,hp:500,max:500,faction:1,kind:0}]:[];w.s.bullets=[{id:1,owner:w.s.pilots[0].id,x:0,y:0,vx:100,vy:0,t:hit?.7:.01,dmg:24,weapon:'cluster',faction:0,hits:[]}];w.sandbox.uProjectiles(w.s,.05);assert.equal(w.s.bullets.length,8);assert.ok(w.s.bullets.every(b=>b.weapon==='flak'&&b.owner===w.s.pilots[0].id));if(hit)assert.ok(w.s.enemies[0].hp<500);w.sandbox.uProjectiles(w.s,.6);assert.equal(w.s.bullets.length,0);}
+});
+test('breach torpedoes deal triple structural damage while needles pierce a second enemy',()=>{
+ const w=world(1);w.cmd(0,{type:'choose',faction:0});const base=w.s.bases.find(b=>b.faction===1),enemy={id:'foe',x:0,y:0,hp:500,max:500,faction:1,kind:0};w.sandbox.uDamage(w.s,base,65,w.s.pilots[0].id,vm.runInContext("weapon('breach')",w.sandbox));w.sandbox.uDamage(w.s,enemy,65,w.s.pilots[0].id,vm.runInContext("weapon('breach')",w.sandbox));assert.equal(base.hp,1405);assert.equal(enemy.hp,435);
+ w.s.rocks=[];w.s.enemies=[{...enemy,id:'a',x:50,y:0,hp:100},{...enemy,id:'b',x:120,y:0,hp:100}];w.s.bullets=[{id:1,x:0,y:0,vx:1250,vy:0,t:1,dmg:8,weapon:'needle',faction:0,pierce:1,hits:[]}];w.sandbox.uProjectiles(w.s,.12);assert.ok(w.s.enemies.every(e=>e.hp===92));assert.equal(w.s.bullets.length,0);
+});
+
+test('32 pilots using the expanded arsenal retain bounded combat and warp frames',()=>{
+ const w=world(32);for(let i=0;i<32;i++){w.cmd(i,{type:'choose',faction:i%2});const p=w.s.pilots[i];p.x=(i%8)*120-450;p.y=Math.floor(i/8)*150;p.a=i%2?Math.PI:0;p.loadout[0]=['needle','helix','swarm','cluster','breach'][i%5];p.hp=p.max=100000;}w.s.rocks=[];w.s.spawn=1e9;
+ for(let t=0;t<120;t++){const result=w.tick(1,w.s.pilots.map(p=>({from:p.id,data:{seq:t+1,steering:true,fire:true}})));assert.ok(w.s.bullets.length<=1536);for(const p of w.s.pilots)assert.ok(w.s.bullets.filter(b=>b.owner===p.id).length<=32);for(const m of result.broadcast)assert.ok(Buffer.byteLength(JSON.stringify(m.data))<16000);}
+});

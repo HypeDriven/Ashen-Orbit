@@ -7,8 +7,10 @@ export function emitVisual(list,effect,x,y,options={}){
  if(list.length>MAX_EFFECTS)list.splice(0,list.length-MAX_EFFECTS);
 }
 export function stepVisuals(list,dt){for(const f of list){f.t-=dt;f.x+=(f.vx||0)*dt;f.y+=(f.vy||0)*dt;}return list.filter(f=>f.t>0).slice(-MAX_EFFECTS);}
-export function rememberTrail(b,dt){if(!['homing','rocket','siege','plasma','disruptor','ion','particle','flame'].includes(b.weapon))return;b.trailClock=(b.trailClock||0)+dt;if(b.trailClock>=.035){b.trailClock=0;(b.trail||(b.trail=[])).unshift({x:b.x,y:b.y});if(b.trail.length>12)b.trail.length=12;}}
-const colors={cannon:'#e0c9a2',gatling:'#e5bd7e',flak:'#e6c497',laser:'#f47873',pulse:'#f99b83',disruptor:'#bd8eff',ion:'#84ddfa',homing:'#e9be85',rocket:'#efa56a',particle:'#b3f2aa',rail:'#cae8ff',plasma:'#8ee6ba',tesla:'#aab7ff',flame:'#ffac69',mine:'#e1a3b9',siege:'#e6b2fa',siphon:'#9ddbc4',pd:'#b6dcea'};
+export function rememberTrail(b,dt){if(!['swarm','cluster','breach','homing','rocket','siege','plasma','disruptor','ion','particle','flame'].includes(b.weapon))return;b.trailClock=(b.trailClock||0)+dt;if(b.trailClock>=.035){b.trailClock=0;(b.trail||(b.trail=[])).unshift({x:b.x,y:b.y});if(b.trail.length>12)b.trail.length=12;}}
+export const PILOT_SHAPES=[[[1.4,0],[-.8,-.5],[-.25,0],[-.8,.5]],[[1,-.5],[1,.5],[-.7,.8],[-1,0],[-.7,-.8]],[[1,0],[.5,-.65],[-.9,-.65],[-.7,0],[-.9,.65],[.5,.65]],[[1.15,0],[.2,-.8],[-1,-.6],[-.5,0],[-1,.6],[.2,.8]],[[1.6,0],[-.8,-.32],[-.4,0],[-.8,.32]],[[1,-.4],[1,.4],[-.8,.7],[-1,-.7]]];
+export function warpScale(at,time){const t=Math.max(0,Math.min(1,(time-(at??-10))/.65));return t*t*(3-2*t);}
+const colors={needle:'#c5e6dc',helix:'#81ddd2',swarm:'#f1d396',cluster:'#efad8d',breach:'#d7b4f3',cannon:'#e0c9a2',gatling:'#e5bd7e',flak:'#e6c497',laser:'#f47873',pulse:'#f99b83',disruptor:'#bd8eff',ion:'#84ddfa',homing:'#e9be85',rocket:'#efa56a',particle:'#b3f2aa',rail:'#cae8ff',plasma:'#8ee6ba',tesla:'#aab7ff',flame:'#ffac69',mine:'#e1a3b9',siege:'#e6b2fa',siphon:'#9ddbc4',pd:'#b6dcea'};
 export const effectColor=id=>colors[id]||'#d0b49d';
 function hash(n){const v=Math.sin(n*127.1+311.7)*43758.5453;return v-Math.floor(v);}
 function alpha(c,a){return c.slice(0,7)+Math.round(Math.max(0,Math.min(1,a))*255).toString(16).padStart(2,'0');}
@@ -41,20 +43,24 @@ export function renderProjectile(p,b,time){
  const id=b.weapon||'cannon',c=effectColor(id),x=b.x,y=b.y,a=Math.atan2(b.vy,b.vx),ux=Math.cos(a),uy=Math.sin(a),nx=-uy,ny=ux,near=p.detail>1.4;
  const point=(along,across)=>[x+ux*along+nx*across,y+uy*along+ny*across];
  if(p.simple){p.line(x,y,x-ux*14,y-uy*14,c,2);return;}
- if(['homing','rocket','siege'].includes(id)){
-  const size=id==='siege'?2:1,trail=b.trail||[];
+ if(['homing','rocket','siege','swarm','breach'].includes(id)){
+  const size=id==='siege'?2:id==='breach'?1.5:id==='swarm'?.7:1,trail=b.trail||[];
   for(let i=trail.length-1;i>=0;i-=near?1:2){const q=trail[i],t=1-i/(trail.length||1);p.disc(q.x,q.y,(3+i*.75)*size,alpha('#83928c',.035*t));if(i<4)p.disc(q.x,q.y,(2+i*.5)*size,alpha(c,.14*t));}
   p.glow(...point(-9*size,0),6*size,c);p.poly([point(-8*size,-2*size),point((-17-Math.sin(time*60)*3)*size,0),point(-8*size,2*size)],alpha(c,.8));p.line(...point(-9*size,0),...point(-16*size,0),'#fff0bf',1.4*size);
   p.poly([point(8*size,0),point(3*size,-2.4*size),point(-8*size,-2.4*size),point(-8*size,2.4*size),point(3*size,2.4*size)],'#adb5ae');p.poly([point(8*size,0),point(2*size,-2.1*size),point(2*size,2.1*size)],c);
   if(near){p.line(...point(2*size,0),...point(-7*size,0),'#353d3c',.65);for(const side of [-1,1]){p.poly([point(-3*size,side*2*size),point(-8*size,side*5*size),point(-7*size,side*2*size)],'#6d7e78');p.line(...point(-2*size,side*2.3*size),...point(2*size,side*2.3*size),'#e7e3cf',.5);}p.line(...point(-6*size,-2),...point(-6*size,2),'#35453e',.6);}
  }else if(id==='mine'){
   const armed=b.t<=8;const points=[];for(let i=0;i<6;i++){const q=i*Math.PI/3;points.push([x+Math.cos(q)*6,y+Math.sin(q)*6]);}p.poly(points,'#6c7672');p.ring(x,y,5,'#d2bfb1',.7);p.disc(x,y,2,armed?c:'#afa780');p.glow(x,y,4,c,.6);for(let i=0;i<4;i++){const q=i*Math.PI/2+time*.3;p.line(x+Math.cos(q)*6,y+Math.sin(q)*6,x+Math.cos(q)*9,y+Math.sin(q)*9,'#8c9e92',.8);}if(near){p.ring(x,y,12+Math.sin(time*5)*2,alpha(c,armed?.35:.1),.5);p.disc(x+3,y-2,.6,Math.sin(time*9)>0?'#ffe7d0':'#515c57');}
+ }else if(id==='cluster'){
+  p.glow(x,y,9,c);p.disc(x,y,5,'#5f6e68');p.ring(x,y,6,c,1);for(let i=0;i<4;i++){const q=time*4+i*Math.PI/2;p.line(x+Math.cos(q)*3,y+Math.sin(q)*3,x+Math.cos(q)*8,y+Math.sin(q)*8,c,1);}p.disc(x,y,2,'#fff0d4');
+ }else if(id==='helix'){
+  p.glow(x,y,7,c);for(const side of [-1,1]){p.line(...point(5,side*2),...point(-22,-side*3),alpha(c,.6),1.1);p.disc(...point(2,side*2),2,c);}p.disc(x,y,1,'#e8fff4');
  }else if(id==='plasma'){
   p.glow(x,y,11,c);p.disc(x,y,6,c);p.disc(x+1,y-1,2.7,'#eef9d6');p.ring(x,y,8,alpha(c,.65),1,time*3,time*3+4.3);p.ring(x,y,10,alpha(c,.35),.6,-time*2,-time*2+3);if(near)for(let i=0;i<5;i++){const q=time*4+i*1.256;p.line(x+Math.cos(q)*4,y+Math.sin(q)*4,x+Math.cos(q+.25)*12,y+Math.sin(q+.25)*12,alpha(c,.7),.55);}for(let i=0;i<(near?8:3);i++)p.disc(...point(-10-i*5,Math.sin(time*9+i)*2),4+i*.6,alpha(c,.12*(1-i/9)));
  }else if(id==='disruptor'||id==='ion'){
   p.glow(x,y,5,c);p.line(...point(3,0),...point(-28,0),alpha(c,.25),4);p.line(...point(4,0),...point(-23,0),'#e3f3ff',.7);
   for(let i=0;i<(near?12:5);i++){const t=i/(near?12:5),q=time*16+t*9,off=Math.sin(q)*3.5;for(const side of [-1,1])p.line(...point(-t*30,off*side),...point(-t*30-3,Math.sin(q+1)*3.5*side),alpha(c,1-t*.65),.65);}p.ring(x,y,5,alpha(c,.7),.8);
- }else if(id==='particle'||id==='rail'){
+ }else if(id==='particle'||id==='rail'||id==='needle'){
   const len=id==='rail'?80:55;p.line(...point(8,0),...point(-len,0),alpha(c,.08),7);p.line(...point(7,0),...point(-len,0),alpha(c,.7),1.8);p.line(...point(7,0),...point(-20,0),'#fffdea',.65);p.glow(x,y,4,c);
   if(near)for(let i=0;i<5;i++){p.ring(...point(-8-i*9,0),2+i*.4,alpha(c,.5-i*.08),.45);p.line(...point(-15-i*9,2),...point(-20-i*9,2),alpha(c,.3),.45);}
  }else if(id==='flame'){
@@ -65,7 +71,12 @@ export function renderProjectile(p,b,time){
 }
 export function renderVisual(p,f,time){
  if(f.beam){renderBeam(p,f,time);return;}const age=Math.max(0,(f.max||1)-f.t),life=Math.max(.001,f.max||1),t=Math.max(0,Math.min(1,age/life)),fade=1-t,c=f.color||effectColor(f.weapon),x=f.x,y=f.y,size=f.size||12,seed=f.seed||0,near=p.detail>1.4;
- if(f.effect==='muzzle'){
+ if(f.effect==='warp'){
+  const a=f.a||0,ux=Math.cos(a),uy=Math.sin(a),nx=-uy,ny=ux,extent=size*(.4+Math.sin(t*Math.PI)*1.4),flash=Math.sin(t*Math.PI),wc='#a4e6f0';
+  p.glow(x,y,extent,wc,flash);const points=[];for(let i=0;i<=24;i++){const q=i*Math.PI/12;points.push([x+ux*Math.cos(q)*extent*.24+nx*Math.sin(q)*extent,y+uy*Math.cos(q)*extent*.24+ny*Math.sin(q)*extent]);}for(let i=1;i<points.length;i++)p.line(...points[i-1],...points[i],alpha(wc,flash*.85),1.6);
+  for(let i=0;i<8;i++){const across=(i/7-.5)*size*2,tail=(f.out?t:1-t)*size*8;p.line(x+nx*across-ux*tail,y+ny*across-uy*tail,x+nx*across+ux*size,y+ny*across+uy*size,alpha(wc,flash*.38),.7);}
+  if(f.out){const travel=t*t*650,length=1+t*5,width=Math.max(.02,1-t*1.5),px=x+ux*travel,py=y+uy*travel,shape=PILOT_SHAPES[f.role||0];p.poly(shape.map(q=>[px+(ux*q[0]*length+nx*q[1]*width)*size,py+(uy*q[0]*length+ny*q[1]*width)*size]),alpha('#c6dcd3',fade));p.line(px-ux*size*length,py-uy*size*length,px-ux*size*(length+4)*t,py-uy*size*(length+4)*t,alpha(wc,fade*.7),2);}
+ }else if(f.effect==='muzzle'){
   const a=f.a||0,ux=Math.cos(a),uy=Math.sin(a),nx=-uy,ny=ux,r=size*(.35+fade);p.glow(x,y,r*.7,c,fade);for(let i=0;i<3;i++){const w=(3-i)*fade;p.poly([[x+nx*w,y+ny*w],[x+ux*r*(1.5-i*.2),y+uy*r*(1.5-i*.2)],[x-nx*w,y-ny*w]],alpha(i===2?'#fff6da':c,fade*(.35+i*.2)));}if(near)for(let i=0;i<4;i++){const aa=a+(i-1.5)*.5;p.line(x+Math.cos(aa)*r*.4,y+Math.sin(aa)*r*.4,x+Math.cos(aa)*r,y+Math.sin(aa)*r,alpha(c,fade*.6),.55);}
  }else if(f.effect==='explosion'){
   const expansion=size*(.3+t*1.8),hot=Math.max(0,1-t*3.3);p.glow(x,y,expansion,c,fade*1.5);p.ring(x,y,size*(.4+t*2.3),alpha(c,fade*fade*.55),Math.max(.4,2*fade));if(hot>0){p.disc(x,y,size*(.15+hot*.45),alpha('#ffe4aa',hot*.6));p.disc(x,y,size*.2*hot,'#fff3d4');}

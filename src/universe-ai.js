@@ -1,12 +1,15 @@
+var BOT_NAMES=['Mira Vale','Theo Marlow','Nadia Storm','Kai Mercer','Petra Quinn','Rafa Vento','Luca Ferro','Iris Vanek','Yuki Amari','Noa Silva'];
+function uBotName(s,hull){var used=s.pilots.filter(function(p){return !p.ai||p.hull!==hull;}).map(function(p){return p.name.toLowerCase();});for(var i=0;i<BOT_NAMES.length;i++){var name=BOT_NAMES[(hull+i)%BOT_NAMES.length];if(used.indexOf(name.toLowerCase())<0)return name;}return BOT_NAMES[hull]+' '+(hull+1);}
 // Server-owned pilots use the same movement, damage, economy and shipyard as humans.
 function uBotPopulation(s,ctx){
  var online=ctx.players.filter(function(p){return !p.ai&&(!ctx.presence||ctx.presence[p.id]&&ctx.presence[p.id].online);}).length;
  var bots=s.pilots.filter(function(p){return p.ai;}),wanted=online===0?HULLS.length:Math.min(bots.length,Math.max(0,WORLD_CAPACITY-online));
- s.pilots=s.pilots.filter(function(p){return !p.ai||bots.indexOf(p)<wanted;});
+ s.pilots=s.pilots.filter(function(p){if(!p.ai||bots.indexOf(p)<wanted)return true;uDepart(s,p);return false;});
  for(var hull=0;hull<wanted;hull++)if(!s.pilots.some(function(p){return p.ai&&p.hull===hull;})){
-  var id='bot:'+hull;uAdd(s,ctx,{id:id,name:'AI '+HULLS[hull].name});var p=s.pilots.find(function(p){return p.id===id;});
+  var id='bot:'+hull;uAdd(s,ctx,{id:id,name:uBotName(s,hull)});var p=s.pilots.find(function(p){return p.id===id;});
   p.ai=true;p.online=true;p.hull=hull;p.faction=hull%2;p.role=0;p.personality=[2,0,3,5,1][hull];p.scrap=120;p.tech=0;p.loadout=HULLS[hull].mounts.map(function(m){return m.type==='fixed'||m.type==='turret'?'cannon':m.type==='engine'?'drive':m.type==='reactor'?'reactor':null;});p.owned=['cannon','drive','reactor','barrier'];p.upgrades={gun:1,armor:0};p.cleared=[];p.botThink=0;uSpawn(s,p);
  }
+ s.pilots.forEach(function(p){if(p.ai&&(!p.namedPilot||/^AI /.test(p.name))){p.name=uBotName(s,p.hull);p.namedPilot=true;}});
 }
 function uBotThink(s,p,ctx){
  var base=uFriendlyBase(s,p);if(!base)return clean({});

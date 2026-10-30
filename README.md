@@ -1,7 +1,7 @@
 # Righteous Republic
 
 Choose Republic or Rebellion on the main menu and enter the common universe.
-The authoritative server supports 32 pilots, mid-game joins, faction bases,
+The authoritative server supports 32 online pilots, mid-game joins, faction bases,
 contested relays, patrols, mining, respawns, and saved ship progression. Solo
 campaigns and two-pilot missions remain available from the menu.
 
@@ -25,9 +25,14 @@ Asteroids split into drifting, rotating fragments until their radius reaches
 projectile cannot destroy its newly created fragments. At the fragment budget,
 splitting waits for smaller pieces to be cleared instead of deleting mass.
 
+Ships warp out on departure or connection loss, releasing their active slots
+immediately. Rejoining pilots keep their progression and warp in at a surviving
+friendly base. Death respawns and sector jumps also use warp effects. Quitting
+releases the room seat; abandoned public-world memberships are reclaimed after
+the platform disconnect grace, and a live game socket keeps a seat occupied.
 The public common universe keeps simulating when everyone is offline, with
-server-controlled AI pilots. Private rooms pause while empty and resume on
-reconnect. Explicit platform closure can end a world.
+server-controlled pilots bearing natural names. Private rooms pause while empty
+and resume on reconnect. Explicit platform closure can end a world.
 
 Online flight responds locally at 60 Hz. Trusted clients retain their movement
 between snapshots; the server checks speed, acceleration, turning, cumulative
@@ -156,3 +161,10 @@ world advanced 23.6 simulation seconds and contained AI pilots in all five hulls
 The game suite passes 67 tests; backend offline-world selection passes its
 focused checks and the 1,505-test game suite. The 32-player load checks are
 synthetic, rather than a live 32-browser benchmark.
+
+The shared solo/online shipyard now has 22 weapons, including five new choices:
+Needle repeater (accurate shield-weak piercing fire), Helix projector (twin
+weaving bolts), Seeker swarm (three automatic target-seeking missiles), Cluster
+bomb (eight bounded fragments on impact or timed detonation), and Breach torpedo
+(triple structural damage, with a slow reload). All use the existing scrap,
+research, sector, mount, energy and heat gates.

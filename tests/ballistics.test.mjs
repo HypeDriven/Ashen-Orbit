@@ -12,3 +12,10 @@ test('input changes apply exactly 32ms later, including press/release inside one
 test('remote motion applies announced future thrust only at its scheduled timestamp',()=>{
  const sample={x:0,y:0,vx:0,vy:0,a:0,av:0,time:10},meta={flightSpec:[300,3],intent:{controls:{steering:true}},pending:[{at:10.032,controls:{steering:true,thrust:1}}]};assert.equal(projectPilotMotion(sample,meta,.031,integratePilotThrust).vx,0);assert.ok(projectPilotMotion(sample,meta,.05,integratePilotThrust).vx>0);
 });
+
+test('helix motion weaves on opposite sides without losing launch drift or depending on frame rate',async()=>{
+ const {advanceProjectile,projectileFragments}=await import('../src/ballistics.js');const w={weave:24},a={x:0,y:0,vx:750,vy:120,driftX:100,driftY:120,launchAngle:0,weaveSide:1},b={...a,weaveSide:-1},c={...a};advanceProjectile(a,w,.1);advanceProjectile(b,w,.1);for(let i=0;i<10;i++)advanceProjectile(c,w,.01);assert.ok(a.y>12&&b.y<12);assert.ok(Math.abs(a.y-c.y)<1e-9);assert.equal(a.vx,750);assert.equal(a.vy,120);assert.equal(projectileFragments(a,{fragments:8,fragmentSpeed:430},3).length,3);
+});
+test('warp visuals grow incoming hulls smoothly and render both directions within their draw budget',async()=>{
+ const {warpScale,renderVisual,createEffectPainter}=await import('../src/effects.js');assert.equal(warpScale(10,10),0);assert.equal(warpScale(10,10.65),1);assert.ok(warpScale(10,10.3)>0&&warpScale(10,10.3)<1);let commands=0;const sink={line(){commands++;},polygon(){commands++;},disc(){commands++;},arc(){commands++;}};const p=createEffectPainter(sink,{zoom:1,width:1000,height:700,cx:0,cy:0},3000);for(const out of [true,false])for(let i=0;i<10;i++)renderVisual(p,{effect:'warp',x:0,y:0,a:.5,size:40,role:2,t:.85-i*.08,max:.85,out},10);assert.ok(commands>100&&commands<=3000);
+});
