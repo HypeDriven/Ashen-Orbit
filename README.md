@@ -103,10 +103,10 @@ including 32 prediction clients under a 200 ms round trip with jitter and 32 pil
 firing concurrently. The VM benchmark exercises 32 pilots, 160 escorts, and 96
 asteroids; it is a synthetic load test, not a live 32-account network test.
 
-Hosting limitation observed in the same live check: owner diagnostics reports an
-effective 20 Hz tick rate, but snapshot tick counters advance at approximately
-10 Hz (full combat snapshots approximately 5 Hz), with simulation time tracking
-wall time. Client rendering/control remain at 60 Hz. Achieving the requested real
-server cadence requires investigation of the platform scheduler; increasing client
-authority alone does not fix that discrepancy. Owner diagnostics is available at
-`GET /api/v1/games/{slug}/diagnostics`.
+The hosting cadence issue is fixed in the backend scheduler (StarHermit commit
+`dbd708b`). Independent session deadlines prevent execution time from halving the
+requested tick rate. Live two-browser validation after deployment measures about
+20.2 server ticks per second and 10.1 full combat snapshots per second, with
+16.7 ms median and 16.8 ms p95 browser frames. The backend change passes 1,503 game
+tests, including deterministic 20/30/60 Hz cadence tests under processing overhead.
+Owner diagnostics is available at `GET /api/v1/games/{slug}/diagnostics`.
