@@ -20,8 +20,8 @@ export function createEffectPainter(sink,view,budget=3000){
  const take=(n=1)=>{if(p.count+n>p.budget)return false;p.count+=n;return true;};
  p.line=(x,y,xx,yy,c,w=1)=>{if(!take())return;const a=project(x,y),b=project(xx,yy);sink.line(a[0],a[1],b[0],b[1],c,Math.max(.35,w*view.zoom));};
  p.poly=(points,c)=>{if(take())sink.polygon(points.map(q=>project(q[0],q[1])),c);};
- p.ring=(x,y,r,c,w=1,start=0,end=Math.PI*2)=>{if(r<=0)return;const steps=Math.max(6,Math.min(48,Math.ceil(r*p.detail*.7*(end-start)/(Math.PI*2))));if(!take(steps))return;const points=[];for(let i=0;i<=steps;i++){const a=start+(end-start)*i/steps;points.push(project(x+Math.cos(a)*r,y+Math.sin(a)*r));}sink.path(points,c,Math.max(.35,w*view.zoom));};
- p.disc=(x,y,r,c)=>{if(r<=0)return;const steps=p.detail>1.6?18:10,points=[];for(let i=0;i<steps;i++){const a=i*Math.PI*2/steps;points.push([x+Math.cos(a)*r,y+Math.sin(a)*r]);}p.poly(points,c);};
+ p.ring=(x,y,r,c,w=1,start=0,end=Math.PI*2)=>{if(r<=0)return;if(sink.arc){if(take()){const q=project(x,y);sink.arc(q[0],q[1],r*view.zoom,c,Math.max(.35,w*view.zoom),start,end);}return;}const steps=Math.max(6,Math.min(48,Math.ceil(r*p.detail*.7*(end-start)/(Math.PI*2))));if(!take(steps))return;const points=[];for(let i=0;i<=steps;i++){const a=start+(end-start)*i/steps;points.push(project(x+Math.cos(a)*r,y+Math.sin(a)*r));}sink.path(points,c,Math.max(.35,w*view.zoom));};
+ p.disc=(x,y,r,c)=>{if(r<=0)return;if(sink.disc){if(take()){const q=project(x,y);sink.disc(q[0],q[1],r*view.zoom,c);}return;}const steps=p.detail>1.6?18:10,points=[];for(let i=0;i<steps;i++){const a=i*Math.PI*2/steps;points.push([x+Math.cos(a)*r,y+Math.sin(a)*r]);}p.poly(points,c);};
  p.glow=(x,y,r,c,strength=1)=>{p.disc(x,y,r*1.8,alpha(c,.035*strength));p.disc(x,y,r*1.25,alpha(c,.09*strength));p.disc(x,y,r*.7,alpha(c,.22*strength));};
  return p;
 }
