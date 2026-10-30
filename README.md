@@ -25,9 +25,9 @@ Asteroids split into drifting, rotating fragments until their radius reaches
 projectile cannot destroy its newly created fragments. At the fragment budget,
 splitting waits for smaller pieces to be cleared instead of deleting mass.
 
-The universe keeps running while other pilots remain. Leaving as its final pilot
-keeps the room membership so the platform can pause the empty session and resume
-it on reconnect. Explicit platform closure or retention expiry can end a world.
+The public common universe keeps simulating when everyone is offline, with
+server-controlled AI pilots. Private rooms pause while empty and resume on
+reconnect. Explicit platform closure can end a world.
 
 Online flight responds locally at 60 Hz. Trusted clients retain their movement
 between snapshots; the server checks speed, acceleration, turning, cumulative
@@ -147,3 +147,12 @@ use role behaviors (prospecting, attack runs, defense, mine laying, and support)
 Synthetic pilots never create platform accounts or player-state writes. Public
 common-universe simulation is enabled through the backend operator's
 `Games:AlwaysRunningWorlds` selection; private rooms still pause when empty.
+
+Live validation of the queued-input build: two browser clients passed movement,
+coasting, firing, cloak, mines and trust checks with no browser exceptions.
+Median frames were 16.7 ms (p95 16.8 ms), with 28.8–29.0 observed server ticks/sec.
+After both clients disconnected beyond the former pause grace, the same public
+world advanced 23.6 simulation seconds and contained AI pilots in all five hulls.
+The game suite passes 67 tests; backend offline-world selection passes its
+focused checks and the 1,505-test game suite. The 32-player load checks are
+synthetic, rather than a live 32-browser benchmark.
