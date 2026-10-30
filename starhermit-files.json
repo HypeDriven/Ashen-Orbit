@@ -15,7 +15,7 @@
     "assets/rock9.png": {"sha256": "8164e919b56fbbb0011a6dfc70fe627cd0d7903757b45b17e4872b424b1f6ac6", "size": 17111},
     "assets/station.png": {"sha256": "53e63b668c3e35e65c6875da233705fdcf89844c5a16404fc74b9a27e0de418a", "size": 78908},
     "index.html": {"sha256": "fad71b21bf51a71956b1270357336f2c87599d5c98ed90193e79b49968707273", "size": 1809},
-    "server.js": {"sha256": "9632ed1ad2cad4c75f893a4e851b26e9c696740ab2716e7eca7fd0a58b01a2eb", "size": 87895},
+    "server.js": {"sha256": "6b64a10b296fa82a7f2df178d7184d79e37d889fc66a6a1009384e25fbeeee47", "size": 87935},
     "src/arsenal.js": {"sha256": "eb5f382b74af87bc46a6942fa0ea238da4bf52f8a7a5475723411e9ece64eea0", "size": 7002},
     "src/ballistics.js": {"sha256": "fd57a778c50f7e4e39265f4a157d611709c0131a43729718780e8545872c9436", "size": 1259},
     "src/campaign.js": {"sha256": "b5fb26ce80d5e012b2b7cd044183e6da2752b2759c304a867918926db870fd10", "size": 772},
