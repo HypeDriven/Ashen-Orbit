@@ -276,7 +276,7 @@ function recordShipImpact(ship,damage,direction,time){
 }
 function shipBreakup(ship,time,pilot=!!ship.pilot,hull=ship.hull||0,role=ship.role||0){
  const geometry=shipGeometry(ship,pilot,hull,role),decay=impactDecay(ship,time);
- return {effect:'ship-breakup',x:ship.x,y:ship.y,a:ship.a||0,vx:(ship.vx||0)+(ship.impactX||0)*decay,vy:(ship.vy||0)+(ship.impactY||0)*decay,av:ship.av||0,shape:geometry.shape,size:geometry.size,faction:ship.faction,max:DEBRIS_LIFE,t:DEBRIS_LIFE};
+ return {effect:'ship-breakup',x:ship.x,y:ship.y,a:ship.a||0,vx:(ship.vx||0)+(ship.impactX||0)*decay,vy:(ship.vy||0)+(ship.impactY||0)*decay,av:ship.av||0,shape:geometry.shape,size:geometry.size,faction:ship.faction??(pilot||ship.team===0||ship.owner?0:1),max:DEBRIS_LIFE,t:DEBRIS_LIFE};
 }
 function debrisHash(seed){const n=Math.sin(seed*127.1+311.7)*43758.5453;return n-Math.floor(n);}
 // All outlines are star-shaped around the origin. Wedges exactly cover the hull;
