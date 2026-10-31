@@ -10,7 +10,8 @@ export function emitVisual(list,effect,x,y,options={}){
 }
 export function limitVisuals(list){while(list.length>MAX_EFFECTS){const i=list.findIndex(f=>f.effect!=='ship-breakup'&&f.effect!=='warp');list.splice(i<0?0:i,1);}return list;}
 export function stepVisuals(list,dt){for(const f of list){f.t-=dt;f.x+=(f.vx||0)*dt;f.y+=(f.vy||0)*dt;}return limitVisuals(list.filter(f=>f.t>0));}
-export function rememberTrail(b,dt){if(!['swarm','cluster','breach','homing','rocket','siege','plasma','disruptor','ion','particle','flame'].includes(b.weapon))return;b.trailClock=(b.trailClock||0)+dt;if(b.trailClock>=.035){b.trailClock=0;(b.trail||(b.trail=[])).unshift({x:b.x,y:b.y});if(b.trail.length>12)b.trail.length=12;}}
+const trailWeapons=new Set(['swarm','cluster','breach','homing','rocket','siege','plasma','disruptor','ion','particle','flame']);
+export function rememberTrail(b,dt){if(!trailWeapons.has(b.weapon))return;b.trailClock=(b.trailClock||0)+dt;if(b.trailClock>=.035){b.trailClock=0;(b.trail||(b.trail=[])).unshift({x:b.x,y:b.y});if(b.trail.length>12)b.trail.length=12;}}
 export function warpScale(at,time){const t=Math.max(0,Math.min(1,(time-(at??-10))/.65));return t*t*(3-2*t);}
 const colors={mining:'#9ce6d0',skirmisher:'#f2d6a0',lancer:'#9acfeb',broadside:'#edbb8c','siege-lance':'#c6b1ed',needle:'#c5e6dc',helix:'#81ddd2',swarm:'#f1d396',cluster:'#efad8d',breach:'#d7b4f3',cannon:'#e0c9a2',gatling:'#e5bd7e',flak:'#e6c497',laser:'#f47873',pulse:'#f99b83',disruptor:'#bd8eff',ion:'#84ddfa',homing:'#e9be85',rocket:'#efa56a',particle:'#b3f2aa',rail:'#cae8ff',plasma:'#8ee6ba',tesla:'#aab7ff',flame:'#ffac69',mine:'#e1a3b9',siege:'#e6b2fa',siphon:'#9ddbc4',pd:'#b6dcea'};
 export const effectColor=id=>colors[id]||'#d0b49d';
@@ -22,10 +23,10 @@ export function createEffectPainter(sink,view,budget=3000){
  const p={simple:false,zoom:view.zoom,detail:view.zoom*(view.scale||1),count:0,budget};
  const project=(x,y)=>[(x-view.cx)*view.zoom+view.width/2,(y-view.cy)*view.zoom+view.height/2];
  const take=(n=1)=>{if(p.count+n>p.budget)return false;p.count+=n;return true;};
- p.line=(x,y,xx,yy,c,w=1)=>{if(!take())return;const a=project(x,y),b=project(xx,yy);sink.line(a[0],a[1],b[0],b[1],c,Math.max(.35,w*view.zoom));};
+ p.line=(x,y,xx,yy,c,w=1)=>{if(!take())return;const ax=(x-view.cx)*view.zoom+view.width/2,ay=(y-view.cy)*view.zoom+view.height/2,bx=(xx-view.cx)*view.zoom+view.width/2,by=(yy-view.cy)*view.zoom+view.height/2;sink.line(ax,ay,bx,by,c,Math.max(.35,w*view.zoom));};
  p.poly=(points,c)=>{if(take())sink.polygon(points.map(q=>project(q[0],q[1])),c);};
- p.ring=(x,y,r,c,w=1,start=0,end=Math.PI*2)=>{if(r<=0)return;if(sink.arc){if(take()){const q=project(x,y);sink.arc(q[0],q[1],r*view.zoom,c,Math.max(.35,w*view.zoom),start,end);}return;}const steps=Math.max(6,Math.min(48,Math.ceil(r*p.detail*.7*(end-start)/(Math.PI*2))));if(!take(steps))return;const points=[];for(let i=0;i<=steps;i++){const a=start+(end-start)*i/steps;points.push(project(x+Math.cos(a)*r,y+Math.sin(a)*r));}sink.path(points,c,Math.max(.35,w*view.zoom));};
- p.disc=(x,y,r,c)=>{if(r<=0)return;if(sink.disc){if(take()){const q=project(x,y);sink.disc(q[0],q[1],r*view.zoom,c);}return;}const steps=p.detail>1.6?18:10,points=[];for(let i=0;i<steps;i++){const a=i*Math.PI*2/steps;points.push([x+Math.cos(a)*r,y+Math.sin(a)*r]);}p.poly(points,c);};
+ p.ring=(x,y,r,c,w=1,start=0,end=Math.PI*2)=>{if(r<=0)return;if(sink.arc){if(take()){const qx=(x-view.cx)*view.zoom+view.width/2,qy=(y-view.cy)*view.zoom+view.height/2;sink.arc(qx,qy,r*view.zoom,c,Math.max(.35,w*view.zoom),start,end);}return;}const steps=Math.max(6,Math.min(48,Math.ceil(r*p.detail*.7*(end-start)/(Math.PI*2))));if(!take(steps))return;const points=[];for(let i=0;i<=steps;i++){const a=start+(end-start)*i/steps;points.push(project(x+Math.cos(a)*r,y+Math.sin(a)*r));}sink.path(points,c,Math.max(.35,w*view.zoom));};
+ p.disc=(x,y,r,c)=>{if(r<=0)return;if(sink.disc){if(take()){const qx=(x-view.cx)*view.zoom+view.width/2,qy=(y-view.cy)*view.zoom+view.height/2;sink.disc(qx,qy,r*view.zoom,c);}return;}const steps=p.detail>1.6?18:10,points=[];for(let i=0;i<steps;i++){const a=i*Math.PI*2/steps;points.push([x+Math.cos(a)*r,y+Math.sin(a)*r]);}p.poly(points,c);};
  p.glow=(x,y,r,c,strength=1)=>{p.disc(x,y,r*1.8,alpha(c,.035*strength));p.disc(x,y,r*1.25,alpha(c,.09*strength));p.disc(x,y,r*.7,alpha(c,.22*strength));};
  return p;
 }

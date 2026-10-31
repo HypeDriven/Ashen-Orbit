@@ -49,9 +49,10 @@ export const HULLS=[
  {name:'CRUISER',cost:1350,research:6,sectors:5,hp:710,radius:52,speed:.72,turn:1.65,power:46,mounts:[mount('fixed',50,-15),mount('fixed',50,15),mount('turret',12,-34),mount('turret',12,34),mount('turret',-25,0),mount('utility',-14,-18),mount('utility',-14,18),mount('engine',-44,0),mount('reactor',0,0),mount('shield',18,0)]},
  {name:'DREADNOUGHT',cost:2200,research:8,sectors:8,hp:1050,radius:66,speed:.6,turn:1.25,power:62,mounts:[mount('fixed',63,-17),mount('fixed',63,17),mount('turret',25,-43),mount('turret',25,43),mount('turret',-22,-38),mount('turret',-22,38),mount('utility',-30,-15),mount('utility',-30,15),mount('utility',0,0),mount('engine',-55,0),mount('reactor',-10,0),mount('shield',30,0)]}
 ];
-export const weapon=id=>WEAPONS.find(w=>w.id===id);
-export const component=id=>COMPONENTS.find(c=>c.id===id);
-export const hullAllows=(id,hull)=>!weapon(id)?.hulls||weapon(id).hulls.includes(hull);
+const WEAPON_BY_ID=new Map(WEAPONS.map(w=>[w.id,w])),COMPONENT_BY_ID=new Map(COMPONENTS.map(c=>[c.id,c]));
+export const weapon=id=>WEAPON_BY_ID.get(id);
+export const component=id=>COMPONENT_BY_ID.get(id);
+export const hullAllows=(id,hull)=>{const w=weapon(id);return !w?.hulls||w.hulls.includes(hull);};
 export const compatible=(slot,id,hull=null)=>!id||((['fixed','turret'].includes(slot.type)?!!weapon(id):component(id)?.type===slot.type)&&(hull===null||hullAllows(id,hull)));
 export const angleDelta=(a,b)=>Math.atan2(Math.sin(b-a),Math.cos(b-a));
 export const turnTowards=(a,b,step)=>a+Math.max(-step,Math.min(step,angleDelta(a,b)));

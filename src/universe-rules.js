@@ -11,7 +11,7 @@ export function fractureRock(r,hitX,hitY){
  const a=Math.atan2(r.y-hitY,r.x-hitX)+Math.PI/2,seed=(r.seed||Math.floor(r.x*13+r.y*7))>>>0,ratio=.44+(seed%13)/100;
  return [ratio,1-ratio].map((fraction,i)=>{const sign=i?1:-1,radius=r.r*Math.sqrt(fraction),ore=i?(r.ore??24)-Math.floor((r.ore??24)*ratio):Math.floor((r.ore??24)*ratio),speed=24+(seed%31);return {x:r.x+Math.cos(a)*sign*radius*.4,y:r.y+Math.sin(a)*sign*radius*.4,r:radius,hp:Math.max(8,radius*.85),type:(r.type+i+1)%10,a:(r.a||0)+sign*.3,vx:(r.vx||0)+Math.cos(a)*sign*speed,vy:(r.vy||0)+Math.sin(a)*sign*speed,spin:sign*(.2+(seed%7)*.08),seed:seed+i+17,ore};});
 }
-export function driftRocks(rocks,dt){for(const r of rocks){r.x+=(r.vx||0)*dt;r.y+=(r.vy||0)*dt;r.a+=(r.spin||0)*dt;const drag=Math.exp(-dt*.15);r.vx=(r.vx||0)*drag;r.vy=(r.vy||0)*drag;}}
+export function driftRocks(rocks,dt){const drag=Math.exp(-dt*.15);for(const r of rocks){r.x+=(r.vx||0)*dt;r.y+=(r.vy||0)*dt;r.a+=(r.spin||0)*dt;r.vx=(r.vx||0)*drag;r.vy=(r.vy||0)*drag;}}
 
 export function sweptHit(ax,ay,bx,by,x,y,r){const dx=bx-ax,dy=by-ay,t=Math.max(0,Math.min(1,((x-ax)*dx+(y-ay)*dy)/(dx*dx+dy*dy||1)));return Math.hypot(x-ax-t*dx,y-ay-t*dy)<=r;}
 
@@ -19,7 +19,7 @@ const flightClamp=(v,a,b)=>Number.isFinite(v)?Math.max(a,Math.min(b,v)):0;
 export const WORLD_SECTORS=9,SECTOR_SPACING=1600,WORLD_Y=7200;
 export const sectorAt=y=>Math.max(0,Math.min(WORLD_SECTORS-1,Math.floor((y+WORLD_Y)/SECTOR_SPACING)));
 export const sectorY=id=>(id-4)*SECTOR_SPACING;
-export function pilotMotionStats(p){const hull=p.hull||0,role=ROLES[p.role||0];if(p.loadout){const st=shipStats(p);return {speed:225*(1+shipLevel(p,'engine')*.09)*st.speed,turn:st.turn,radius:HULLS_MOTION_RADIUS[ hull ]};}return {speed:(250-hull*24)*role.speed,turn:(2.8-hull*.32)*role.turn,radius:22+hull*9};}
+export function pilotMotionStats(p,stats=null){const hull=p.hull||0,role=ROLES[p.role||0];if(p.loadout){const st=stats||shipStats(p);return {speed:225*(1+shipLevel(p,'engine')*.09)*st.speed,turn:st.turn,radius:HULLS_MOTION_RADIUS[ hull ]};}return {speed:(250-hull*24)*role.speed,turn:(2.8-hull*.32)*role.turn,radius:22+hull*9};}
 const HULLS_MOTION_RADIUS=[24,31,40,52,66];
 // Force/torque integration shared by solo flight, server simulation and prediction.
 export function integratePilotThrust(p,dt,input,st){
@@ -36,7 +36,7 @@ export function integratePilotThrust(p,dt,input,st){
   }else torque=flightClamp(input.turn||0,-1,1)*turnAcceleration;
   const nextAv=flightClamp(av+torque*h,-st.turn,st.turn),angle=p.a+(av+nextAv)*h*.25;
   let ax,ay;
-  if(input.steering){ax=Math.cos(angle)*thrust-Math.sin(angle)*strafe;ay=Math.sin(angle)*thrust+Math.cos(angle)*strafe;}
+  if(input.steering){const cos=Math.cos(angle),sin=Math.sin(angle);ax=cos*thrust-sin*strafe;ay=sin*thrust+cos*strafe;}
   else {ax=flightClamp(input.x||0,-1,1);ay=flightClamp(input.y||0,-1,1);}
   const magnitude=Math.max(1,Math.hypot(ax,ay)),acceleration=limit*3;
   const vx=p.vx||0,vy=p.vy||0,oldSpeed=Math.hypot(vx,vy);
@@ -44,7 +44,7 @@ export function integratePilotThrust(p,dt,input,st){
   // A speed limit constrains engine acceleration, never erases existing momentum.
   const cap=Math.max(limit,oldSpeed),speed=Math.hypot(nx,ny);if(speed>cap){nx*=cap/speed;ny*=cap/speed;}
   p.x+=(vx+nx)*.5*h;p.y+=(vy+ny)*.5*h;p.vx=nx;p.vy=ny;
-  p.a=Math.atan2(Math.sin(p.a+(av+nextAv)*h*.5),Math.cos(p.a+(av+nextAv)*h*.5));p.av=nextAv;
+  const nextAngle=p.a+(av+nextAv)*h*.5;p.a=Math.atan2(Math.sin(nextAngle),Math.cos(nextAngle));p.av=nextAv;
  }
 }
 // Used by the authoritative server, live prediction, and input replay. This
