@@ -241,3 +241,23 @@ test('32 pilots using the expanded arsenal retain bounded combat and warp frames
 test('parked ships save their final progression once and stop rewriting offline account state',()=>{
  const w=world(2);w.cmd(0,{type:'choose',faction:0});const p=w.s.pilots[0],id=p.id;p.scrap=777;w.ctx.presence=Object.fromEntries(w.ctx.players.map(p=>[p.id,{online:true}]));w.ctx.presence[id].online=false;assert.equal(w.tick().playerStates[id].universe.scrap,777);let savedAgain=false;for(let i=0;i<100;i++){const out=w.tick();if(out.playerStates?.[id])savedAgain=true;}assert.equal(savedAgain,false,'an offline world must not overwrite progression or trust from a different session');
 });
+
+test('shared hull restrictions reject fitting and firing on the wrong hull and preserve valid licenses',()=>{
+ for(const id of ['skirmisher','lancer','broadside','siege-lance'])for(let hull=0;hull<5;hull++){
+  const w=world(1);w.cmd(0,{type:'choose',faction:0});const p=w.s.pilots[0];p.hull=hull;p.scrap=10000;p.tech=100;p.cleared=[0,1,2,3,4,5,6,7,8];p.owned.push(id);p.loadout=vm.runInContext('HULLS',w.sandbox)[hull].mounts.map(m=>m.type==='fixed'||m.type==='turret'?'cannon':m.type==='engine'?'drive':m.type==='reactor'?'reactor':null);const allowed=vm.runInContext(`weapon('${id}').hulls.includes(${hull})`,w.sandbox);assert.equal(w.cmd(0,{type:'fit',slot:0,item:id}).ok,allowed,id+' on '+hull);
+  p.loadout=Array.from(p.loadout,()=>null);p.loadout[0]=id;p.energy=100;p.heat=0;p.mounts=[];w.s.fx=[];w.s.bullets=[];w.sandbox.uFireMounts(w.s,p,.05,{fire:true});assert.equal(w.s.fx.some(f=>f.weapon===id),allowed);if(!allowed)assert.equal(p.energy,100);
+ }
+});
+test('shared utility miners fracture an asteroid, haul its real ore and award normal scrap and research',()=>{
+ const w=world(1);w.cmd(0,{type:'choose',faction:0});const p=w.s.pilots[0];p.scrap=1000;p.tech=10;assert.equal(w.cmd(0,{type:'fit',slot:1,item:'mining-bay'}).ok,true);p.x=p.y=0;p.total=90;w.s.rocks=[{x:150,y:0,r:12,hp:18,type:0,a:0,ore:24,seed:999}];w.s.beacons=[];w.s.spawn=1e9;const scrap=p.scrap,tech=p.tech;w.tick(500);assert.equal(w.s.rocks.length,0);assert.equal(w.s.loot.length,0);assert.equal(p.scrap-scrap,24);assert.equal(p.tech-tech,1);assert.equal(p.total,114);assert.equal(w.s.escorts.filter(e=>e.mining).length,2);assert.ok(w.s.escorts.every(e=>e.cargo===0));
+});
+test('shared mining lasers retain low offensive damage and their ships can be destroyed',()=>{
+ const w=world(1);w.cmd(0,{type:'choose',faction:0});const p=w.s.pilots[0];p.x=p.y=0;p.loadout[1]='mining-bay';w.s.rocks=[];const enemy={id:'enemy',x:100,y:0,hp:200,max:200,faction:1,kind:0};w.s.enemies=[enemy];for(let i=0;i<100;i++){w.s.time+=.05;w.sandbox.uMiningDrones(w.s,.05);}assert.ok(enemy.hp<200&&enemy.hp>=176);const d=w.s.escorts.find(e=>e.mining);w.sandbox.uDamage(w.s,d,40,'enemy',{});assert.equal(d.hp,0);w.sandbox.uMiningDrones(w.s,.05);assert.equal(w.s.escorts.filter(e=>e.mining).length,1);
+});
+test('mining drones do not consume escort hangar slots and are recalled on owner death or departure',()=>{
+ const w=world(1);w.cmd(0,{type:'choose',faction:0});const p=w.s.pilots[0];p.scrap=2000;p.tech=10;w.cmd(0,{type:'fit',slot:1,item:'mining-bay'});w.tick();assert.equal(w.s.escorts.filter(e=>e.mining).length,2);assert.equal(w.cmd(0,{type:'upgrade',id:'escort'}).ok,true);assert.equal(w.cmd(0,{type:'upgrade',id:'escort'}).ok,true);assert.equal(w.cmd(0,{type:'upgrade',id:'escort'}).ok,false);assert.equal(w.s.escorts.filter(e=>!e.mining).length,2);p.hp=0;p.respawn=8;w.tick();assert.equal(w.s.escorts.filter(e=>e.mining).length,0);w.cmd(0,{type:'leave'});assert.equal(w.s.escorts.length,0);
+});
+test('32 capital miners plus full escort complements fit every transport frame',()=>{
+ const w=world(32);for(let i=0;i<32;i++){w.cmd(i,{type:'choose',faction:i%2});const p=w.s.pilots[i];p.hull=4;p.x=(i%8)*120-450;p.y=Math.floor(i/8)*150;p.hp=p.max=100000;p.loadout=vm.runInContext('HULLS[4].mounts',w.sandbox).map(m=>m.type==='utility'?'survey-bay':m.type==='reactor'?'reactor':null);for(let j=0;j<5;j++)w.s.escorts.push({id:10000+i*5+j,owner:p.id,faction:p.faction,x:p.x,y:p.y+80,hp:100000,a:0,cd:100,slot:j});}
+ w.s.rocks=Array.from({length:96},(_,i)=>({x:(i%12)*130-700,y:Math.floor(i/12)*120-400,r:24,hp:1000000,type:i%10,a:0,seed:i}));w.s.spawn=1e9;w.s.beacons=[];let peak=0;for(let i=0;i<20;i++){const out=w.tick();peak=Math.max(peak,w.s.escorts.filter(e=>e.mining).length);for(const m of out.broadcast)assert.ok(Buffer.byteLength(JSON.stringify(m.data))<16000);}assert.equal(peak,128);assert.equal(w.s.escorts.filter(e=>!e.mining).length,160);
+});

@@ -175,3 +175,25 @@ verified natural pilot names, observer-visible warp-out, immediate room-seat
 release, and warp-in with a new ship life in the same world. The public world
 also stayed running with all five AI hulls after every human seat was released.
 Parked pilots save once on departure, avoiding background account-state writes.
+
+Hull-specific weapons now give each chassis a distinct equipment choice:
+Skirmisher burst fits Skiff/Corvette; Frigate lance fits Frigate; Capital flak
+array fits Cruiser/Dreadnought; Siege lance fits Dreadnought. The shipyard lists
+permitted hulls. Fitting, saved loadouts, hull changes, and firing enforce the
+same restrictions in solo and online play. Licenses remain owned when a hull
+change unfits an incompatible weapon.
+
+Fit a **Mining drone bay** (2 miners) or **Survey drone bay** (3 faster, fragile
+miners) in a utility mount. They deploy automatically, prioritize nearby rocks,
+zap and fracture them, collect ore, and return it for normal scrap/research.
+Mining bays reach 650m; survey bays reach 850m. Each ship supports at most four
+miners, independently of its combat escort hangar. Launches and lasers consume
+capacitor; destroyed miners rebuild after 10/16 seconds. Death, cloak, warp,
+or removing the bay recalls its drones. Cargo is lost if its drone is lost.
+With no mining work, their short-range self-defense deals only 2/1.7 ship DPS
+per drone and receives no combat-escort weapon upgrades.
+
+Validation includes 96 game tests, native shipyard fitting and hull-gate checks,
+and autonomous mining from fragmentation to ore delivery in solo and shared
+worlds. A synthetic 32-player case with 128 miners and 160 combat escorts stays
+within packet limits; its Node benchmark measured about 15ms p95 server work.

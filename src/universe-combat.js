@@ -4,7 +4,7 @@ function uQuery(grid,ax,ay,bx,by,pad){var found=[];for(var x=Math.floor((Math.mi
 // Shared-world combat uses the same catalog, mounts, upgrade ranks and resource
 // costs as the solo shipyard. Outcomes remain on the server.
 function uTargets(s){return s.pilots.concat(s.enemies,s.escorts||[],s.bases);}
-function uRadius(p){return p.base?150:p.pilot?uStats(p).radius:p.owner?13:22;}
+function uRadius(p){return p.base?150:p.pilot?uStats(p).radius:p.mining?9:p.owner?13:22;}
 function uShooter(s,id){return s.pilots.find(function(p){return p.id===id;});}
 function uDamage(s,target,amount,owner,w){
  if(target.hp<=0||amount<=0)return;
@@ -28,7 +28,7 @@ function uFireMounts(s,p,dt,m){
  if(p.hp<=0)return;
  var ownedShots=s.bullets.filter(function(b){return b.owner===p.id;}).length;
  var hull=HULLS[p.hull],gun=shipLevel(p,'gun'),st=shipStats(p);p.mounts=p.mounts||[];
- hull.mounts.forEach(function(mount,i){var w=weapon(p.loadout[i]);if(!w)return;var state=p.mounts[i]||(p.mounts[i]={a:p.a,cd:0});state.cd=Math.max(0,state.cd-dt);
+ hull.mounts.forEach(function(mount,i){var w=weapon(p.loadout[i]);if(!w||!hullAllows(w.id,p.hull))return;var state=p.mounts[i]||(p.mounts[i]={a:p.a,cd:0});state.cd=Math.max(0,state.cd-dt);
  var x=p.x+Math.cos(p.a)*mount.x-Math.sin(p.a)*mount.y,y=p.y+Math.sin(p.a)*mount.x+Math.cos(p.a)*mount.y;
  var target=null;if(mount.type==='turret'){var dd=1000;uTargets(s).forEach(function(t){if(t.hp<=0||t.faction===p.faction||t.faction<0||!visibleShip(p,t))return;var d=Math.hypot(t.x-x,t.y-y);if(t.id===m.target&&d<1400){target=t;dd=-1;}else if(d<dd){dd=d;target=t;}});if(target)state.a=turnTowards(state.a,Math.atan2(target.y-y,target.x-x),3.4*dt);}else state.a=p.a;
  if(ownedShots>=32||!m.fire||p.cloaked||p.overheated||p.jam>0||state.cd>0||p.energy<w.energy||s.bullets.length>=1536)return;
@@ -69,11 +69,20 @@ function uBaseDefenses(s,dt){
 function uEscorts(s,dt){
  var grid=uGrid(uTargets(s)),owners={};s.pilots.forEach(function(p){owners[p.id]=p;});
  s.escorts=s.escorts.filter(function(e){return e.hp>0&&s.pilots.some(function(p){return p.id===e.owner;});});
- s.escorts.forEach(function(e){var owner=owners[e.owner];if(!owner||owner.hp<=0)return;e.cd=Math.max(0,(e.cd||0)-dt*(e.jam>0?.15:1));var target=null,dd=650;
+ s.escorts.forEach(function(e){if(e.mining)return;var owner=owners[e.owner];if(!owner||owner.hp<=0)return;e.cd=Math.max(0,(e.cd||0)-dt*(e.jam>0?.15:1));var target=null,dd=650;
   uQuery(grid,e.x,e.y,e.x,e.y,650).forEach(function(t){if(t.hp>0&&t.faction>=0&&t.faction!==e.faction&&visibleShip(e,t)){var d=distance(e,t);if(d<dd){dd=d;target=t;}}});
   var a=(e.slot||0)*Math.PI*.4+s.time*.3,tx=owner.x+Math.cos(a)*95,ty=owner.y+Math.sin(a)*95;
   if(target&&owner.stance){tx=target.x-Math.cos(e.a)*170;ty=target.y-Math.sin(e.a)*170;}
   var dx=tx-e.x,dy=ty-e.y,d=Math.hypot(dx,dy),step=Math.min(d,dt*240*(e.jam>0?.4:1));e.vx=dt>0&&d>.01?dx/d*step/dt:0;e.vy=dt>0&&d>.01?dy/d*step/dt:0;if(d>.01){e.a=Math.atan2(dy,dx);e.x=uRound(e.x+dx/d*step);e.y=uRound(e.y+dy/d*step);}
   if(target&&e.cd===0&&s.bullets.length<1536){var aa=Math.atan2(target.y-e.y,target.x-e.x);e.cd=.6;s.bullets.push({id:s.next++,x:e.x,y:e.y,vx:uRound(Math.cos(aa)*620+(e.vx||0)),vy:uRound(Math.sin(aa)*620+(e.vy||0)),t:1.2,faction:e.faction,dmg:uRound(16*(1+shipLevel(owner,'wingguns')*.4)),weapon:'cannon',owner:owner.id,hits:[]});}
  });
+}
+
+function uMiningDrones(s,dt){
+ s.escorts=syncMiningDrones(s.escorts,s.pilots,s.time,function(){return s.next++;});
+ var enemies=uTargets(s).filter(function(t){return !t.base&&t.hp>0;});
+ s.escorts.forEach(function(d){if(!d.mining)return;var p=uShooter(s,d.owner);if(!p)return;var result=stepMiningDrone(d,p,s.rocks,enemies,s.loot,dt);
+  if(result.deposit){var value=Math.round(result.deposit*(p.role===2?1.6:1)),before=Math.floor(p.total/100);p.scrap+=value;p.total+=value;p.dayScrap+=value;p.tech+=Math.floor(p.total/100)-before;p.profileDirty=true;}
+  if(result.zap){var target=result.zap.target;if(result.zap.kind==='rock'){target.hp-=result.zap.damage;target.hitX=d.x;target.hitY=d.y;}else uDamage(s,target,result.zap.damage,p.id,{});var a=Math.atan2(target.y-d.y,target.x-d.x),r=result.zap.kind==='rock'?target.r*.8:0;serverVisual(s,'beam',d.x,d.y,{beam:true,x2:target.x-Math.cos(a)*r,y2:target.y-Math.sin(a)*r,max:.16,weapon:'mining'});}
+ });s.loot=s.loot.filter(function(l){return l.v>0;});
 }

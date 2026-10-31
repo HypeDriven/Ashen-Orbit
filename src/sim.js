@@ -1,9 +1,10 @@
+import {syncMiningDrones,stepMiningDrone} from './mining-drones.js';
 import {launchVelocity,advanceProjectile,projectileFragments} from './ballistics.js';
 import {UPGRADES,TREES,shipStats,shipUpgradeStatus,shipHullStatus,shipFitStatus} from './shipyard.js';
 import {ROLES,fractureRock,driftRocks,integratePilotThrust} from './universe-rules.js';
 import {emitVisual,stepVisuals,rememberTrail} from './effects.js';
 import {createBaseDefense,updateBaseDefense,interceptBaseShot} from './defenses.js';
-import {WEAPONS,COMPONENTS,HULLS,weapon,component,compatible,angleDelta,turnTowards,segmentDistance} from './arsenal.js';
+import {WEAPONS,COMPONENTS,HULLS,weapon,component,compatible,hullAllows,angleDelta,turnTowards,segmentDistance} from './arsenal.js';
 export {WEAPONS,COMPONENTS,HULLS} from './arsenal.js';
 // Righteous Republic: fixed-step simulation shared by native and browser runtimes.
 export const TAU = Math.PI * 2;
@@ -35,7 +36,7 @@ export function createGame(saved=null){
   if(Array.isArray(saved.visited))s.visited=saved.visited.filter(x=>Number.isInteger(x)&&x>=0&&x<11);
  }
  if(saved?.schema>=3){
-  s.hull=Math.max(0,Math.min(4,Math.floor(saved.hull||0)));s.loadout=HULLS[s.hull].mounts.map((m,i)=>compatible(m,saved.loadout?.[i])?saved.loadout?.[i]||null:null);
+  s.hull=Math.max(0,Math.min(4,Math.floor(saved.hull||0)));s.loadout=HULLS[s.hull].mounts.map((m,i)=>compatible(m,saved.loadout?.[i],s.hull)?saved.loadout?.[i]||null:null);
   if(Array.isArray(saved.owned))s.owned=[...new Set(s.owned.concat(saved.owned.filter(id=>weapon(id)||component(id))))];
   s.contractLog=Array.isArray(saved.contractLog)?[...new Set(saved.contractLog.filter(k=>typeof k==='string'))]:[];
   s.ciphers=Array.isArray(saved.ciphers)?[...new Set(saved.ciphers.filter(k=>[2,5,8].includes(k)))]:[];
@@ -126,7 +127,7 @@ export function update(s,dt,input){
  if(!steering&&!selectedTarget(s))selectTarget(s);const target=selectedTarget(s);if(!steering&&mag<.1&&target)p.a=turnTowards(p.a,Math.atan2(target.y-p.y,target.x-p.x),st.turn*dt);
  s.heat=Math.max(0,s.heat-st.cooling*dt);if(s.heat>=100)s.overheated=true;if(s.overheated&&s.heat<35)s.overheated=false;
  fireMounts(s,dt,!!input.fire,target);
- for(const e of s.ships){if(e.hp<=0)continue;e.cd-=dt*(e.jam>0?.15:1);e.hit=Math.max(0,e.hit-dt);if(e!==p){
+ for(const e of s.ships){if(e.hp<=0||e.mining)continue;e.cd-=dt*(e.jam>0?.15:1);e.hit=Math.max(0,e.hit-dt);if(e!==p){
   let target=p;if(e.team){if(p.cloaked&&dist(e,p)>150)target=s.ships.find(q=>q!==p&&!q.team&&q.hp>0&&dist(e,q)<850)||{x:0,y:0,hp:99999,hidden:true};const convoy=s.objectives.find(o=>o.id==='convoy'&&o.active&&!o.done&&!o.failed);if(convoy&&dist(e,convoy)<dist(e,p)*.9)target=convoy;for(const f of s.baseDefense.fighters)if(f.hp>0&&dist(e,f)<Math.min(230,dist(e,target)))target=f;}
   else{let dd=s.stance?1400:750;for(const en of s.ships.concat(s.nests)){if(en.hp<=0||!en.team)continue;const d=dist(e,en);if(d<dd){dd=d;target=en;}}}
   if(e.burn>0){e.burn-=dt;damage(s,e,9*dt);}e.jam=Math.max(0,(e.jam||0)-dt);
@@ -142,6 +143,7 @@ export function update(s,dt,input){
  }
  for(const boss of s.ships.filter(e=>e.team&&e.kind===2)){const phase=boss.hp<boss.max*.33?2:boss.hp<boss.max*.66?1:0;if(phase>(boss.phase||0)){boss.phase=phase;boss.shield=boss.maxShield=350;for(let i=0;i<3;i++)s.ships.push(makeShip(boss.x+(i-1)*100,boss.y+100,1,phase===1?3:4));notify(s,'DREADNOUGHT PHASE '+(phase+1)+' / REINFORCEMENTS');}if(phase===2)boss.cd-=dt*.6;}
  for(const n of s.nests){if(n.hp<=0)continue;n.cd-=dt;if(n.cd<=0&&s.ships.filter(e=>e.team&&e.hp>0).length<28){n.cd=cfg.hazard==='reinforcements'?7:13;s.ships.push(makeShip(n.x+80,n.y,1,cfg.types[Math.floor(s.time)%cfg.types.length]));}}
+ updateSoloMiners(s,dt);
  updateBaseDefense(s.baseDefense,dt,s.time,s.ships.filter(e=>e.team),s.bullets,(e,amount)=>damage(s,e,amount));
  driftRocks(s.rocks,dt);const fragments=[];for(const r of s.rocks)if(r.hp<=0){if(r.ore==null)r.ore=Math.round(24*cfg.reward);let bits=fractureRock(r,p.x,p.y);if(bits.length&&s.rocks.length+fragments.length+bits.length-1>192){bits=[{...r,hp:Math.max(8,r.r*.85),vx:(r.vx||0)+20,spin:.5}];}fragments.push(...bits);if(!bits.length){s.loot.push({x:r.x,y:r.y,v:r.ore});burst(s,r.x,r.y,12);}else emitVisual(s.fx,'impact',r.x,r.y,{size:r.r*.6,color:'#b5b19b'});}
  const shards=[];for(const b of s.bullets){if(b.t<=0)continue;const w=b.weapon?weapon(b.weapon):null;const ax=b.x,ay=b.y;rememberTrail(b,dt);
@@ -161,7 +163,7 @@ export function update(s,dt,input){
  }
  s.bullets=s.bullets.filter(b=>b.t>0).concat(shards);s.rocks=s.rocks.filter(r=>r.hp>0).concat(fragments);
  s.mines=s.mines.filter(m=>{m.arm-=dt;m.t-=dt;if(m.t<=0)return false;if(m.arm>0)return true;const target=s.ships.find(e=>e.team&&e.hp>0&&dist(e,m)<75);if(!target)return true;for(const e of s.ships)if(e.team&&e.hp>0&&dist(e,m)<170)damage(s,e,(m.dmg??110)*(1-dist(e,m)/220));emitVisual(s.fx,'explosion',m.x,m.y,{size:55,weapon:'mine'});return false;});
- for(const e of s.ships)if(e.hp<=0&&!e.destroyed){e.destroyed=true;burst(s,e.x,e.y,e.kind===2?50:18);if(e.team){s.kills++;salvage(s,e.x,e.y,ENEMIES[e.kind].reward);}else if(e!==p){s.wing=Math.max(0,s.wing-1);notify(s,'WINGMAN LOST');}}
+ for(const e of s.ships)if(e.hp<=0&&!e.destroyed){e.destroyed=true;burst(s,e.x,e.y,e.kind===2?50:18);if(e.team){s.kills++;salvage(s,e.x,e.y,ENEMIES[e.kind].reward);}else if(e!==p&&!e.mining){s.wing=Math.max(0,s.wing-1);notify(s,'WINGMAN LOST');}}
  for(const n of s.nests)if(n.hp<=0&&!n.destroyed){n.destroyed=true;burst(s,n.x,n.y,35);salvage(s,n.x,n.y,14);s.tech+=cfg.hazard==='reinforcements'?2:1;notify(s,'REBEL OUTPOST DISABLED / INTEL RECOVERED');}
  s.ships=s.ships.filter(e=>e===p||e.hp>0);
  const range=tractorRange(s);let working=false;
@@ -182,14 +184,14 @@ export function update(s,dt,input){
 export function stats(s){return shipStats(s);}
 function refit(s,heal=false){const st=stats(s),p=s.player,missing=Math.max(0,(p.max||st.hp)-p.hp);p.max=st.hp;p.hp=heal?p.max:Math.max(1,p.max-missing);p.maxShield=st.shield;p.shield=heal?st.shield:Math.min(p.shield||0,st.shield);}
 export function hullStatus(s){return shipHullStatus(s);}
-export function expandHull(s){if(interact(s)!=='dock')return false;const st=hullStatus(s);if(!st.ok){notify(s,st.reason);return false;}const old=HULLS[s.hull],items=s.loadout.slice();s.scrap-=st.cost;s.tech-=st.research;s.hull++;const used=new Set();s.loadout=HULLS[s.hull].mounts.map(m=>{const i=old.mounts.findIndex((o,i)=>!used.has(i)&&o.type===m.type&&items[i]);if(i>=0){used.add(i);return items[i];}return null;});s.mountState=[];refit(s,true);notify(s,HULLS[s.hull].name+' / NEW MOUNTS AVAILABLE');s.events.push('buy');return true;}
+export function expandHull(s){if(interact(s)!=='dock')return false;const st=hullStatus(s);if(!st.ok){notify(s,st.reason);return false;}const old=HULLS[s.hull],items=s.loadout.slice();s.scrap-=st.cost;s.tech-=st.research;s.hull++;const used=new Set();s.loadout=HULLS[s.hull].mounts.map(m=>{const i=old.mounts.findIndex((o,i)=>!used.has(i)&&o.type===m.type&&items[i]&&compatible(m,items[i],s.hull));if(i>=0){used.add(i);return items[i];}return null;});s.mountState=[];refit(s,true);notify(s,HULLS[s.hull].name+' / NEW MOUNTS AVAILABLE');s.events.push('buy');return true;}
 export function fitStatus(s,slot,id){return shipFitStatus(s,slot,id);}
 export function fit(s,slot,id){if(interact(s)!=='dock')return false;const st=fitStatus(s,slot,id);if(!st.ok){notify(s,st.reason);return false;}s.scrap-=st.cost;s.tech-=st.research;if(id&&!s.owned.includes(id))s.owned.push(id);s.loadout[slot]=id;s.mountState[slot]=null;refit(s);notify(s,id?'COMPONENT FITTED / LICENSE REUSABLE':'MOUNT EMPTIED');return true;}
 export function selectedTarget(s){return s.ships.concat(s.nests,s.bases||[]).find(e=>(e.id||-1)===s.targetId&&e.hp>0&&e.team&&dist(s.player,e)<1400)||null;}
 export function selectTarget(s,x=null,y=null){const enemies=s.ships.concat(s.nests,s.bases||[]).filter(e=>e.team&&e.hp>0&&dist(s.player,e)<1400).sort((a,b)=>x===null?dist(s.player,a)-dist(s.player,b):dist({x,y},a)-dist({x,y},b));if(x!==null){s.targetId=enemies.length?enemies[0].id||-1:null;}else{const i=enemies.findIndex(e=>(e.id||-1)===s.targetId);s.targetId=enemies.length?(enemies[(i+1)%enemies.length].id||-1):null;}return selectedTarget(s);}
 function weaponDamage(s,e,w,dmg){if(s.nests.includes(e))dmg*=w.structure||1;const before=e.hp;if(e.shield>0&&w.shield){const drained=Math.min(e.shield,dmg*w.shield);e.shield-=drained;damage(s,e,Math.max(0,dmg-drained/w.shield));}else damage(s,e,dmg*(e.kind===1?(w.armor||1):1));if(w.jam)e.jam=Math.max(e.jam||0,w.jam);if(w.burn)e.burn=Math.max(e.burn||0,w.burn);if(w.heal)s.player.hp=Math.min(s.player.max,s.player.hp+Math.max(0,before-e.hp)*w.heal);}
 function explodeWeapon(s,b,w,direct){for(const e of s.ships.concat(s.nests)){if(e===direct||e.hp<=0||!e.team)continue;const d=dist(e,b);if(d<w.splash)weaponDamage(s,e,w,b.dmg*.65*(1-d/w.splash));}if(w.self&&dist(s.player,b)<w.splash)damage(s,s.player,b.dmg*.3*(1-dist(s.player,b)/w.splash));emitVisual(s.fx,'explosion',b.x,b.y,{size:w.splash*.35,weapon:w.id});}
-function fireMounts(s,dt,fire,target){const p=s.player,h=HULLS[s.hull];for(let i=0;i<h.mounts.length;i++){const m=h.mounts[i],w=weapon(s.loadout[i]);if(!w)continue;const mount=s.mountState[i]||(s.mountState[i]={a:p.a,cd:0});mount.cd=Math.max(0,mount.cd-dt);const x=p.x+Math.cos(p.a)*m.x-Math.sin(p.a)*m.y,y=p.y+Math.sin(p.a)*m.x+Math.cos(p.a)*m.y;
+function fireMounts(s,dt,fire,target){const p=s.player,h=HULLS[s.hull];for(let i=0;i<h.mounts.length;i++){const m=h.mounts[i],w=weapon(s.loadout[i]);if(!w||!hullAllows(w.id,s.hull))continue;const mount=s.mountState[i]||(s.mountState[i]={a:p.a,cd:0});mount.cd=Math.max(0,mount.cd-dt);const x=p.x+Math.cos(p.a)*m.x-Math.sin(p.a)*m.y,y=p.y+Math.sin(p.a)*m.x+Math.cos(p.a)*m.y;
  if(m.type==='turret'){if(target)mount.a=turnTowards(mount.a,Math.atan2(target.y-y,target.x-x),3.4*dt);}else mount.a=p.a;
  if(s.player.cloaked||!fire||mount.cd>0||s.overheated||s.energy<w.energy||s.bullets.length>=320)continue;
  if(m.type==='turret'&&(!target||Math.abs(angleDelta(mount.a,Math.atan2(target.y-y,target.x-x)))>.16))continue;
@@ -208,3 +210,13 @@ function contactVisual(s,e,w,amount,fromX,fromY){
 export function chooseRole(s,id){if(!ROLES[id]||interact(s)!=='dock'||s.scrap<ROLES[id].cost)return false;if(s.role===id)return true;s.scrap-=ROLES[id].cost;s.role=id;s.player.role=id;refit(s,true);notify(s,ROLES[id].name+' ROLE FITTED');return true;}
 export function toggleCloak(s){if(s.player.cloaked){s.player.cloaked=false;return true;}const role=ROLES[s.role||0];if(!role.cloak||s.dead||s.energy<25||s.cloakLock>0){notify(s,'CLOAK NEEDS CAPACITOR / NO RECENT DAMAGE');return false;}s.player.cloaked=!s.player.cloaked;return true;}
 export function layMine(s){const role=ROLES[s.role||0];if(s.dead||s.player.cloaked||s.energy<25||s.mines.length>=role.mines){notify(s,'MINE RACK OR CAPACITOR UNAVAILABLE');return false;}const last=s.mines[s.mines.length-1];if(last&&last.t>87.5)return false;s.energy-=25;s.mines.push({x:s.player.x-Math.cos(s.player.a)*45,y:s.player.y-Math.sin(s.player.a)*45,arm:1.2,t:90,dmg:s.role===3?140:110,faction:s.faction});return true;}
+
+function updateSoloMiners(s,dt){
+ const p=s.player;p.loadout=s.loadout;p.hull=s.hull;p.energy=s.energy;p.faction=s.faction;s.ships=syncMiningDrones(s.ships,[p],s.time,()=>++serial);
+ const enemies=s.ships.filter(e=>e.team&&e.hp>0);
+ for(const d of s.ships){if(!d.mining)continue;const result=stepMiningDrone(d,p,s.rocks,enemies,s.loot,dt);
+  if(result.deposit)s.scrap+=Math.round(result.deposit*(s.role===2?1.6:1));
+  if(result.zap){const {target,kind,damage:amount}=result.zap;if(kind==='rock'){target.hp-=amount;target.hitX=d.x;target.hitY=d.y;}else damage(s,target,amount);const a=Math.atan2(target.y-d.y,target.x-d.x),r=kind==='rock'?target.r*.8:0;emitVisual(s.fx,'beam',d.x,d.y,{beam:true,x2:target.x-Math.cos(a)*r,y2:target.y-Math.sin(a)*r,weapon:'mining',max:.16});}
+ }
+ s.energy=p.energy;
+}

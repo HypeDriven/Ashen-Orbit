@@ -1,5 +1,5 @@
 import {launchVelocity} from './ballistics.js';
-import {HULLS,weapon} from './arsenal.js';
+import {HULLS,weapon,hullAllows} from './arsenal.js';
 import {shipLevel} from './shipyard.js';
 // Cosmetic only. Hit detection, damage, ammunition and heat stay on the server.
 export class FireFeedback {
@@ -9,7 +9,7 @@ export class FireFeedback {
   const p=s.player;if(this.life!==p.spawnSeq){this.reset();this.life=p.spawnSeq;}
   HULLS[s.hull||0].mounts.forEach((mount,i)=>{
    this.cooldowns[i]=Math.max(0,(this.cooldowns[i]||0)-dt);const w=weapon(s.loadout?.[i]);
-   if(!w||mount.type!=='fixed'||!input.fire||p.hp<=0||p.cloaked||s.overheated||s.energy<w.energy||this.cooldowns[i]>0)return;
+   if(!w||!hullAllows(w.id,s.hull||0)||mount.type!=='fixed'||!input.fire||p.hp<=0||p.cloaked||s.overheated||s.energy<w.energy||this.cooldowns[i]>0)return;
    this.cooldowns[i]=w.rate/(1+shipLevel(s,'gun')*.05);
    const a=p.a,x=p.x+Math.cos(a)*mount.x-Math.sin(a)*mount.y,y=p.y+Math.sin(a)*mount.x+Math.cos(a)*mount.y;
    s.fx.push({effect:'muzzle',x,y,a,vx:0,vy:0,t:.12,max:.12,size:9,weapon:w.id,seed:i});

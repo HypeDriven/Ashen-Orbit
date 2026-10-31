@@ -16,9 +16,10 @@ function uBotThink(s,p,ctx){
  if(uAtBase(s,p)){
   if(p.role!==p.personality&&p.scrap>=ROLES[p.personality].cost)uShipyard(s,p,{type:'role',role:p.personality});
   var preferred=['gatling','rail','laser','mine','homing','pulse'][p.personality];if(p.role===p.personality&&p.loadout[0]!==preferred&&shipFitStatus(p,0,preferred).ok)uShipyard(s,p,{type:'fit',slot:0,item:preferred});
+  if(p.personality===2&&p.role===2&&p.loadout.indexOf('mining-bay')<0){var utility=HULLS[p.hull].mounts.findIndex(function(m){return m.type==='utility';});if(utility>=0&&shipFitStatus(p,utility,'mining-bay').ok)uShipyard(s,p,{type:'fit',slot:utility,item:'mining-bay'});}
   var choices=[['gun','engine','multishot','pierce'],['armor','shield','regen','gun'],['tractor','engine','gun','armor'],['engine','armor','emp','gun'],['engine','gun','emp','armor'],['hangar','wingguns','winghull','armor']][p.personality];
   var reserve=p.role===p.personality?0:ROLES[p.personality].cost;for(var i=0;i<choices.length;i++)if(shipUpgradeStatus(p,choices[i]).ok&&p.scrap-shipUpgradeStatus(p,choices[i]).cost>=reserve){uShipyard(s,p,{type:'upgrade',id:choices[i]});break;}
-  if(p.role===5&&p.scrap>=95&&s.escorts.filter(function(e){return e.owner===p.id;}).length<2)uShipyard(s,p,{type:'upgrade',id:'escort'});
+  if(p.role===5&&p.scrap>=95&&s.escorts.filter(function(e){return e.owner===p.id&&!e.mining;}).length<2)uShipyard(s,p,{type:'upgrade',id:'escort'});
  }
  var returning=p.hp<p.max*.4||p.role!==p.personality&&p.scrap>=ROLES[p.personality].cost||p.role===p.personality&&p.scrap>=250;
  var enemy=s.pilots.concat(s.enemies).filter(function(t){return t.id!==p.id&&t.online!==false&&t.hp>0&&t.faction!==p.faction&&visibleShip(p,t)&&distance(t,p)<900;}).sort(function(a,b){return distance(a,p)-distance(b,p);})[0];

@@ -102,3 +102,7 @@ test('joining the next world leaves a completed world and preserves the chosen f
 test('quitting issues a seat-release write synchronously for runtime keepalive delivery',async()=>{
  const room={id:'world',metadata:{universe:true},gameSessionId:'session',hostUserId:'me',participants:[{userId:'me'}]};let leaves=0;const mod=await client('online.ts',{player:()=>({userId:'me'}),connectGame:()=>socket(),rooms:{mine:async()=>room,connect:()=>socket(),leave:async id=>{assert.equal(id,'world');leaves++;}}});await mod.enterUniverse(0);mod.quitOnline();assert.equal(leaves,1);
 });
+
+test('shared snapshots preserve mining drone ownership and cargo without counting them as escorts',async()=>{
+ const sock=socket(),mod=await client('online.ts',{player:()=>({userId:'me'}),launchContext:()=>({sessionId:'session'}),connectGame:()=>sock});mod.resumeLaunch();const world={kind:'universe',pilots:[['me','Pilot',0,0,0,0,0,0,176,176,0,0,0,false,100,120,0,0,0]],enemies:[[1,10,20,0,0,0,32,32,0,0,0,1,12],[2,30,40,0,0,0,150,150,0,0,0,0,0]],pilotIds:['me'],rocks:[],mines:[],bases:[],fx:[],beacons:[],core:{x:0,y:0},bullets:[],loot:[],time:1,message:'Mining',progress:0,goal:9,ended:false};sock.events.game({type:'snapshot',world});const drone=mod.online.view.ships.find(e=>e.id===1);assert.equal(drone.mining,true);assert.equal(drone.owner,'me');assert.equal(drone.cargo,12);assert.equal(drone.team,0);assert.equal(mod.online.view.wing,1);
+});

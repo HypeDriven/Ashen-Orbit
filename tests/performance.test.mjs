@@ -5,3 +5,7 @@ test('packed projectiles preserve collision-visible positions and long-lived min
 test('firing gives local feedback on the first frame and never applies damage',()=>{
  const s=createGame(),feedback=new FireFeedback(),hp=s.player.hp,energy=s.energy;feedback.step(s,1/60,{fire:true});assert.ok(s.fx.some(e=>e.effect==='muzzle'));assert.ok(s.fx.some(e=>e.beam));assert.equal(s.player.hp,hp);assert.equal(s.energy,energy);const count=s.fx.length;feedback.step(s,1/60,{fire:true});assert.equal(s.fx.length,count);
 });
+
+test('client feedback cannot preview a weapon forbidden on the current hull',()=>{
+ const s=createGame(),feedback=new FireFeedback();s.loadout[0]='siege-lance';feedback.step(s,1/60,{fire:true});assert.equal(s.fx.length,0);
+});

@@ -21,12 +21,18 @@ export const WEAPONS=[
  {id:'helix',name:'Helix projector',desc:'Twin weaving bolts cover a widening lane; moderate reach.',cost:230,research:2,tier:1,power:4,energy:5,heat:10,rate:.4,speed:650,life:1.15,damage:20,count:2,spread:.035,weave:24,color:'#81ddd2'},
  {id:'swarm',name:'Seeker swarm',desc:'Three agile seekers acquire nearby targets; low hull damage.',cost:310,research:2,tier:2,power:5,energy:9,heat:18,rate:1.4,speed:380,life:2.6,damage:22,count:3,spread:.22,homing:3.6,seek:850,color:'#f1d396'},
  {id:'cluster',name:'Cluster bomb',desc:'Splits after 0.7s or impact into eight short-range fragments.',cost:290,research:2,tier:2,power:5,energy:10,heat:20,rate:1.6,speed:310,life:.7,damage:24,fragments:8,fragmentSpeed:430,color:'#efad8d'},
- {id:'breach',name:'Breach torpedo',desc:'3x damage to bases and outposts; slow and poor against ships.',cost:380,research:3,tier:3,power:6,energy:16,heat:26,rate:2.2,speed:340,life:3,damage:65,structure:3,color:'#d7b4f3'}
+ {id:'breach',name:'Breach torpedo',desc:'3x damage to bases and outposts; slow and poor against ships.',cost:380,research:3,tier:3,power:6,energy:16,heat:26,rate:2.2,speed:340,life:3,damage:65,structure:3,color:'#d7b4f3'},
+ {id:'skirmisher',name:'Skirmisher burst',desc:'Light-hull triple burst; close range and wide spread.',cost:210,research:1,tier:0,hulls:[0,1],power:4,energy:4,heat:10,rate:.4,speed:950,life:.5,damage:14,count:3,spread:.1,color:'#f2d6a0'},
+ {id:'lancer',name:'Frigate lance',desc:'Frigate reactor-fed beam; long reach, heavy capacitor drain.',cost:420,research:3,tier:2,hulls:[2],power:8,energy:22,heat:25,rate:1.2,speed:0,life:0,damage:105,range:900,beam:true,color:'#9acfeb'},
+ {id:'broadside',name:'Capital flak array',desc:'Capital swarm defense; nine shells, high heat and power.',cost:460,research:3,tier:3,hulls:[3,4],power:10,energy:13,heat:26,rate:1,speed:750,life:.65,damage:22,count:9,spread:.12,color:'#edbb8c'},
+ {id:'siege-lance',name:'Siege lance',desc:'Dreadnought beam; 1.8x structural damage, very slow reload.',cost:720,research:5,tier:4,hulls:[4],power:12,energy:34,heat:42,rate:2.8,speed:0,life:0,damage:210,range:1100,beam:true,structure:1.8,color:'#c6b1ed'}
 ];
 export const COMPONENTS=[
  {id:'radiator',name:'Radiator',type:'utility',power:1,cost:140,research:1,desc:'+14 heat cooling/sec.'},
  {id:'magnet',name:'Salvage winch',type:'utility',power:2,cost:140,research:1,desc:'+140 tractor range; -10% speed.'},
  {id:'bulkhead',name:'Heavy bulkhead',type:'utility',power:1,cost:180,research:1,desc:'+110 hull; -8% speed.'},
+ {id:'mining-bay',name:'Mining drone bay',type:'utility',power:4,cost:210,research:1,desc:'2 miners zap rocks, collect ore and return it. 2 ship DPS each.',drone:{count:2,hp:32,speed:235,reach:650,range:125,rockDamage:18,shipDamage:1.5,rate:.75,launch:14,rebuild:10,cargo:24}},
+ {id:'survey-bay',name:'Survey drone bay',type:'utility',power:6,cost:340,research:2,desc:'3 fast, fragile long-range miners. 1.7 ship DPS each. Max 4 drones.',drone:{count:3,hp:20,speed:300,reach:850,range:135,rockDamage:12,shipDamage:1,rate:.6,launch:18,rebuild:16,cargo:18}},
  {id:'drive',name:'Vector engine',type:'engine',power:3,cost:0,research:0,desc:'+18% speed, +15% turn rate.'},
  {id:'cruise',name:'Cruise engine',type:'engine',power:2,cost:220,research:2,desc:'+32% speed; -25% turn rate.'},
  {id:'agile',name:'Maneuver engine',type:'engine',power:4,cost:220,research:2,desc:'+45% turn rate, only +5% speed.'},
@@ -45,7 +51,8 @@ export const HULLS=[
 ];
 export const weapon=id=>WEAPONS.find(w=>w.id===id);
 export const component=id=>COMPONENTS.find(c=>c.id===id);
-export const compatible=(slot,id)=>!id||(['fixed','turret'].includes(slot.type)?!!weapon(id):component(id)?.type===slot.type);
+export const hullAllows=(id,hull)=>!weapon(id)?.hulls||weapon(id).hulls.includes(hull);
+export const compatible=(slot,id,hull=null)=>!id||((['fixed','turret'].includes(slot.type)?!!weapon(id):component(id)?.type===slot.type)&&(hull===null||hullAllows(id,hull)));
 export const angleDelta=(a,b)=>Math.atan2(Math.sin(b-a),Math.cos(b-a));
 export const turnTowards=(a,b,step)=>a+Math.max(-step,Math.min(step,angleDelta(a,b)));
 export function segmentDistance(x,y,ax,ay,bx,by){const dx=bx-ax,dy=by-ay,t=Math.max(0,Math.min(1,((x-ax)*dx+(y-ay)*dy)/(dx*dx+dy*dy||1)));return Math.hypot(x-ax-t*dx,y-ay-t*dy);}

@@ -10,7 +10,7 @@ export function stepVisuals(list,dt){for(const f of list){f.t-=dt;f.x+=(f.vx||0)
 export function rememberTrail(b,dt){if(!['swarm','cluster','breach','homing','rocket','siege','plasma','disruptor','ion','particle','flame'].includes(b.weapon))return;b.trailClock=(b.trailClock||0)+dt;if(b.trailClock>=.035){b.trailClock=0;(b.trail||(b.trail=[])).unshift({x:b.x,y:b.y});if(b.trail.length>12)b.trail.length=12;}}
 export const PILOT_SHAPES=[[[1.4,0],[-.8,-.5],[-.25,0],[-.8,.5]],[[1,-.5],[1,.5],[-.7,.8],[-1,0],[-.7,-.8]],[[1,0],[.5,-.65],[-.9,-.65],[-.7,0],[-.9,.65],[.5,.65]],[[1.15,0],[.2,-.8],[-1,-.6],[-.5,0],[-1,.6],[.2,.8]],[[1.6,0],[-.8,-.32],[-.4,0],[-.8,.32]],[[1,-.4],[1,.4],[-.8,.7],[-1,-.7]]];
 export function warpScale(at,time){const t=Math.max(0,Math.min(1,(time-(at??-10))/.65));return t*t*(3-2*t);}
-const colors={needle:'#c5e6dc',helix:'#81ddd2',swarm:'#f1d396',cluster:'#efad8d',breach:'#d7b4f3',cannon:'#e0c9a2',gatling:'#e5bd7e',flak:'#e6c497',laser:'#f47873',pulse:'#f99b83',disruptor:'#bd8eff',ion:'#84ddfa',homing:'#e9be85',rocket:'#efa56a',particle:'#b3f2aa',rail:'#cae8ff',plasma:'#8ee6ba',tesla:'#aab7ff',flame:'#ffac69',mine:'#e1a3b9',siege:'#e6b2fa',siphon:'#9ddbc4',pd:'#b6dcea'};
+const colors={mining:'#9ce6d0',skirmisher:'#f2d6a0',lancer:'#9acfeb',broadside:'#edbb8c','siege-lance':'#c6b1ed',needle:'#c5e6dc',helix:'#81ddd2',swarm:'#f1d396',cluster:'#efad8d',breach:'#d7b4f3',cannon:'#e0c9a2',gatling:'#e5bd7e',flak:'#e6c497',laser:'#f47873',pulse:'#f99b83',disruptor:'#bd8eff',ion:'#84ddfa',homing:'#e9be85',rocket:'#efa56a',particle:'#b3f2aa',rail:'#cae8ff',plasma:'#8ee6ba',tesla:'#aab7ff',flame:'#ffac69',mine:'#e1a3b9',siege:'#e6b2fa',siphon:'#9ddbc4',pd:'#b6dcea'};
 export const effectColor=id=>colors[id]||'#d0b49d';
 function hash(n){const v=Math.sin(n*127.1+311.7)*43758.5453;return v-Math.floor(v);}
 function alpha(c,a){return c.slice(0,7)+Math.round(Math.max(0,Math.min(1,a))*255).toString(16).padStart(2,'0');}
@@ -112,4 +112,13 @@ export function renderHullDetail(p,e,r,time,mounts=[],loadout=[]){
    for(let j=0;j<3;j++){const q=5+j*2.4;p.line(x+u*q-v*2,y+v*q+u*2,x+u*q+v*2,y+v*q-u*2,'#3b5244',.6);}p.disc(x+u*13*size,y+v*13*size,1.3,'#26372e');}
  }
  if(p.detail>1.2)for(const scar of e.scars||[]){const [x,y]=point(scar.x,scar.y),age=Math.max(0,time-scar.born),fade=Math.max(0,1-age/45);if(!fade)continue;p.disc(x,y,scar.size*1.5,alpha('#24312d',fade*.55));p.ring(x,y,scar.size,alpha('#a08963',fade*.6),.6);const aa=scar.a+a;p.line(x-Math.cos(aa)*scar.size,y-Math.sin(aa)*scar.size,x+Math.cos(aa)*scar.size,y+Math.sin(aa)*scar.size,alpha('#18251f',fade),1);if(age<3)p.disc(x,y,scar.size*.35,alpha(effectColor(scar.weapon),(1-age/3)*.7));}
+}
+
+export function renderMiningDrone(p,d,time){
+ const a=d.a||0,ux=Math.cos(a),uy=Math.sin(a),nx=-uy,ny=ux,c=d.team?'#cf9c89':'#9ce6d0',point=(x,y)=>[d.x+ux*x+nx*y,d.y+uy*x+ny*y];
+ p.poly([point(8,0),point(1,-5),point(-7,-4),point(-7,4),point(1,5)],d.hit>0?'#ffffff':'#819b91');
+ for(const side of [-1,1]){p.line(...point(-3,side*3),...point(4,side*10),c,1.2);p.line(...point(4,side*10),...point(9,side*8),'#b9c9ba',1.6);}
+ p.disc(...point(4,0),1.8,c);if(d.cargo>0){p.disc(...point(-3,0),2.4,'#d5b46b');p.ring(d.x,d.y,12,'#9a885f',.5,0,Math.PI*2*Math.min(1,d.cargo/24));}
+ if(Math.hypot(d.vx||0,d.vy||0)>10)p.line(...point(-7,0),...point(-12-Math.sin(time*25)*2,0),c,1);
+ if(d.hp<d.max)p.ring(d.x,d.y,11,c,.7,0,Math.PI*2*Math.max(0,d.hp/d.max));
 }
