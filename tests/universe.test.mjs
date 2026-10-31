@@ -26,8 +26,8 @@ test('late joins enter the existing universe, choose sides, and reconnect withou
  w.ctx.players.push({id:'late',name:'Late pilot',ai:false});
  assert.equal(w.game.onMembershipChange(w.ctx).ok,true);w.tick();
  assert.equal(w.cmd(1,{type:'choose',faction:1}).ok,true);
- assert.equal(w.s.pilots[0],p);assert.equal(w.s.pilots[1].x,2200);
- assert.equal(w.s.pilots.length,2);
+ assert.equal(w.s.pilots[0],p);assert.equal(w.s.pilots.find(p=>p.id==='late').x,2200);
+ assert.equal(w.s.pilots.filter(p=>!p.ai).length,2);
 });
 
 test('faction and purchased hull/role survive departure and saved-state restoration',()=>{
@@ -105,7 +105,7 @@ test('solo roles apply tradeoffs and laid mines retain their original damage',()
 });
 
 test('destroyed bases stop repairs, jumps and spawning; the last enemy base ends the world',()=>{
- const w=world();w.cmd(0,{type:'choose',faction:0});w.cmd(1,{type:'choose',faction:1});w.s.rocks=[];w.s.spawn=100000;
+ const w=world();w.sandbox.uBotPopulation=()=>{};w.cmd(0,{type:'choose',faction:0});w.cmd(1,{type:'choose',faction:1});w.s.rocks=[];w.s.spawn=100000;
  const attacker=w.s.pilots[0],defender=w.s.pilots[1];
  for(let sector=0;sector<9;sector++){
   const base=w.s.bases.find(b=>b.faction===1&&b.sector===sector);attacker.x=base.x-650;attacker.y=base.y;attacker.a=0;attacker.vx=attacker.vy=0;attacker.energy=100;attacker.heat=0;attacker.overheated=false;
@@ -279,3 +279,12 @@ test('crowded mass destruction retains player hulls, unique event ids and bounde
  const w=world(32);for(let i=0;i<32;i++){w.cmd(i,{type:'choose',faction:i%2});const p=w.s.pilots[i];p.hull=4;p.vx=300;p.vy=-70;w.sandbox.uDamage(w.s,p,100000,'test',{}, {x:1,y:0});}for(let i=0;i<180;i++)w.sandbox.uDamage(w.s,{id:'escort-'+i,owner:'test',x:0,y:0,vx:140,vy:40,a:0,hp:1,max:1,faction:0,kind:0},100,'test',{}, {x:0,y:1});
  const debris=w.s.fx.filter(f=>f.effect==='ship-breakup');assert.equal(debris.filter(f=>f.size===66).length,32);assert.ok(w.s.fx.length<=64);assert.equal(new Set(w.s.fx.map(f=>f.seed)).size,w.s.fx.length);const messages=w.sandbox.uBroadcast(w.s,true);for(const packet of messages)assert.ok(Buffer.byteLength(JSON.stringify(packet.data))<16000);assert.ok(debris.every(f=>!f.fragments));
 });
+
+ test('AI fills occupied sectors to four pilots and yields to humans',()=>{
+ const w=world(1);w.cmd(0,{type:'choose',faction:0});w.tick();
+ assert.equal(w.s.pilots.filter(p=>p.ai).length,3);
+ const p=w.s.pilots.find(p=>!p.ai);p.y=-3200;p.sector=2;w.tick();
+ assert.ok(w.s.pilots.filter(p=>p.ai).every(p=>p.sector===2));
+ w.ctx.players.push({id:'new-human',name:'New',ai:false});w.tick();w.cmd(1,{type:'choose',faction:1});w.tick();
+ assert.equal(w.s.pilots.filter(p=>p.ai&&p.sector===4).length,3);
+ });
