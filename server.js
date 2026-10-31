@@ -1,29 +1,29 @@
 'use strict';
 // BEGIN GENERATED BASE DEFENSES
 // Shared deterministic station defenses. This module is inlined into server.js by
-// scripts/sync-defenses.mjs so campaign and authoritative missions use the same rules.
+// scripts/sync-universe.mjs so campaign and authoritative missions use the same rules.
 function createBaseDefense(){
  var d={shields:[],turrets:[],fighters:[],fx:[]};
  for(var i=0;i<3;i++){var a=-Math.PI/2+i*Math.PI*2/3;d.shields.push({x:Math.cos(a)*215,y:Math.sin(a)*215,r:82,hp:65,max:65,recharge:0,flash:0});}
  for(var j=0;j<2;j++)d.turrets.push({x:j?145:-145,y:-75,a:-Math.PI/2,cd:j*.4});
- for(var k=0;k<6;k++){var angle=k*Math.PI/3,r=130+(k%3)*18;d.fighters.push({x:Math.cos(angle)*r,y:Math.sin(angle)*r,a:angle+Math.PI/2,hp:28,max:28,down:false,cd:k*.13,respawn:0,squad:Math.floor(k/3),slot:k});}
+ for(var k=0;k<6;k++){var angle=k*Math.PI/3,r=130+(k%3)*18;d.fighters.push({x:Math.cos(angle)*r,y:Math.sin(angle)*r,a:angle+Math.PI/2,hp:28,max:28,down:false,cd:k*.13,respawn:0,squad:Math.floor(k/3),slot:k,baseFighter:true,vx:0,vy:0,av:0});}
  return d;
 }
 function baseDistance(a,b){return Math.hypot(a.x-b.x,a.y-b.y);}
 function baseBeam(d,x,y,xx,yy,kind){d.fx.push({x:x,y:y,x2:xx,y2:yy,t:.14,kind:kind});}
 function updateBaseDefense(d,dt,time,enemies,bullets,hitEnemy){
- d.fx=d.fx.filter(function(f){f.t-=dt;return f.t>0;});
+ d.time=time;d.fx=d.fx.filter(function(f){f.t-=dt;if(f.effect==='ship-breakup'){f.x+=(f.vx||0)*dt;f.y+=(f.vy||0)*dt;}return f.t>0;});
  d.shields.forEach(function(s){s.flash=Math.max(0,s.flash-dt);s.recharge=Math.max(0,s.recharge-dt);if(s.recharge===0)s.hp=Math.min(s.max,s.hp+dt*5);});
  d.turrets.forEach(function(t){t.cd=Math.max(0,t.cd-dt);if(t.cd>0)return;
   // Only intercept inbound shots that threaten the station's neighborhood.
   var shot=null,dd=300;bullets.forEach(function(b){if(!b.team||b.t<=0)return;var distance=baseDistance(t,b);if(distance<dd&&b.x*b.vx+b.y*b.vy<0){dd=distance;shot=b;}});
   if(shot){t.a=Math.atan2(shot.y-t.y,shot.x-t.x);t.cd=.8;shot.t=-1;baseBeam(d,t.x,t.y,shot.x,shot.y,'pd');return;}
   var target=null;dd=380;enemies.forEach(function(e){var distance=baseDistance(t,e);if(e.hp>0&&Math.hypot(e.x,e.y)<460&&distance<dd){dd=distance;target=e;}});
-  if(target){t.a=Math.atan2(target.y-t.y,target.x-t.x);t.cd=1.2;hitEnemy(target,6);baseBeam(d,t.x,t.y,target.x,target.y,'pd');}
+  if(target){t.a=Math.atan2(target.y-t.y,target.x-t.x);t.cd=1.2;hitEnemy(target,6,{x:target.x-t.x,y:target.y-t.y});baseBeam(d,t.x,t.y,target.x,target.y,'pd');}
  });
  d.fighters.forEach(function(f){
-  if(f.hp<=0){if(!f.down){f.down=true;f.respawn=45+f.slot*2;}f.respawn=Math.max(0,f.respawn-dt);if(f.respawn===0){var launch=f.slot*Math.PI/3;f.x=Math.cos(launch)*130;f.y=Math.sin(launch)*130;f.hp=f.max;f.down=false;f.cd=1;}else return;}
-  f.cd=Math.max(0,f.cd-dt);var target=null,dd=240;
+  if(f.hp<=0){if(!f.down){f.down=true;f.respawn=45+f.slot*2;}f.respawn=Math.max(0,f.respawn-dt);if(f.respawn===0){var launch=f.slot*Math.PI/3;f.x=Math.cos(launch)*130;f.y=Math.sin(launch)*130;f.hp=f.max;f.down=false;f.destroyed=false;f.cd=1;}else return;}
+  var oldX=f.x,oldY=f.y,oldA=f.a;f.cd=Math.max(0,f.cd-dt);var target=null,dd=240;
   enemies.forEach(function(e){var distance=baseDistance(f,e);if(e.hp>0&&Math.hypot(e.x,e.y)<460&&distance<dd){dd=distance;target=e;}});
   var tx,ty;
   if(target){var angle=time*.8+f.slot*Math.PI/3;tx=target.x+Math.cos(angle)*65;ty=target.y+Math.sin(angle)*65;}
@@ -32,9 +32,10 @@ function updateBaseDefense(d,dt,time,enemies,bullets,hitEnemy){
   var dx=tx-f.x,dy=ty-f.y,distance=Math.hypot(dx,dy),step=Math.min(distance,dt*145);if(distance>.01){f.a=Math.atan2(dy,dx);f.x+=dx/distance*step;f.y+=dy/distance*step;}
   // A hard leash also protects restored worlds and future faster fighter drives.
   length=Math.hypot(f.x,f.y);if(length>500){f.x*=500/length;f.y*=500/length;}
-  if(target&&baseDistance(f,target)<190&&f.cd===0){f.a=Math.atan2(target.y-f.y,target.x-f.x);f.cd=1;hitEnemy(target,2);baseBeam(d,f.x,f.y,target.x,target.y,'fighter');}
+  if(target&&baseDistance(f,target)<190&&f.cd===0){f.a=Math.atan2(target.y-f.y,target.x-f.x);f.cd=1;hitEnemy(target,2,{x:target.x-f.x,y:target.y-f.y});baseBeam(d,f.x,f.y,target.x,target.y,'fighter');}
+  f.vx=dt>0?(f.x-oldX)/dt:0;f.vy=dt>0?(f.y-oldY)/dt:0;f.av=dt>0?Math.max(-6,Math.min(6,Math.atan2(Math.sin(f.a-oldA),Math.cos(f.a-oldA))/dt)):0;
  });
- if(d.fx.length>24)d.fx.splice(0,d.fx.length-24);
+ while(d.fx.length>32){var index=d.fx.findIndex(function(f){return f.effect!=='ship-breakup';});d.fx.splice(index<0?0:index,1);}
 }
 // Earliest entry into a circle, including swept high-speed shots; ships themselves
 // can breach the shield, and a shot originating inside a shield is not blocked.
@@ -46,7 +47,7 @@ function interceptBaseShot(d,b,ax,ay,bx,by){
  d.fighters.forEach(function(f){if(f.hp<=0)return;var t=baseCircleEntry(ax,ay,bx,by,f.x,f.y,9);if(t!==null)hits.push({t:t,fighter:f});});
  hits.sort(function(a,b){return a.t-b.t;});
  for(var i=0;i<hits.length;i++){var h=hits[i];if(h.shield){var s=h.shield,absorbed=Math.min(s.hp,b.dmg);s.hp-=absorbed;s.hitX=ax+(bx-ax)*h.t;s.hitY=ay+(by-ay)*h.t;s.recharge=8;s.flash=.2;b.dmg-=absorbed;if(b.dmg<=0){b.t=-1;return true;}}
-  else{var f=h.fighter;f.hp=Math.max(0,f.hp-b.dmg);if(f.hp===0){f.down=true;f.respawn=45+f.slot*2;}b.t=-1;return true;}}
+  else{var f=h.fighter;recordShipImpact(f,b.dmg,{x:b.vx,y:b.vy},d.time||0);f.hp=Math.max(0,f.hp-b.dmg);if(f.hp===0){f.destroyed=true;f.down=true;f.respawn=45+f.slot*2;d.debrisSerial=(d.debrisSerial||0)+1;d.fx.push(Object.assign(shipBreakup(Object.assign({},f,{baseFighter:true}),d.time||0),{seed:d.debrisSerial,hullColor:f.squad?'#9ebfc3':'#a7bea1'}));}b.t=-1;return true;}}
  return false;
 }
 // END GENERATED BASE DEFENSES
@@ -68,7 +69,10 @@ function acceptPilotInput(p,data,now,simulationTime){
 }
 function applyQueuedPilotInput(p,time){while(p.pendingInputs&&p.pendingInputs.length&&p.pendingInputs[0].at<=time){var e=p.pendingInputs.shift();if(e.seq>(p.inputAck||0)){p.input=e.controls;p.inputAt=e.at;}}}
 
-function broadcast(s){return [{to:'all',data:{type:'snapshot',world:s}}];}
+function broadcast(s){
+ if(JSON.stringify(s).length<14000)return [{to:'all',data:{type:'snapshot',world:s}}];
+ var view=Object.assign({},s),packets=[];['pilots','enemies','bullets','loot','fx'].forEach(function(kind){var rows=view[kind]||[];for(var i=0;i<rows.length;i+=24)packets.push({to:'all',data:{type:'entity-part',time:s.time,kind:kind,values:rows.slice(i,i+24)}});view[kind]=[];});view.multipart=true;packets.push({to:'all',data:{type:'snapshot',world:view}});return packets;
+}
 function start(ctx){
  var humans=ctx.players.filter(function(p){return !p.ai;});
  if(humans.length<1||humans.length>2)return {ok:false,error:'One daily pilot or exactly two co-op pilots required.'};
@@ -88,21 +92,22 @@ function command(ctx){var s=ctx.sessionState,m=ctx.message.data||{},p=s&&s.pilot
 }
 function tick(ctx){
  var s=ctx.sessionState;if(!s)return {ok:false,error:'No mission.'};if(s.ended)return {ok:true};
- var dt=Math.max(0,Math.min(.1,(ctx.now-s.now)/1000));s.now=ctx.now;s.time+=dt;s.tick++;s.fx=[];
+ var dt=Math.max(0,Math.min(.1,(ctx.now-s.now)/1000));s.now=ctx.now;s.time+=dt;s.tick++;advanceServerVisuals(s,dt);
  var day=Math.floor(ctx.now/86400000);if(day!==s.day){s.day=day;s.pilots.forEach(function(p){p.dayScrap=0;});}
  (ctx.inputs||[]).forEach(function(packet){var p=s.pilots.find(function(p){return p.id===packet.from;});if(p){acceptPilotInput(p,packet.data||{},ctx.now,s.time);}});
  s.pilots.forEach(function(p){
-  if(p.hp<=0){var partner=s.pilots.find(function(o){return o.id!==p.id&&o.hp>0&&distance(p,o)<120&&o.input.tractor&&ctx.now-o.lastInput<800;});if(partner){p.revive+=dt;if(p.revive>=4){p.hp=130;p.revive=0;p.warpAt=s.time;serverVisual(s,'warp',p.x,p.y,{max:.85,size:24,a:p.a,out:false,role:0});}}else p.revive=0;return;}
+  if(p.hp<=0){var partner=s.pilots.find(function(o){return o.id!==p.id&&o.hp>0&&distance(p,o)<120&&o.input.tractor&&ctx.now-o.lastInput<800;});if(partner){p.revive+=dt;if(p.revive>=4){p.hp=130;p.destroyed=false;p.impactX=p.impactY=0;p.impactAt=s.time;p.revive=0;p.warpAt=s.time;serverVisual(s,'warp',p.x,p.y,{max:.85,size:24,a:p.a,out:false,role:0});}}else p.revive=0;return;}
   applyQueuedPilotInput(p,s.time);var m=ctx.now-p.lastInput<800?p.input:clean({});stepPilotMovement(p,dt,m,[],false);p.inputAck=Math.max(p.inputAck||0,p.input.seq||0);p.cd-=dt;
   if(!m.steering&&m.aim!==null)p.a=m.aim;else if(!m.steering){var target=null,dd=900;s.enemies.forEach(function(e){var d=distance(p,e);if(d<dd){dd=d;target=e;}});if(target)p.a=Math.atan2(target.y-p.y,target.x-p.x);}
   if(m.fire&&p.cd<=0&&s.bullets.length<200){p.cd=.2;serverVisual(s,'muzzle',p.x,p.y,{a:p.a,weapon:'cannon',size:9,max:.12});s.bullets.push({x:p.x,y:p.y,vx:Math.cos(p.a)*640+p.vx,vy:Math.sin(p.a)*640+p.vy,t:1.6,owner:p.id,team:0,dmg:26});}
  });
  s.spawn-=dt;if(s.spawn<=0&&s.enemies.length<24){s.wave++;s.spawn=s.mission==='daily'?2.4:3;var a=(ctx.random||.5)*Math.PI*2;for(var i=0;i<(s.mission==='daily'?2:3);i++){var aa=a+i*.2;s.enemies.push({id:s.wave*10+i,x:Math.cos(aa)*1250,y:Math.sin(aa)*850,hp:i===0&&s.wave%3===0?150:65,max:i===0&&s.wave%3===0?150:65,kind:i===0&&s.wave%3===0?1:s.wave%4===0?3:0,a:aa,cd:1.5});}}
- s.enemies.forEach(function(e){var target=s.core,dd=800;s.pilots.forEach(function(p){if(p.hp>0&&distance(p,e)<dd){dd=distance(p,e);target=p;}});if(s.baseDefense)s.baseDefense.fighters.forEach(function(f){if(f.hp>0&&distance(f,e)<Math.min(230,distance(target,e)))target=f;});e.a=Math.atan2(target.y-e.y,target.x-e.x);var d=distance(e,target),v=e.kind===1?60:105;if(d>210){e.x+=Math.cos(e.a)*v*dt;e.y+=Math.sin(e.a)*v*dt;}e.cd-=dt;if(d<900&&e.cd<=0&&s.bullets.length<200){e.cd=e.kind===3?2.4:1.6;serverVisual(s,'muzzle',e.x,e.y,{a:e.a,weapon:'cannon',size:9,max:.12});s.bullets.push({x:e.x,y:e.y,vx:Math.cos(e.a)*(e.kind===3?520:280)+(e.vx||0),vy:Math.sin(e.a)*(e.kind===3?520:280)+(e.vy||0),t:4,team:1,dmg:e.kind===3?24:10});}});
- if(s.baseDefense)updateBaseDefense(s.baseDefense,dt,s.time,s.enemies,s.bullets,function(e,amount){e.hp-=amount*(e.kind===1?.72:1);});
- s.bullets.forEach(function(b){if(b.t<=0)return;var ax=b.x,ay=b.y;b.x+=b.vx*dt;b.y+=b.vy*dt;b.t-=dt;if(s.baseDefense&&interceptBaseShot(s.baseDefense,b,ax,ay,b.x,b.y))return;var targets=b.team?s.pilots.concat([s.core]):s.enemies;for(var i=0;i<targets.length;i++){var t=targets[i];if(t.hp>0&&distance(b,t)<(t===s.core?65:25)){serverVisual(s,'impact',b.x,b.y,{a:Math.atan2(b.vy,b.vx),weapon:'cannon',size:13,max:.65});t.hp-=b.dmg;b.t=-1;break;}}});
+ s.enemies.forEach(function(e){var target=s.core,dd=800;s.pilots.forEach(function(p){if(p.hp>0&&distance(p,e)<dd){dd=distance(p,e);target=p;}});if(s.baseDefense)s.baseDefense.fighters.forEach(function(f){if(f.hp>0&&distance(f,e)<Math.min(230,distance(target,e)))target=f;});e.a=Math.atan2(target.y-e.y,target.x-e.x);var d=distance(e,target),v=e.kind===1?60:105;e.vx=d>210?Math.cos(e.a)*v:0;e.vy=d>210?Math.sin(e.a)*v:0;if(d>210){e.x+=e.vx*dt;e.y+=e.vy*dt;}e.cd-=dt;if(d<900&&e.cd<=0&&s.bullets.length<200){e.cd=e.kind===3?2.4:1.6;serverVisual(s,'muzzle',e.x,e.y,{a:e.a,weapon:'cannon',size:9,max:.12});s.bullets.push({x:e.x,y:e.y,vx:Math.cos(e.a)*(e.kind===3?520:280)+(e.vx||0),vy:Math.sin(e.a)*(e.kind===3?520:280)+(e.vy||0),t:4,team:1,dmg:e.kind===3?24:10});}});
+ if(s.baseDefense)updateBaseDefense(s.baseDefense,dt,s.time,s.enemies,s.bullets,function(e,amount,direction){recordShipImpact(e,amount,direction,s.time);e.hp-=amount*(e.kind===1?.72:1);});
+ s.bullets.forEach(function(b){if(b.t<=0)return;var ax=b.x,ay=b.y;b.x+=b.vx*dt;b.y+=b.vy*dt;b.t-=dt;if(s.baseDefense&&interceptBaseShot(s.baseDefense,b,ax,ay,b.x,b.y))return;var targets=b.team?s.pilots.concat([s.core]):s.enemies;for(var i=0;i<targets.length;i++){var t=targets[i];if(t.hp>0&&distance(b,t)<(t===s.core?65:25)){serverVisual(s,'impact',b.x,b.y,{a:Math.atan2(b.vy,b.vx),weapon:'cannon',size:13,max:.65});recordShipImpact(t,b.dmg,{x:b.vx,y:b.vy},s.time);t.hp-=b.dmg;b.t=-1;break;}}});
  s.bullets=s.bullets.filter(function(b){return b.t>0;});
- s.enemies=s.enemies.filter(function(e){if(e.hp>0)return true;serverVisual(s,'explosion',e.x,e.y,{size:e.kind===1?37:25,max:1.7});for(var i=0;i<3;i++)s.loot.push({x:e.x+(i-1)*22,y:e.y,v:12});return false;});
+ s.enemies=s.enemies.filter(function(e){if(e.hp>0)return true;serverVisual(s,'ship-breakup',e.x,e.y,shipBreakup(e,s.time));for(var i=0;i<3;i++)s.loot.push({x:e.x+(i-1)*22,y:e.y,v:12});return false;});
+ s.pilots.forEach(function(p){if(p.hp<=0&&!p.destroyed){p.destroyed=true;serverVisual(s,'ship-breakup',p.x,p.y,shipBreakup(p,s.time,true));}});
  s.loot.forEach(function(l){var nearest=null,dd=Infinity;s.pilots.forEach(function(p){if(p.hp<=0)return;var d=distance(p,l);if(d<dd){dd=d;nearest=p;}});if(!nearest)return;var tractor=nearest.input.tractor&&ctx.now-nearest.lastInput<800;if(dd<(tractor?420:45)){var a=Math.atan2(nearest.y-l.y,nearest.x-l.x),v=tractor?420:100;l.x+=Math.cos(a)*Math.min(dd,v*dt);l.y+=Math.sin(a)*Math.min(dd,v*dt);}if(dd<28){nearest.scrap+=l.v;nearest.dayScrap+=l.v;l.v=0;}});s.loot=s.loot.filter(function(l){return l.v>0;}).slice(-160);
  if(s.mission==='salvage'){var both=s.pilots.length===2&&s.pilots.every(function(p){return p.hp>0&&distance(p,s.core)<230;});var total=s.pilots.reduce(function(n,p){return n+p.scrap;},0);s.progress=total;s.message=total<600?'Recover 600 scrap. One pilot tows; one defends the Republic garrison.':'Cargo full. Both pilots return to the ring!';if(total>=600&&both)s.won=true;}
  if(s.mission==='convoy'){s.core.x=Math.sin(s.time*.025)*500;s.core.y=-s.time*3;s.progress=s.time;s.message='Escort the freighter for 90s. Tractor near a downed partner to revive.';if(s.time>=90&&s.pilots.some(function(p){return p.hp>0;}))s.won=true;}
@@ -116,7 +121,12 @@ function tick(ctx){
 }
 globalThis.game={tickRateHz:20,replays:false,queues:[{key:'coop',teams:1,teamSize:2}],createSession:start,onPlayerMessage:command,onTick:tick};
 
-function serverVisual(s,effect,x,y,options){if(s.fx.length>=64)return;if(s.fx.length>=32&&effect!=='warp')return;var f={effect:effect,x:x,y:y,vx:0,vy:0,t:options.max,max:options.max,seed:s.tick*37+s.fx.length};Object.keys(options).forEach(function(key){f[key]=options[key];});s.fx.push(f);}
+function serverVisual(s,effect,x,y,options){
+ var critical=effect==='warp'||effect==='ship-breakup';if(s.fx.length>=32&&!critical)return;
+ if(s.fx.length>=64){var index=s.fx.findIndex(function(f){return f.effect!=='warp'&&f.effect!=='ship-breakup';});if(index<0){var smallest=Infinity;s.fx.forEach(function(f,i){if(f.size<smallest){smallest=f.size;index=i;}});if(smallest>(options.size||0))return;}s.fx.splice(index,1);}
+ s.visualSerial=(s.visualSerial||s.tick*128||1)+1;var f={effect:effect,x:x,y:y,vx:0,vy:0,t:options.max,max:options.max,seed:s.visualSerial};Object.keys(options).forEach(function(key){f[key]=options[key];});s.fx.push(f);
+}
+function advanceServerVisuals(s,dt){s.fx=s.fx.filter(function(f){if(f.effect!=='warp'&&f.effect!=='ship-breakup')return false;f.t-=dt;f.x+=(f.vx||0)*dt;f.y+=(f.vy||0)*dt;return f.t>0&&(f.effect!=='ship-breakup'||f.max-f.t<.3);});}
 
 // BEGIN GENERATED UNIVERSE
 const INPUT_LEAD_SECONDS=.032;
@@ -234,6 +244,52 @@ const compatible=(slot,id,hull=null)=>!id||((['fixed','turret'].includes(slot.ty
 const angleDelta=(a,b)=>Math.atan2(Math.sin(b-a),Math.cos(b-a));
 const turnTowards=(a,b,step)=>a+Math.max(-step,Math.min(step,angleDelta(a,b)));
 function segmentDistance(x,y,ax,ay,bx,by){const dx=bx-ax,dy=by-ay,t=Math.max(0,Math.min(1,((x-ax)*dx+(y-ay)*dy)/(dx*dx+dy*dy||1)));return Math.hypot(x-ax-t*dx,y-ay-t*dy);}
+
+
+const PILOT_SHAPES=[[[1.4,0],[-.8,-.5],[-.25,0],[-.8,.5]],[[1,-.5],[1,.5],[-.7,.8],[-1,0],[-.7,-.8]],[[1,0],[.5,-.65],[-.9,-.65],[-.7,0],[-.9,.65],[.5,.65]],[[1.15,0],[.2,-.8],[-1,-.6],[-.5,0],[-1,.6],[.2,.8]],[[1.6,0],[-.8,-.32],[-.4,0],[-.8,.32]],[[1,-.4],[1,.4],[-.8,.7],[-1,-.7]]];
+const HULL_OUTLINES=PILOT_SHAPES.concat([
+ [[1,0],[.2,-.3],[-.35,-.65],[-.7,-.6],[-.45,0],[-.7,.6],[-.35,.65],[.2,.3]],
+ [[1,-.5],[1,.5],[-.8,.8],[-1,0],[-.8,-.8]],
+ [[1.6,0],[-.8,-.24],[-.35,0],[-.8,.24]],
+ [[1,0],[.5,-.8],[-.7,-.8],[-1,0],[-.7,.8],[.5,.8]],
+ [[1.4,0],[-.9,-.5],[-.3,0],[-.9,.5]],
+ [[8/9,0],[1/9,-5/9],[-7/9,-4/9],[-7/9,4/9],[1/9,5/9]],
+ [[1,0],[-.8,-.55],[-.45,0],[-.8,.55]]
+]);
+const NPC_RADII=[17,29,62,22,38,12];
+const DEBRIS_LIFE=3.6,MAX_IMPACT_DRIFT=48;
+function shipGeometry(ship,pilot=!!ship.pilot,hull=ship.hull||0,role=ship.role||0){
+ if(ship.mining)return {shape:11,size:9};
+ if(ship.baseFighter)return {shape:12,size:7};
+ if(pilot)return {shape:role,size:HULLS[hull]?.radius||24};
+ const kind=ship.kind||0;return {shape:[6,7,6,8,9,10][kind]??6,size:ship.owner?13:ship.escort||ship.team===0&&ship.faction===undefined?18:NPC_RADII[kind]||17};
+}
+const impactDecay=(ship,time)=>Math.exp(-Math.max(0,time-(ship.impactAt??time))*1.4);
+// Visual impulse only: this never changes live movement, health or trust checks.
+function recordShipImpact(ship,damage,direction,time){
+ if(!direction||!Number.isFinite(damage)||damage<=0)return;
+ const length=Math.hypot(direction.x,direction.y);if(!Number.isFinite(length)||length<.0001)return;
+ const decay=impactDecay(ship,time),force=Math.min(14,damage*.18)/(1+(ship.hull||0)*.25);
+ let x=(ship.impactX||0)*decay+direction.x/length*force,y=(ship.impactY||0)*decay+direction.y/length*force;
+ const magnitude=Math.hypot(x,y);if(magnitude>MAX_IMPACT_DRIFT){x*=MAX_IMPACT_DRIFT/magnitude;y*=MAX_IMPACT_DRIFT/magnitude;}
+ ship.impactX=x;ship.impactY=y;ship.impactAt=time;
+}
+function shipBreakup(ship,time,pilot=!!ship.pilot,hull=ship.hull||0,role=ship.role||0){
+ const geometry=shipGeometry(ship,pilot,hull,role),decay=impactDecay(ship,time);
+ return {effect:'ship-breakup',x:ship.x,y:ship.y,a:ship.a||0,vx:(ship.vx||0)+(ship.impactX||0)*decay,vy:(ship.vy||0)+(ship.impactY||0)*decay,av:ship.av||0,shape:geometry.shape,size:geometry.size,faction:ship.faction,max:DEBRIS_LIFE,t:DEBRIS_LIFE};
+}
+function debrisHash(seed){const n=Math.sin(seed*127.1+311.7)*43758.5453;return n-Math.floor(n);}
+// All outlines are star-shaped around the origin. Wedges exactly cover the hull;
+// larger hulls split each wedge again, keeping a strict sixteen-piece limit.
+function hullFragments(f){
+ const shape=HULL_OUTLINES[f.shape]||HULL_OUTLINES[6],r=f.size||24,ca=Math.cos(f.a||0),sa=Math.sin(f.a||0),seed=f.seed||0,parts=[];
+ const add=(a,b)=>{const points=[[0,0],[a[0]*r,a[1]*r],[b[0]*r,b[1]*r]],cx=(a[0]+b[0])*r/3,cy=(a[1]+b[1])*r/3,x=ca*cx-sa*cy,y=sa*cx+ca*cy,mass=Math.abs((a[0]*b[1]-a[1]*b[0])*r*r/2);if(mass<.001)return;
+  const length=Math.hypot(x,y)||1,speed=(26+Math.sqrt(r)*5)*(.65+debrisHash(seed+parts.length+9)*.65);
+  parts.push({points:points.map(p=>[p[0]-cx,p[1]-cy]),x,y,mass,radialX:x/length*speed,radialY:y/length*speed,spin:(f.av||0)+(debrisHash(seed+parts.length+40)-.5)*3});};
+ for(let i=0;i<shape.length;i++){const a=shape[i],b=shape[(i+1)%shape.length];if(r>=36){const mid=[(a[0]+b[0])/2,(a[1]+b[1])/2];add(a,mid);add(mid,b);}else add(a,b);}
+ const mass=parts.reduce((n,p)=>n+p.mass,0)||1,meanX=parts.reduce((n,p)=>n+p.radialX*p.mass,0)/mass,meanY=parts.reduce((n,p)=>n+p.radialY*p.mass,0)/mass;
+ return parts.map(p=>({...p,vx:(f.vx||0)-(f.av||0)*p.y+p.radialX-meanX,vy:(f.vy||0)+(f.av||0)*p.x+p.radialY-meanY}));
+}
 
 
 const MAX_MINING_DRONES=4;
@@ -462,8 +518,8 @@ function uQuery(grid,ax,ay,bx,by,pad){var found=[];for(var x=Math.floor((Math.mi
 function uTargets(s){return s.pilots.concat(s.enemies,s.escorts||[],s.bases);}
 function uRadius(p){return p.base?150:p.pilot?uStats(p).radius:p.mining?9:p.owner?13:22;}
 function uShooter(s,id){return s.pilots.find(function(p){return p.id===id;});}
-function uDamage(s,target,amount,owner,w){
- if(target.hp<=0||amount<=0)return;
+function uDamage(s,target,amount,owner,w,direction){
+ if(target.hp<=0||amount<=0)return;recordShipImpact(target,amount,direction,s.time);
  amount*=target.base&&w&&w.structure||1;var pilot=uShooter(s,owner),before=target.hp+(target.shield||0),shieldFactor=w&&w.shield||1;
  var absorbed=Math.min(target.shield||0,amount*shieldFactor);target.shield=Math.max(0,(target.shield||0)-absorbed);amount=Math.max(0,amount-absorbed/shieldFactor);
  if(!target.base&&target.kind===1&&!target.pilot)amount*=.72*(w&&w.armor||1);
@@ -471,13 +527,13 @@ function uDamage(s,target,amount,owner,w){
  if(!target.base){target.cloaked=false;target.lock=3;if(w&&w.jam)target.jam=Math.max(target.jam||0,w.jam);if(w&&w.burn){target.burn=Math.max(target.burn||0,w.burn);target.burnOwner=owner;}}
  if(pilot){pilot.damage=(pilot.damage||0)+Math.max(0,before-target.hp-(target.shield||0));if(w&&w.heal)pilot.hp=Math.min(pilot.max,pilot.hp+Math.min(amount,before)*w.heal);}
  if(target.hp===0){
-  serverVisual(s,'explosion',target.x,target.y,{max:1.7,size:target.base?160:35});
+  if(target.base)serverVisual(s,'explosion',target.x,target.y,{max:1.7,size:160});else serverVisual(s,'ship-breakup',target.x,target.y,shipBreakup(target,s.time));
   if(target.base){target.destroyedAt=s.time;target.killer=owner||'';if(pilot)pilot.baseKills=(pilot.baseKills||0)+1;var winningSide=1-target.faction;s.pilots.forEach(function(p){if(p.faction===winningSide){p.scrap+=120;p.tech+=2;if(p.cleared.indexOf(target.sector)<0)p.cleared.push(target.sector);p.profileDirty=true;}});}
   else if(target.pilot){target.deaths=(target.deaths||0)+1;target.respawn=8;target.vx=target.vy=0;if(pilot&&pilot.id!==target.id){pilot.kills=(pilot.kills||0)+1;pilot.scrap+=35;pilot.tech+=1;pilot.profileDirty=true;}}
  }
 }
 function uBlast(s,b,w,direct){
- uTargets(s).forEach(function(target){if(target===direct||target.hp<=0||target.faction===b.faction&&!w.self)return;var d=distance(target,b);if(d<w.splash){var self=target.faction===b.faction;if(self&&target.id!==b.owner)return;uDamage(s,target,b.dmg*(self?.3:.65)*(1-d/w.splash),b.owner,w);}});
+ uTargets(s).forEach(function(target){if(target===direct||target.hp<=0||target.faction===b.faction&&!w.self)return;var d=distance(target,b);if(d<w.splash){var self=target.faction===b.faction;if(self&&target.id!==b.owner)return;uDamage(s,target,b.dmg*(self?.3:.65)*(1-d/w.splash),b.owner,w,{x:target.x-b.x,y:target.y-b.y});}});
  serverVisual(s,'explosion',b.x,b.y,{max:.65,size:w.splash*.35,weapon:w.id});
 }
 function uFireMounts(s,p,dt,m){
@@ -496,7 +552,7 @@ function uFireMounts(s,p,dt,m){
   uTargets(s).forEach(function(t){if(t.hp<=0||t.faction===p.faction||t.faction<0)return;if(segmentDistance(t.x,t.y,x,y,bx,by)<uRadius(t)){var d=Math.hypot(t.x-x,t.y-y);if(d<dd){dd=d;victim=t;}}});
   var rock=null;s.rocks.forEach(function(r){if(r.hp>0&&segmentDistance(r.x,r.y,x,y,bx,by)<r.r){var d=Math.hypot(r.x-x,r.y-y);if(d<dd){rock=r;victim=null;dd=d;}}});
   if(rock){rock.hp-=dmg*(p.role===2?1.6:1);rock.hitX=x;rock.hitY=y;}
-  if(victim){uDamage(s,victim,dmg,p.id,w);var previous=victim,struck=[victim.id];for(var j=0;j<(w.chain||0);j++){var next=uTargets(s).find(function(t){return t.hp>0&&t.faction!==p.faction&&t.faction>=0&&struck.indexOf(t.id)<0&&distance(t,previous)<230;});if(!next)break;uDamage(s,next,dmg*.55,p.id,w);struck.push(next.id);serverVisual(s,'beam',previous.x,previous.y,{beam:true,x2:next.x,y2:next.y,max:.13,weapon:w.id});previous=next;}}
+  if(victim){uDamage(s,victim,dmg,p.id,w,{x:victim.x-x,y:victim.y-y});var previous=victim,struck=[victim.id];for(var j=0;j<(w.chain||0);j++){var next=uTargets(s).find(function(t){return t.hp>0&&t.faction!==p.faction&&t.faction>=0&&struck.indexOf(t.id)<0&&distance(t,previous)<230;});if(!next)break;uDamage(s,next,dmg*.55,p.id,w,{x:next.x-previous.x,y:next.y-previous.y});struck.push(next.id);serverVisual(s,'beam',previous.x,previous.y,{beam:true,x2:next.x,y2:next.y,max:.13,weapon:w.id});previous=next;}}
   serverVisual(s,'beam',x,y,{beam:true,x2:victim?victim.x:rock?rock.x:bx,y2:victim?victim.y:rock?rock.y:by,max:.13,weapon:w.id});
  }else{var count=(w.count||1)+(w.id==='cannon'?shipLevel(p,'multishot'):0);for(var n=0;n<count&&ownedShots<32&&s.bullets.length<1536;n++){var a=state.a+(count>1?(n-(count-1)/2)*(w.spread||.075):(w.spread||0)*(Math.random()-.5));ownedShots++;var velocity=launchVelocity(p,a,w.speed,x,y);s.bullets.push({id:s.next++,x:uRound(x),y:uRound(y),vx:uRound(velocity.vx),vy:uRound(velocity.vy),driftX:velocity.vx-Math.cos(a)*w.speed,driftY:velocity.vy-Math.sin(a)*w.speed,t:w.life,faction:p.faction,dmg:uRound(dmg),weapon:w.id,owner:p.id,pierce:(w.pierce||0)+(w.id==='cannon'?shipLevel(p,'pierce'):0),hits:[],arm:w.mine?1:0,target:m.target||null,launchAngle:a,weaveSide:n%2?-1:1});}}
  });
@@ -509,7 +565,7 @@ function uProjectiles(s,dt){
   advanceProjectile(b,w,dt);b.x=uRound(b.x);b.y=uRound(b.y);b.t=Math.round((b.t-dt)*1000)/1000;b.arm=Math.max(0,(b.arm||0)-dt);
   var contacts=[];uQuery(grid,ax,ay,b.x,b.y,200).forEach(function(entry){var t=entry.ship,r=entry.r+(w.mine?45:0);if(Math.abs(t.x-b.x)>Math.abs(b.x-ax)+r||Math.abs(t.y-b.y)>Math.abs(b.y-ay)+r)return;if(t.hp<=0||t.faction===b.faction||t.faction<0||b.hits.indexOf(t.id)>=0||b.arm>0)return;if(sweptHit(ax,ay,b.x,b.y,t.x,t.y,r))contacts.push({kind:'ship',target:t,d:Math.hypot(t.x-ax,t.y-ay)});});
   uQuery(rockGrid,ax,ay,b.x,b.y,100).forEach(function(r){if(r.hp>0&&sweptHit(ax,ay,b.x,b.y,r.x,r.y,r.r))contacts.push({kind:'rock',target:r,d:Math.hypot(r.x-ax,r.y-ay)});});contacts.sort(function(a,b){return a.d-b.d;});
-  for(var i=0;i<contacts.length;i++){var c=contacts[i],t=c.target;if(c.kind==='rock'){t.hp-=b.dmg*(w.id==='laser'?1.8:1);t.hitX=ax;t.hitY=ay;b.t=-1;}else{uDamage(s,t,b.dmg,b.owner,w);b.hits.push(t.id);if(!b.pierce)b.t=-1;else b.pierce--;}
+  for(var i=0;i<contacts.length;i++){var c=contacts[i],t=c.target;if(c.kind==='rock'){t.hp-=b.dmg*(w.id==='laser'?1.8:1);t.hitX=ax;t.hitY=ay;b.t=-1;}else{uDamage(s,t,b.dmg,b.owner,w,{x:b.vx,y:b.vy});b.hits.push(t.id);if(!b.pierce)b.t=-1;else b.pierce--;}
    serverVisual(s,'impact',b.x,b.y,{max:.4,size:12,weapon:b.weapon});if(w.splash)uBlast(s,b,w,c.kind==='ship'?t:null);if(b.t<=0)break;
   }
   if(w.mine&&b.t<=0&&!b.hits.length)uBlast(s,b,w,null);
@@ -539,7 +595,7 @@ function uMiningDrones(s,dt){
  var enemies=uTargets(s).filter(function(t){return !t.base&&t.hp>0;});
  s.escorts.forEach(function(d){if(!d.mining)return;var p=uShooter(s,d.owner);if(!p)return;var result=stepMiningDrone(d,p,s.rocks,enemies,s.loot,dt);
   if(result.deposit){var value=Math.round(result.deposit*(p.role===2?1.6:1)),before=Math.floor(p.total/100);p.scrap+=value;p.total+=value;p.dayScrap+=value;p.tech+=Math.floor(p.total/100)-before;p.profileDirty=true;}
-  if(result.zap){var target=result.zap.target;if(result.zap.kind==='rock'){target.hp-=result.zap.damage;target.hitX=d.x;target.hitY=d.y;}else uDamage(s,target,result.zap.damage,p.id,{});var a=Math.atan2(target.y-d.y,target.x-d.x),r=result.zap.kind==='rock'?target.r*.8:0;serverVisual(s,'beam',d.x,d.y,{beam:true,x2:target.x-Math.cos(a)*r,y2:target.y-Math.sin(a)*r,max:.16,weapon:'mining'});}
+  if(result.zap){var target=result.zap.target;if(result.zap.kind==='rock'){target.hp-=result.zap.damage;target.hitX=d.x;target.hitY=d.y;}else uDamage(s,target,result.zap.damage,p.id,{},{x:target.x-d.x,y:target.y-d.y});var a=Math.atan2(target.y-d.y,target.x-d.x),r=result.zap.kind==='rock'?target.r*.8:0;serverVisual(s,'beam',d.x,d.y,{beam:true,x2:target.x-Math.cos(a)*r,y2:target.y-Math.sin(a)*r,max:.16,weapon:'mining'});}
  });s.loot=s.loot.filter(function(l){return l.v>0;});
 }
 
@@ -631,7 +687,7 @@ function uReconcile(s,ctx){
 }
 function uSpawn(s,p){
  var base=uFriendlyBase(s,p);if(!base){p.hp=0;p.respawn=0;return false;}
- var st=uStats(p);p.x=base.x;p.y=base.y+120;p.sector=base.sector;p.vx=p.vy=p.av=0;p.pendingInputs=[];p.input=clean({});p.latestMotion=null;p.hp=p.max=st.hp;p.shield=p.maxShield=st.shield;p.energy=p.boost=100;p.heat=0;p.overheated=false;p.cloaked=false;p.respawn=0;p.lock=3;p.spawnSeq=(p.spawnSeq||0)+1;p.mounts=[];p.warpAt=s.time;resetFlightAudit(p,s.now);uWarp(s,p,false);return true;
+ var st=uStats(p);p.x=base.x;p.y=base.y+120;p.sector=base.sector;p.vx=p.vy=p.av=0;p.pendingInputs=[];p.input=clean({});p.latestMotion=null;p.impactX=p.impactY=0;p.impactAt=s.time;p.hp=p.max=st.hp;p.shield=p.maxShield=st.shield;p.energy=p.boost=100;p.heat=0;p.overheated=false;p.cloaked=false;p.respawn=0;p.lock=3;p.spawnSeq=(p.spawnSeq||0)+1;p.mounts=[];p.warpAt=s.time;resetFlightAudit(p,s.now);uWarp(s,p,false);return true;
 }
 function uCreate(ctx){
  if(ctx.players.filter(function(p){return !p.ai&&uOnline(ctx,p.id);}).length>WORLD_CAPACITY)return {ok:false,error:'Universe capacity reached.'};
@@ -715,14 +771,14 @@ function uCommand(ctx){
  else if(m.type==='mine'){if(p.hp<=0||p.cloaked||p.mineCd>0||p.energy<25||s.mines.filter(function(a){return a.owner===p.id;}).length>=uRole(p).mines||s.mines.length>=64)return {ok:false,error:'Mine rack or capacitor unavailable.'};p.energy-=25;p.mineCd=2.5;s.mines.push({id:s.next++,x:uRound(p.x-Math.cos(p.a)*45),y:uRound(p.y-Math.sin(p.a)*45),faction:p.faction,owner:p.id,arm:1.2,t:90,dmg:p.role===3?140:95});}
  else if(m.type==='jump-sector'){var destination=s.bases.find(function(b){return b.faction===p.faction&&b.sector===m.sector&&b.hp>0;});if(!uAtBase(s,p)||!destination||p.hp<=0)return {ok:false,error:'Jump from a surviving friendly base to another friendly base.'};uWarp(s,p,true);p.x=destination.x;p.y=destination.y+120;p.sector=destination.sector;p.vx=p.vy=p.av=0;p.spawnSeq++;p.warpAt=s.time;resetFlightAudit(p,s.now);uWarp(s,p,false);}
  else if(m.type==='stance'){p.stance=p.stance?0:1;}
- else if(m.type==='pulse'){if(p.hp<=0||p.pulse>0)return {ok:false,error:'EMP is recharging.'};p.pulse=14-shipLevel(p,'emp')*2;var range=420+shipLevel(p,'emp')*70,amount=110+shipLevel(p,'emp')*40;uTargets(s).forEach(function(t){if(t.hp>0&&t.faction!==p.faction&&distance(p,t)<range)uDamage(s,t,amount,p.id,{});});s.bullets=s.bullets.filter(function(b){return b.faction===p.faction||distance(p,b)>range;});serverVisual(s,'pulse',p.x,p.y,{max:.65,size:range});}
+ else if(m.type==='pulse'){if(p.hp<=0||p.pulse>0)return {ok:false,error:'EMP is recharging.'};p.pulse=14-shipLevel(p,'emp')*2;var range=420+shipLevel(p,'emp')*70,amount=110+shipLevel(p,'emp')*40;uTargets(s).forEach(function(t){if(t.hp>0&&t.faction!==p.faction&&distance(p,t)<range)uDamage(s,t,amount,p.id,{},{x:t.x-p.x,y:t.y-p.y});});s.bullets=s.bullets.filter(function(b){return b.faction===p.faction||distance(p,b)>range;});serverVisual(s,'pulse',p.x,p.y,{max:.65,size:range});}
  else if(['hull','role','fit','upgrade'].indexOf(m.type)>=0){var error=uShipyard(s,p,m);if(error)return {ok:false,error:error};}
  else return {ok:false,error:'Unknown universe command.'};
  return {ok:true,sessionState:s,playerStates:uSave(s,ctx),broadcast:[uProfilePacket(p)].concat(uBroadcast(s,true))};
 }
 function uTick(ctx){
  var s=ctx.sessionState;if(s.ended)return {ok:true,broadcast:uBroadcast(s,true)};
- var dt=Math.max(0,Math.min(.1,(ctx.now-s.now)/1000));s.now=ctx.now;s.time+=dt;s.tick++;s.fx=s.fx.filter(function(f){if(f.effect!=='warp')return false;f.t-=dt;return f.t>0;});uReconcile(s,ctx);
+ var dt=Math.max(0,Math.min(.1,(ctx.now-s.now)/1000));s.now=ctx.now;s.time+=dt;s.tick++;advanceServerVisuals(s,dt);uReconcile(s,ctx);
  var day=Math.floor(ctx.now/86400000);if(day!==s.day){s.day=day;s.pilots.forEach(function(p){p.dayScrap=0;});}
  (ctx.inputs||[]).forEach(function(packet){var p=s.pilots.find(function(q){return q.id===packet.from;});if(p)acceptPilotInput(p,packet.data||{},ctx.now,s.time);});
  var actionPackets=[];s.pilots.slice().forEach(function(p){while(p.pendingActions&&p.pendingActions.length&&p.pendingActions[0].at<=s.time){var action=p.pendingActions.shift(),result=uCommand(Object.assign({},ctx,{message:{from:p.id,data:action.command}}));if(result.broadcast)actionPackets=actionPackets.concat(result.broadcast);if(!result.ok&&!p.ai)actionPackets.push({to:[p.id],data:{type:'notice',message:result.error}});}});
@@ -747,7 +803,7 @@ function uTick(ctx){
  s.enemies.concat(s.escorts).forEach(function(e){if(e.burn>0&&e.hp>0){e.burn=Math.max(0,e.burn-dt);uDamage(s,e,dt*9,e.burnOwner,{});}e.jam=Math.max(0,(e.jam||0)-dt);});
  uMiningDrones(s,dt);uEscorts(s,dt);uBaseDefenses(s,dt);uProjectiles(s,dt);driftRocks(s.rocks,dt);
  var fragments=[];s.rocks=s.rocks.filter(function(r){if(r.hp>0)return true;var pieces=fractureRock(r,r.hitX||r.x-1,r.hitY||r.y);if(pieces.length&&s.rocks.length+fragments.length+pieces.length-1>96)pieces=[Object.assign({},r,{hp:Math.max(8,r.r*.85),vx:(r.vx||0)+20,spin:.5})];fragments=fragments.concat(pieces);if(!pieces.length){s.loot.push({x:uRound(r.x),y:uRound(r.y),v:r.ore??8});serverVisual(s,'explosion',r.x,r.y,{max:.7,size:r.r*.6});}return false;}).concat(fragments);
- s.mines=s.mines.filter(function(m){m.arm-=dt;m.t-=dt;if(m.t<=0)return false;if(m.arm>0)return true;var targets=uTargets(s),target=targets.find(function(p){return p.hp>0&&p.faction>=0&&p.faction!==m.faction&&distance(p,m)<(p.base?190:75);});if(!target)return true;targets.forEach(function(p){var d=distance(p,m);if(p.hp>0&&p.faction!==m.faction&&d<(p.base?260:180))uDamage(s,p,m.dmg*(1-d/(p.base?340:220)),m.owner,{});});serverVisual(s,'explosion',m.x,m.y,{max:.7,size:55});return false;});
+ s.mines=s.mines.filter(function(m){m.arm-=dt;m.t-=dt;if(m.t<=0)return false;if(m.arm>0)return true;var targets=uTargets(s),target=targets.find(function(p){return p.hp>0&&p.faction>=0&&p.faction!==m.faction&&distance(p,m)<(p.base?190:75);});if(!target)return true;targets.forEach(function(p){var d=distance(p,m);if(p.hp>0&&p.faction!==m.faction&&d<(p.base?260:180))uDamage(s,p,m.dmg*(1-d/(p.base?340:220)),m.owner,{},{x:p.x-m.x,y:p.y-m.y});});serverVisual(s,'explosion',m.x,m.y,{max:.7,size:55});return false;});
  s.loot=s.loot.filter(function(l){var closest=null,dd=Infinity;s.pilots.forEach(function(p){if(p.hp>0&&p.faction>=0&&distance(p,l)<dd){closest=p;dd=distance(p,l);}});if(!closest)return true;var p=closest,range=(340+shipLevel(p,'tractor')*110+shipStats(p).magnet*140)*uRole(p).tractor;if(p.input.tractor&&ctx.now-p.lastInput<800&&p.energy>0&&dd<range){var a=Math.atan2(p.y-l.y,p.x-l.x);l.x+=Math.cos(a)*Math.min(dd,400*dt);l.y+=Math.sin(a)*Math.min(dd,400*dt);p.energy=Math.max(0,p.energy-dt*10);}if(dd<30){var value=Math.round(l.v*(p.role===2?1.6:1)),before=Math.floor(p.total/100);p.scrap+=value;p.total+=value;p.dayScrap+=value;p.tech+=Math.floor(p.total/100)-before;p.profileDirty=true;return false;}return true;}).slice(-48);
  s.spawn-=dt;if(s.spawn<=0){s.spawn=12;if(s.rocks.length<36){var sec=s.tick%9;s.rocks.push({x:uRound(Math.cos(s.tick)*1400),y:uRound(sectorY(sec)+Math.sin(s.tick)*500),r:45,hp:42,type:s.tick%10,a:0,seed:s.next++,ore:36});}if(s.enemies.length<8){var f=s.patrolFaction===0?1:0;s.patrolFaction=f;var active=s.pilots.filter(function(p){return p.hp>0;})[s.tick%Math.max(1,s.pilots.length)];s.enemies.push({id:s.next++,faction:f,x:(f?1:-1)*1100,y:active?sectorY(active.sector):0,vx:0,vy:0,a:0,hp:100,max:100,cd:1,kind:0});}}
  s.enemies=s.enemies.filter(function(e){if(e.hp<=0){s.loot.push({x:e.x,y:e.y,v:24});return false;}var target=s.pilots.filter(function(p){return p.hp>0&&p.faction>=0&&p.faction!==e.faction&&visibleShip(e,p);}).sort(function(a,b){return distance(a,e)-distance(b,e);})[0];if(target){var a=Math.atan2(target.y-e.y,target.x-e.x);e.a=a;if(distance(e,target)>300){e.vx=Math.cos(a)*90*(e.jam>0?.4:1);e.vy=Math.sin(a)*90*(e.jam>0?.4:1);e.x=uRound(e.x+e.vx*dt);e.y=uRound(e.y+e.vy*dt);}else e.vx=e.vy=0;e.cd-=dt*(e.jam>0?.15:1);if(e.cd<=0&&distance(e,target)<800&&s.bullets.length<1536){e.cd=1.6;s.bullets.push({id:s.next++,x:e.x,y:e.y,vx:uRound(Math.cos(a)*380+(e.vx||0)),vy:uRound(Math.sin(a)*380+(e.vy||0)),t:2.2,faction:e.faction,dmg:12,weapon:'cannon',owner:e.id,hits:[]});}}return true;});

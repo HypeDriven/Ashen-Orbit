@@ -197,3 +197,23 @@ Validation includes 96 game tests, native shipyard fitting and hull-gate checks,
 and autonomous mining from fragmentation to ore delivery in solo and shared
 worlds. A synthetic 32-player case with 128 miners and 160 combat escorts stays
 within packet limits; its Node benchmark measured about 15ms p95 server work.
+
+Destroyed ships now fracture their rendered hull outline into 3–16 rotating
+pieces, with a flash, shockwave, sparks and smoke. Every piece inherits the
+ship's velocity and rotational motion; recent incoming fire adds a decaying
+directional push capped at 48m/s. Projectile momentum, beam direction, and
+radial blasts all supply that visual impulse. It never changes live flight
+physics, damage, collision rules, or movement trust.
+
+Players, AI pilots, patrols, escorts, mining drones and station fighters share
+the breakup rules. Wreckage fades after 3.6 seconds and adds no colliders. Solo
+death-screen effects keep animating, with a brief backdrop fade so the blast
+remains visible. Multiplayer sends one compact, briefly retained breakup event
+per ship; deterministic client geometry supplies the individual fragments.
+Co-op battles also split crowded snapshots into bounded transport packets.
+
+Validation: 112 tests cover outline area, linear/angular momentum, capped recent
+hit direction, once-only death events, continued death-screen animation,
+respawn isolation, immutable snapshots, and crowded shared/co-op transport.
+Native captures verify the explosion and drifting fragments; a 32-player combat
+benchmark measured roughly 13ms p95 server work.

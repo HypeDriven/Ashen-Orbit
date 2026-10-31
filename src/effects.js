@@ -1,14 +1,16 @@
+import {PILOT_SHAPES,hullFragments} from './ship-debris.js';
+export {PILOT_SHAPES} from './ship-debris.js';
 // Procedural combat visuals: cosmetic data never changes hit tests or damage.
 export const MAX_EFFECTS=144;
 let serial=0;
 export function emitVisual(list,effect,x,y,options={}){
  const life=options.max||(effect==='explosion'?1.7:effect==='muzzle'?.12:effect==='shield'?.48:.65);
  list.push({x,y,vx:0,vy:0,t:life,max:life,effect,seed:++serial, ...options});
- if(list.length>MAX_EFFECTS)list.splice(0,list.length-MAX_EFFECTS);
+ limitVisuals(list);
 }
-export function stepVisuals(list,dt){for(const f of list){f.t-=dt;f.x+=(f.vx||0)*dt;f.y+=(f.vy||0)*dt;}return list.filter(f=>f.t>0).slice(-MAX_EFFECTS);}
+export function limitVisuals(list){while(list.length>MAX_EFFECTS){const i=list.findIndex(f=>f.effect!=='ship-breakup'&&f.effect!=='warp');list.splice(i<0?0:i,1);}return list;}
+export function stepVisuals(list,dt){for(const f of list){f.t-=dt;f.x+=(f.vx||0)*dt;f.y+=(f.vy||0)*dt;}return limitVisuals(list.filter(f=>f.t>0));}
 export function rememberTrail(b,dt){if(!['swarm','cluster','breach','homing','rocket','siege','plasma','disruptor','ion','particle','flame'].includes(b.weapon))return;b.trailClock=(b.trailClock||0)+dt;if(b.trailClock>=.035){b.trailClock=0;(b.trail||(b.trail=[])).unshift({x:b.x,y:b.y});if(b.trail.length>12)b.trail.length=12;}}
-export const PILOT_SHAPES=[[[1.4,0],[-.8,-.5],[-.25,0],[-.8,.5]],[[1,-.5],[1,.5],[-.7,.8],[-1,0],[-.7,-.8]],[[1,0],[.5,-.65],[-.9,-.65],[-.7,0],[-.9,.65],[.5,.65]],[[1.15,0],[.2,-.8],[-1,-.6],[-.5,0],[-1,.6],[.2,.8]],[[1.6,0],[-.8,-.32],[-.4,0],[-.8,.32]],[[1,-.4],[1,.4],[-.8,.7],[-1,-.7]]];
 export function warpScale(at,time){const t=Math.max(0,Math.min(1,(time-(at??-10))/.65));return t*t*(3-2*t);}
 const colors={mining:'#9ce6d0',skirmisher:'#f2d6a0',lancer:'#9acfeb',broadside:'#edbb8c','siege-lance':'#c6b1ed',needle:'#c5e6dc',helix:'#81ddd2',swarm:'#f1d396',cluster:'#efad8d',breach:'#d7b4f3',cannon:'#e0c9a2',gatling:'#e5bd7e',flak:'#e6c497',laser:'#f47873',pulse:'#f99b83',disruptor:'#bd8eff',ion:'#84ddfa',homing:'#e9be85',rocket:'#efa56a',particle:'#b3f2aa',rail:'#cae8ff',plasma:'#8ee6ba',tesla:'#aab7ff',flame:'#ffac69',mine:'#e1a3b9',siege:'#e6b2fa',siphon:'#9ddbc4',pd:'#b6dcea'};
 export const effectColor=id=>colors[id]||'#d0b49d';
@@ -70,7 +72,7 @@ export function renderProjectile(p,b,time){
  }
 }
 export function renderVisual(p,f,time){
- if(f.beam){renderBeam(p,f,time);return;}const age=Math.max(0,(f.max||1)-f.t),life=Math.max(.001,f.max||1),t=Math.max(0,Math.min(1,age/life)),fade=1-t,c=f.color||effectColor(f.weapon),x=f.x,y=f.y,size=f.size||12,seed=f.seed||0,near=p.detail>1.4;
+ if(f.effect==='ship-breakup'){renderShipBreakup(p,f,time);return;}if(f.beam){renderBeam(p,f,time);return;}const age=Math.max(0,(f.max||1)-f.t),life=Math.max(.001,f.max||1),t=Math.max(0,Math.min(1,age/life)),fade=1-t,c=f.color||effectColor(f.weapon),x=f.x,y=f.y,size=f.size||12,seed=f.seed||0,near=p.detail>1.4;
  if(f.effect==='warp'){
   const a=f.a||0,ux=Math.cos(a),uy=Math.sin(a),nx=-uy,ny=ux,extent=size*(.4+Math.sin(t*Math.PI)*1.4),flash=Math.sin(t*Math.PI),wc='#a4e6f0';
   p.glow(x,y,extent,wc,flash);const points=[];for(let i=0;i<=24;i++){const q=i*Math.PI/12;points.push([x+ux*Math.cos(q)*extent*.24+nx*Math.sin(q)*extent,y+uy*Math.cos(q)*extent*.24+ny*Math.sin(q)*extent]);}for(let i=1;i<points.length;i++)p.line(...points[i-1],...points[i],alpha(wc,flash*.85),1.6);
@@ -121,4 +123,12 @@ export function renderMiningDrone(p,d,time){
  p.disc(...point(4,0),1.8,c);if(d.cargo>0){p.disc(...point(-3,0),2.4,'#d5b46b');p.ring(d.x,d.y,12,'#9a885f',.5,0,Math.PI*2*Math.min(1,d.cargo/24));}
  if(Math.hypot(d.vx||0,d.vy||0)>10)p.line(...point(-7,0),...point(-12-Math.sin(time*25)*2,0),c,1);
  if(d.hp<d.max)p.ring(d.x,d.y,11,c,.7,0,Math.PI*2*Math.max(0,d.hp/d.max));
+}
+
+function renderShipBreakup(p,f,time){
+ const age=Math.max(0,f.max-f.t),fade=Math.min(1,Math.max(0,f.t)/1.4),parts=f.fragments||(f.fragments=hullFragments(f));
+ for(let i=0;i<parts.length;i++){const shard=parts[i],a=(f.a||0)+shard.spin*age,ca=Math.cos(a),sa=Math.sin(a),x=f.x+shard.x+(shard.vx-(f.vx||0))*age,y=f.y+shard.y+(shard.vy-(f.vy||0))*age,points=shard.points.map(q=>[x+ca*q[0]-sa*q[1],y+sa*q[0]+ca*q[1]]);
+  p.poly(points,alpha(f.hullColor||'#b3b9a4',fade));if(p.detail>.8){p.line(...points[0],...points[1],alpha(age<1.1?'#edb47d':'#4f5a51',fade),.8);if(age<1.5&&i%3===0)p.disc(x,y,1.3,alpha('#ffd5a0',fade*(1-age/1.5)));}
+ }
+ if(age<.9)renderVisual(p,{...f,effect:'explosion',max:.9,t:.9-age,size:f.size*.8,color:'#e9bd88'},time);
 }

@@ -8,7 +8,7 @@ async function client(file,platform){
  let source=stripTypeScriptTypes(readFileSync(new URL('../src/'+file,import.meta.url),'utf8'))
   .replace("import * as platform from 'starhermit:platform';",'const platform=globalThis.__frontierTestPlatform;')
   .replace(/import \{\s*stopVoice\s*\} from '\.\/comms\.js';/,'const stopVoice=async()=>{};');
- for(const name of ['sim','universe-rules','prediction','fire-feedback','wire','input-timeline'])source=source.replaceAll(`'./${name}.js'`,JSON.stringify(new URL(`../src/${name}.js`,import.meta.url).href));
+ for(const name of ['effects','sim','universe-rules','prediction','fire-feedback','wire','input-timeline'])source=source.replaceAll(`'./${name}.js'`,JSON.stringify(new URL(`../src/${name}.js`,import.meta.url).href));
  return import('data:text/javascript;base64,'+Buffer.from(source).toString('base64')+'#'+Math.random());
 }
 function frozen(value){if(value&&typeof value==='object'){for(const v of Object.values(value))frozen(v);Object.freeze(value);}return value;}
@@ -105,4 +105,12 @@ test('quitting issues a seat-release write synchronously for runtime keepalive d
 
 test('shared snapshots preserve mining drone ownership and cargo without counting them as escorts',async()=>{
  const sock=socket(),mod=await client('online.ts',{player:()=>({userId:'me'}),launchContext:()=>({sessionId:'session'}),connectGame:()=>sock});mod.resumeLaunch();const world={kind:'universe',pilots:[['me','Pilot',0,0,0,0,0,0,176,176,0,0,0,false,100,120,0,0,0]],enemies:[[1,10,20,0,0,0,32,32,0,0,0,1,12],[2,30,40,0,0,0,150,150,0,0,0,0,0]],pilotIds:['me'],rocks:[],mines:[],bases:[],fx:[],beacons:[],core:{x:0,y:0},bullets:[],loot:[],time:1,message:'Mining',progress:0,goal:9,ended:false};sock.events.game({type:'snapshot',world});const drone=mod.online.view.ships.find(e=>e.id===1);assert.equal(drone.mining,true);assert.equal(drone.owner,'me');assert.equal(drone.cargo,12);assert.equal(drone.team,0);assert.equal(mod.online.view.wing,1);
+});
+
+test('repeated authoritative breakup events never restart or duplicate a client wreck animation',async()=>{
+ const sock=socket(),mod=await client('online.ts',{player:()=>({userId:'me'}),launchContext:()=>({sessionId:'session'}),connectGame:()=>sock});mod.resumeLaunch();const wreck={effect:'ship-breakup',seed:77,x:0,y:0,vx:300,vy:-40,a:0,av:1,shape:0,size:24,max:3.6,t:3.6,faction:1},world={kind:'universe',pilots:[['me','Pilot',0,0,0,0,0,0,176,176,0,0,0,false,100,120,0,0,0]],enemies:[],rocks:[],mines:[],bases:[],fx:[wreck],beacons:[],core:{x:0,y:0},bullets:[],loot:[],time:1,message:'Combat',progress:0,goal:9,ended:false};sock.events.game(frozen({type:'snapshot',world}));const f=mod.online.view.fx[0];assert.notEqual(f,wreck);f.x=60;f.t=3.4;sock.events.game({type:'snapshot',world:{...world,time:1.1,fx:[{...wreck,x:30,t:3.5}]}});assert.equal(mod.online.view.fx.length,1);assert.equal(mod.online.view.fx[0],f);assert.equal(f.x,60);assert.equal(f.t,3.4);
+});
+
+test('station-fighter debris remains mutable locally without modifying immutable authoritative snapshots',async()=>{
+ const sock=socket(),mod=await client('online.ts',{player:()=>({userId:'me'}),launchContext:()=>({sessionId:'session'}),connectGame:()=>sock});mod.resumeLaunch();const fx={effect:'ship-breakup',seed:1,x:0,y:0,vx:150,vy:20,a:0,av:1,shape:12,size:7,max:3.6,t:3.6},baseDefense={fx:[fx],fighters:[],turrets:[],shields:[]};const world=frozen({kind:'universe',pilots:[['me','Pilot',0,0,0,0,0,0,176,176,0,0,0,false,100,120,0,0,0]],enemies:[],rocks:[],mines:[],bases:[],fx:[],baseDefense,beacons:[],core:{x:0,y:0},bullets:[],loot:[],time:1,message:'Combat',progress:0,goal:9,ended:false});sock.events.game({type:'snapshot',world});const {stepVisuals}=await import('../src/effects.js'),local=mod.online.view.baseDefense;assert.notEqual(local,baseDefense);assert.notEqual(local.fx[0],fx);local.fx=stepVisuals(local.fx,.1);assert.equal(fx.t,3.6);assert.equal(fx.x,0);assert.equal(local.fx[0].x,15);
 });

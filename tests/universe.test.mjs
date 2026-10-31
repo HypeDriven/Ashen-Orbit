@@ -261,3 +261,21 @@ test('32 capital miners plus full escort complements fit every transport frame',
  const w=world(32);for(let i=0;i<32;i++){w.cmd(i,{type:'choose',faction:i%2});const p=w.s.pilots[i];p.hull=4;p.x=(i%8)*120-450;p.y=Math.floor(i/8)*150;p.hp=p.max=100000;p.loadout=vm.runInContext('HULLS[4].mounts',w.sandbox).map(m=>m.type==='utility'?'survey-bay':m.type==='reactor'?'reactor':null);for(let j=0;j<5;j++)w.s.escorts.push({id:10000+i*5+j,owner:p.id,faction:p.faction,x:p.x,y:p.y+80,hp:100000,a:0,cd:100,slot:j});}
  w.s.rocks=Array.from({length:96},(_,i)=>({x:(i%12)*130-700,y:Math.floor(i/12)*120-400,r:24,hp:1000000,type:i%10,a:0,seed:i}));w.s.spawn=1e9;w.s.beacons=[];let peak=0;for(let i=0;i<20;i++){const out=w.tick();peak=Math.max(peak,w.s.escorts.filter(e=>e.mining).length);for(const m of out.broadcast)assert.ok(Buffer.byteLength(JSON.stringify(m.data))<16000);}assert.equal(peak,128);assert.equal(w.s.escorts.filter(e=>!e.mining).length,160);
 });
+
+test('shared player breakup captures hull, flight velocity and recent fire before the dead ship is stopped',()=>{
+ const w=world(2);w.cmd(0,{type:'choose',faction:0});w.cmd(1,{type:'choose',faction:1});const p=w.s.pilots[1];p.hull=3;p.role=4;p.hp=10;p.shield=0;p.vx=250;p.vy=-60;p.av=1.5;p.x=-800;p.y=100;w.sandbox.uDamage(w.s,p,4,w.s.pilots[0].id,{}, {x:1,y:0});w.sandbox.uDamage(w.s,p,10000,w.s.pilots[0].id,{}, {x:0,y:1});const f=w.s.fx.find(f=>f.effect==='ship-breakup');assert.ok(f);assert.equal(f.shape,4);assert.equal(f.size,52);assert.equal(f.av,1.5);assert.ok(f.vx>250&&f.vx<298);assert.ok(f.vy>-60&&f.vy<-12);assert.equal(p.vx,0);assert.equal(p.vy,0);w.sandbox.uDamage(w.s,p,10000,w.s.pilots[0].id,{}, {x:0,y:1});assert.equal(w.s.fx.filter(f=>f.effect==='ship-breakup').length,1);w.tick(161);assert.ok(p.hp>0);assert.equal(p.impactX,0);assert.equal(p.impactY,0);assert.ok(!w.s.fx.some(f=>f.effect==='ship-breakup'));assert.ok(f.vx>250,'respawning never rewrites the previous wreck velocity');
+});
+test('real shared projectiles and beams give wreckage the incoming fire direction',()=>{
+ for(const beam of [false,true]){const w=world(2);w.cmd(0,{type:'choose',faction:0});w.cmd(1,{type:'choose',faction:1});const a=w.s.pilots[0],b=w.s.pilots[1];a.x=-300;a.y=0;a.a=0;b.x=b.y=0;b.hp=1;b.shield=0;b.vx=0;b.vy=140;w.s.rocks=[];w.s.fx=[];
+  if(beam){a.loadout[0]='laser';a.mounts=[];w.sandbox.uFireMounts(w.s,a,.05,{fire:true});}else{w.s.bullets=[{id:1,x:-100,y:-100,vx:2000,vy:2000,t:1,dmg:100,weapon:'cannon',faction:0,owner:a.id,hits:[]}];w.sandbox.uProjectiles(w.s,.05);}
+  const f=w.s.fx.find(f=>f.effect==='ship-breakup');assert.ok(f);assert.ok(f.vx>0);if(beam)assert.equal(f.vy,140);else assert.ok(f.vy>140);
+ }
+});
+test('shared breakup events survive the alternating snapshot cadence without per-fragment network state',()=>{
+ const w=world(2);w.cmd(0,{type:'choose',faction:0});w.cmd(1,{type:'choose',faction:1});w.s.fx=[];const p=w.s.pilots[1];p.vx=100;w.sandbox.uDamage(w.s,p,10000,w.s.pilots[0].id,{}, {x:1,y:0});const f=w.s.fx[0],seed=f.seed;assert.equal(f.effect,'ship-breakup');assert.equal(f.fragments,undefined);let seen=0;
+ for(let i=0;i<4;i++){const result=w.tick();for(const packet of result.broadcast)if(packet.data.type==='snapshot')seen+=packet.data.world.fx.filter(f=>f.seed===seed).length;}assert.ok(seen>=2);w.tick(4);assert.ok(!w.s.fx.some(f=>f.seed===seed));
+});
+test('crowded mass destruction retains player hulls, unique event ids and bounded transport frames',()=>{
+ const w=world(32);for(let i=0;i<32;i++){w.cmd(i,{type:'choose',faction:i%2});const p=w.s.pilots[i];p.hull=4;p.vx=300;p.vy=-70;w.sandbox.uDamage(w.s,p,100000,'test',{}, {x:1,y:0});}for(let i=0;i<180;i++)w.sandbox.uDamage(w.s,{id:'escort-'+i,owner:'test',x:0,y:0,vx:140,vy:40,a:0,hp:1,max:1,faction:0,kind:0},100,'test',{}, {x:0,y:1});
+ const debris=w.s.fx.filter(f=>f.effect==='ship-breakup');assert.equal(debris.filter(f=>f.size===66).length,32);assert.ok(w.s.fx.length<=64);assert.equal(new Set(w.s.fx.map(f=>f.seed)).size,w.s.fx.length);const messages=w.sandbox.uBroadcast(w.s,true);for(const packet of messages)assert.ok(Buffer.byteLength(JSON.stringify(packet.data))<16000);assert.ok(debris.every(f=>!f.fragments));
+});
