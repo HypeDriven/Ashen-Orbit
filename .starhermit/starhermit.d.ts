@@ -3003,13 +3003,61 @@ declare module "starhermit:scene" {
     updateVolume(camera?: Camera | null): void;
     dispose(): void;
   }
+  /** Since API_MINOR 36 (`VOLUME_LAYER_MINOR`): a VolumeLayer of the game's own materials. */
+  export interface VolumeLayerOptions {
+    /** The three.js layer its members are on, 1..31 (default 31). The
+     * window's camera must not enable it, or the members draw twice; give
+     * each layer of materials its own channel. */
+    channel?: number;
+  }
   /** Half-float volume history and bilateral upsampling. Six targets use 30 bytes per pixel.
    * Add beside its batch and call render after batch.updateVolume. Moving cameras use the direct batch.
-   * Owns its targets, geometry and materials; does not own batch/atlas. */
+   * Owns its targets, geometry and materials; does not own batch/atlas.
+   *
+   * Since API_MINOR 36 (`VOLUME_LAYER_MINOR`; a TypeError before) it also
+   * takes the game's own materials: `new VolumeLayer(width, height, {
+   * channel })` (add it to the scene; width and height usually half the
+   * window's). Put objects on its channel (`layer.include(object)`, or
+   * `object.layers.set(layer.channel)`) and call `render(camera)` once a
+   * frame after updating them: the scene's objects on the channel are drawn
+   * through `camera` (its layers set to the channel for the pass, then
+   * restored) into a half-float target of the layer's size, as a render
+   * target pass draws (no shadows or post effects; lit only by lights
+   * enabled on the channel; the scene's fog and environment apply; no
+   * background), then their nearest surfaces' depth, then history
+   * reprojected by that depth and clamped to the current neighbours, and
+   * the layer composites it over the frame as one premultiplied
+   * transparent draw (ordered by its `renderOrder`), upsampled against the
+   * full-resolution opaque depth. Normal, premultiplied and additive
+   * blending compose in linear light (additive light with zero alpha
+   * stays). The composite tones the layer's light straight, as
+   * `ShaderMaterial.straightToneMapping` does: premultiplied members with
+   * it (the `starhermit:volume` fire and explosion) and translucent normal
+   * ones look as drawn directly, premultiplied ones without it as if they
+   * had it; multiply, subtractive and custom blending against what is
+   * behind have nothing behind them in the layer. `renderer.sceneDepth`
+   * read in the pass is the last window frame's (exact while the camera
+   * rests), and `renderer.sceneColor` is not meaningful there. 28 bytes per
+   * pixel (five targets). */
   export class VolumeLayer extends Mesh {
-    readonly batch: VolumeBatch; readonly width: number; readonly height: number; readonly allocatedBytes: number;
+    /** Null for a layer of materials. */
+    readonly batch: VolumeBatch | null; readonly width: number; readonly height: number; readonly allocatedBytes: number;
+    /** A layer of materials' three.js layer (a batch layer has none). */
+    readonly channel: number;
+    /** A layer of materials': hide what lies behind the full-resolution
+     * opaque depth by the members' nearest surface (default true; false
+     * skips that pass, for members that end at `renderer.sceneDepth`
+     * themselves, and keeps no history while the camera moves). */
+    depthTest: boolean;
     historyWeight: number; readonly historyFrames: number; readonly shaderError: string | null;
     constructor(batch: VolumeBatch, width: number, height: number);
+    /** Since API_MINOR 36: a layer of the game's own materials. */
+    constructor(width: number, height: number, options?: VolumeLayerOptions);
+    /** A layer of materials': puts each object and everything under it on
+     * the channel alone (objects added under them later need it too). A
+     * TypeError for a batch layer. */
+    include(...objects: Object3D[]): this;
+    /** True when the layer composites this frame (a batch layer: replaces the batch). */
     render(camera?: Camera | null): boolean;
     reset(): void;
     dispose(): void;
@@ -4776,6 +4824,9 @@ declare module "starhermit:scene" {
     /** WGSL declaring `fn fog(f: Fog) -> Fog` (since API_MINOR 9; with
      * `fog: true`). */
     fogShader?: string;
+    /** Since API_MINOR 36 (`STRAIGHT_TONE_MINOR`): see
+     * `ShaderMaterial.straightToneMapping`. */
+    straightToneMapping?: boolean;
   }
   /** The game's own surface and light (three.js `ShaderMaterial`, in
    * WGSL; since API_MINOR 6): `fragmentShader` gives each fragment's linear
@@ -4790,6 +4841,19 @@ declare module "starhermit:scene" {
     fragmentShader: string;
     /** Since API_MINOR 9 (see `ShaderMaterialParameters`). */
     fogShader: string;
+    /** Since API_MINOR 36 (`STRAIGHT_TONE_MINOR`; older games' materials
+     * have no such property), default false. With `premultipliedAlpha`
+     * the fragment still gives its color premultiplied, and the renderer
+     * divides it by its alpha, tone maps, encodes and fogs that straight
+     * color, then multiplies it by the alpha again: three.js's order for a
+     * shader ending in `tonemapping_fragment`, `colorspace_fragment`,
+     * `fog_fragment` and `premultiplied_alpha_fragment`, so a thin edge
+     * (small alpha) is not brighter than the body behind it. Light given
+     * at alpha 0 is output as given (it has no straight color). Without it
+     * the premultiplied color is tone mapped and encoded as given (a
+     * three.js shader writing premultiplied color before those chunks),
+     * as before. Post effects tone map the composite either way. */
+    straightToneMapping: boolean;
   }
   export interface MeshStandardMaterialParameters extends MaterialParameters {
     /** 0–1 (default 0). */
@@ -6764,6 +6828,159 @@ declare module "starhermit:scene" {
   }
   /** Window pixels to normalized device coordinates for `setFromCamera`. */
   export function pointerToNdc(x: number, y: number, target?: Vector2): Vector2;
+}
+
+// ===========================================================================
+/** Since API_MINOR 36 (`VOLUME_FX_MINOR`; importing it from an older game
+ * throws a TypeError): drop-in volumetric effects (smoke, explosions, dust,
+ * fire, clouds, fog banks). Each `VolumeEffect` is a box Mesh (its origin
+ * the centre of the box's base) whose ShaderMaterial ray-marches the box
+ * with jittered steps: Beer–Lambert extinction, a two-lobe Henyey–Greenstein
+ * phase, a short shadow march toward the sun with multiple-scattering
+ * octaves, blackbody emission from temperature, ending at
+ * `renderer.sceneDepth` (soft where it meets opaque geometry) and fogged by
+ * the scene's `Fog`/`FogExp2` at its opacity-weighted depth. Density comes
+ * from a shape function over a shared 64³ tileable noise (baked on the GPU
+ * into a WebGL3DRenderTarget, 16 slice passes a frame for its first four
+ * frames, 2 MiB of images) or from a `VolumeGrid` (an RG16F Data3DTexture,
+ * e.g. a `.vdb` converted by starhermit-volume's `vdb_brick` example). Each
+ * effect takes one program and three texture slots. See the README's
+ * "Volumetric effects" for costs and resolutions. */
+declare module "starhermit:volume" {
+  import type { ColorInput, Color, Data3DTexture, Fog, FogExp2, Group, Mesh, Object3D, ShaderMaterial, Vector3, Vector4 } from "starhermit:scene";
+
+  export type VolumeShape = "plume" | "fireball" | "billow" | "flame" | "cumulus" | "slab" | "grid";
+  export type VolumePresetName = "smoke" | "explosion" | "dust" | "fire" | "cloud" | "fogBank";
+
+  export interface VolumeEffectOptions {
+    shape?: VolumeShape;
+    /** The box in world units (x, height, z); the origin is its base's centre. */
+    size?: readonly [number, number, number];
+    /** The voxels of a "grid" effect (its size defaults to the grid's world size). */
+    grid?: VolumeGrid | null;
+    /** Multiplies the shape's density. */
+    density?: number;
+    /** Extinction per world unit at density 1. */
+    extinction?: number;
+    /** Single-scattering albedo (linear). */
+    albedo?: ColorInput;
+    /** Henyey–Greenstein g (−0.95..0.95) of the first lobe and of the second, and the second's weight 0..1. */
+    anisotropy?: number;
+    backScatter?: number;
+    lobeMix?: number;
+    /** 0..1: the light the multiple-scattering octaves add. */
+    multiScatter?: number;
+    /** Scales the sky and ground light. */
+    ambient?: number;
+    /** Scales blackbody emission (0: none). */
+    emission?: number;
+    /** Kelvin at heat 0 and heat 1. */
+    temperature?: readonly [number, number];
+    /** Samples along a ray through the whole box diagonal (8..128; shorter rays take fewer), and toward the sun (0..8). */
+    steps?: number;
+    shadowSteps?: number;
+    /** How far the shadow march reaches, world units. */
+    shadowLength?: number;
+    /** World size of one tile of the noise. */
+    noiseScale?: number;
+    /** World units a second. */
+    wind?: readonly [number, number, number];
+    /** The shape's own four parameters (README table). */
+    params?: readonly [number, number, number, number];
+    /** Seconds; 0 runs forever. A one-shot hides after it unless `loop`. */
+    life?: number;
+    loop?: boolean;
+    opacity?: number;
+    seed?: number;
+  }
+  /** The presets, frozen: `{ ...volumePresets.smoke, density: 3 }`. */
+  export const volumePresets: Readonly<Record<VolumePresetName, Readonly<Required<Omit<VolumeEffectOptions, "grid">>>>>;
+
+  /** The exports of starhermit-volume-kernel's .wasm (`new WebAssembly.Instance(new WebAssembly.Module(files.readBytes("starhermit_volume_kernel.wasm")), {}).exports`). */
+  export interface VolumeKernel {
+    readonly memory: { readonly buffer: ArrayBuffer };
+    vdb_input(len: number): number; vdb_open(len: number): number; vdb_close(file: number): void;
+    vdb_brick(file: number, density: number, heat: number, width: number, height: number, depth: number, format: number, densityScale: number): number;
+    brick_data(brick: number): number; brick_data_len(brick: number): number; brick_info(brick: number): number; brick_destroy(brick: number): void;
+    vdb_error(): number; vdb_error_len(): number;
+  }
+  /** A dense (density, heat) volume as a linear RG16F Data3DTexture. */
+  export class VolumeGrid {
+    /** Interleaved (density, heat) per voxel, x fastest, then rows, then slices: half-float bits or floats. RangeError for sides past 1..2048 or a wrong length. */
+    constructor(data: Uint16Array | Float32Array, width: number, height: number, depth: number, voxelSize?: readonly [number, number, number], densityMax?: number, heatMax?: number);
+    /** A `.shvol` brick (`vdb_brick convert`); TypeError for another file, RangeError for a size that does not match its header. */
+    static fromBytes(bytes: Uint8Array): VolumeGrid;
+    /** A `.vdb` read at run time through starhermit-volume-kernel: density and temperature picked by name, resampled so the longest side is `maxSide` (default 128; RangeError past 1..2048), its voxel size from the file's transform; an Error with the kernel's message for a file it cannot read. Interpreted (first and dev runs) a large file takes a while: load inside `engine.setBusy`. */
+    static fromVdb(kernel: VolumeKernel, bytes: Uint8Array, maxSide?: number): VolumeGrid;
+    readonly texture: Data3DTexture;
+    readonly width: number;
+    readonly height: number;
+    readonly depth: number;
+    readonly voxelSize: readonly [number, number, number];
+    readonly densityMax: number;
+    readonly heatMax: number;
+    readonly worldSize: [number, number, number];
+    dispose(): void;
+  }
+
+  /** The light an effect is shaded with (linear colours times intensity; the sun direction points toward the sun). */
+  export interface VolumeLighting {
+    readonly sunDirection: Vector3;
+    readonly sunColor: Color;
+    readonly skyColor: Color;
+    readonly groundColor: Color;
+  }
+
+  /** One effect from a preset or options (overrides on top). TypeError for an unknown preset or shape, or a "grid" without a VolumeGrid. */
+  export class VolumeEffect extends Mesh {
+    constructor(options?: VolumeEffectOptions | VolumePresetName, overrides?: VolumeEffectOptions);
+    readonly shape: VolumeShape;
+    readonly grid: VolumeGrid | null;
+    readonly volumeMaterial: ShaderMaterial;
+    readonly size: Vector3;
+    readonly albedo: Color;
+    readonly wind: Vector3;
+    readonly params: Vector4;
+    density: number; extinction: number;
+    anisotropy: number; backScatter: number; lobeMix: number; multiScatter: number; ambient: number;
+    emission: number; temperatureMin: number; temperatureMax: number;
+    steps: number; shadowSteps: number; shadowLength: number; noiseScale: number;
+    life: number; loop: boolean; opacity: number; seed: number;
+    /** End rays at the scene's depth (default true; turn off for passes into targets seen from another camera). */
+    depthAware: boolean;
+    /** Seconds since made or triggered, and how fast it runs. */
+    age: number; timeScale: number;
+    /** From age 0, emitting (an explosion's blast, a dust puff). */
+    trigger(): void;
+    /** Stops emitting: smoke and fire rise away and thin out. */
+    stop(): void;
+    readonly emitting: boolean;
+    /** False once a one-shot's life ran out or a stopped emitter cleared its box. */
+    readonly alive: boolean;
+    readonly shaderError: string | null;
+    /** Advances `dt` seconds and sets the uniforms (VolumeEffects calls it). RangeError for steps or sizes out of range. */
+    update(dt: number, lighting: VolumeLighting, fog?: Fog | FogExp2 | null): void;
+    dispose(): void;
+  }
+
+  /** Effects sharing the scene's light and fog: add it to the scene, make effects with `create`, call `update(dt)` once a frame before it renders. */
+  export class VolumeEffects extends Group {
+    constructor();
+    /** From the scene each update while `autoLighting`: the first visible DirectionalLight, plus HemisphereLights and AmbientLights. */
+    readonly lighting: VolumeLighting;
+    autoLighting: boolean;
+    /** Apply `scene.fog` (default true). */
+    sceneFog: boolean;
+    /** Noise slices baked a frame until ready (16). */
+    bakeSlices: number;
+    /** The shared noise is baked; effects show from then on. */
+    readonly ready: boolean;
+    readonly shaderError: string | null;
+    readonly effects: readonly VolumeEffect[];
+    create(options: VolumeEffectOptions | VolumePresetName, position?: readonly [number, number, number], overrides?: VolumeEffectOptions): VolumeEffect;
+    update(dt: number): void;
+    dispose(): void;
+  }
 }
 
 // ===========================================================================
