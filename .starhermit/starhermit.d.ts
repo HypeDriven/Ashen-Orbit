@@ -388,7 +388,9 @@ declare module "starhermit:engine" {
   // should be sliced across frames (`fuelLeft()` says how much of this
   // call's fuel remains) or announced with `setBusy`. Running out of heap
   // (`engine.limits.heap_mib`: 256 MiB, which the manifest may lower, or
-  // raise up to 1,024 since API_MINOR 14; natively a device that cannot
+  // raise up to 1,024 since API_MINOR 14 and up to 4,096 since API_MINOR 34,
+  // BIG_HEAP_MINOR, which a manifest raising it past 1,024 must declare;
+  // the browser runtime holds it to 2,048; natively a device that cannot
   // give a large allocation within it ends the game the same way) or call
   // frames ends the game at once, as an uncaught exception or rejected
   // promise from a callback does, on the runtime's error screen with its
@@ -722,6 +724,52 @@ declare module "starhermit:engine" {
      * heap is back (`heapLimitBytes` then counts it). */
     readonly heapBytes?: number;
     readonly heapLimitBytes?: number;
+    /** Each kind of pass's GPU time, for benchmarking (since API_MINOR
+     * 34; absent before). Null where the device times nothing: OpenGL ES
+     * without GL_EXT_disjoint_timer_query, WebGPU without
+     * `timestamp-query`, WebGL2 without `EXT_disjoint_timer_query_webgl2`
+     * (browsers often leave it out). The first read starts the runtime's
+     * timer where passes are not timed already (OpenGL ES and browsers;
+     * Vulkan, Direct3D 12 and Metal always time them), so a game that
+     * never reads it adds no GPU work; it reads null, then
+     * `frames: 0`, until the first results arrive a few frames later.
+     * Results always lag a few frames behind the frame drawn. One frozen
+     * object a frame. */
+    readonly gpu?: GpuStats | null;
+  }
+  /** GPU pass times (`stats().gpu`, since API_MINOR 34): each kind of
+   * pass's mean time a frame in milliseconds over about the latest 60
+   * timed frames (`frames`; fewer at first, 0 until results arrive).
+   * Precision is the device's: native timestamps resolve well below a
+   * microsecond; browsers quantize theirs (Chrome rounds WebGPU
+   * timestamps to 100 µs unless its unsafe-WebGPU flag is on, and WebGL
+   * timer queries are coarsened likewise), so compare averages over many
+   * frames, not single passes. Kinds a backend does not time read 0:
+   * `uploads` is timed on Vulkan, Direct3D 12 and Metal only, `present`
+   * (the copy to the window) there and, on WebGPU, as a render target's
+   * composite. */
+  export interface GpuStats {
+    readonly passes: {
+      /** Texture, mesh and instance uploads, target clears, readbacks. */
+      readonly uploads: number;
+      readonly shadows: number;
+      /** The lit scene (with its depth prepass). */
+      readonly scene: number;
+      /** Ambient occlusion: its normals prepass, the occlusion, its
+       * denoise and blend. */
+      readonly occlusion: number;
+      readonly bloom: number;
+      /** The composite (bloom added, the grade, the output) and the
+       * game's post programs. */
+      readonly post: number;
+      readonly antiAliasing: number;
+      /** 2D batches: the game's overlay and the runtime's interface. */
+      readonly overlay: number;
+      readonly present: number;
+    };
+    /** Every pass's time together. */
+    readonly totalMs: number;
+    readonly frames: number;
   }
   export function stats(): FrameStats;
 
@@ -733,8 +781,11 @@ declare module "starhermit:engine" {
   export interface Limits {
     readonly fuelMs: number;
     /** The script heap: 256 unless the manifest's `engine.limits.heap_mib=`
-     * lowers it or raises it (since API_MINOR 14), up to 1,024 (MiB).
-     * Natively only: browsers hold the game to their own heap. */
+     * lowers it or raises it (since API_MINOR 14), up to 1,024 (MiB), or up
+     * to 4,096 since API_MINOR 34 (`BIG_HEAP_MINOR`). Natively only:
+     * browsers hold the game's own script to their own heap, and its
+     * workers' heaps to this, which the browser runtime holds to at most
+     * 2,048 (it reports 2,048 for a game declaring more). */
     readonly heapMib: number;
     readonly callFrames: number;
     readonly gpuMib: number;
@@ -749,7 +800,8 @@ declare module "starhermit:engine" {
      * unless the manifest's `engine.limits.instanced_meshes=` lowers it or
      * raises it, up to 4,096. */
     readonly instancedMeshes: number;
-    /** The image budget (since API_MINOR 9): 56 unless the manifest's
+    /** The image budget (since API_MINOR 9): 56 (256 since API_MINOR 35,
+     * `IMAGE_BUDGET_256_MINOR`) unless the manifest's
      * `engine.limits.image_mib=` lowers it or raises it, up to 512 (MiB);
      * images count against it within `gpuMib`. */
     readonly imageMib: number;
@@ -856,7 +908,8 @@ declare module "starhermit:engine" {
    * attribute) and 4 an index, or 2 below 65,536 vertices (in whole 4
    * bytes; since API_MINOR 14, as the GPU holds them). `textureBytes` is
    * the image
-   * budget: 56 MiB, or what `engine.limits.image_mib=` sets (at most
+   * budget: 56 MiB (256 MiB since API_MINOR 35), or what
+   * `engine.limits.image_mib=` sets (at most
    * 512 MiB, since API_MINOR 9), within `engine.limits.gpu_mib`. The
    * scene's limits (since API_MINOR 10; the same natively and in
    * browsers): 131,072 nodes, 65,536 objects, 262,144 instances, 1,024
@@ -2658,6 +2711,25 @@ declare module "starhermit:scene" {
   export const CubeUVReflectionMapping: 306;
   /** `DataTexture` types and format (three.js's numbers). */
   export const UnsignedByteType: 1009;
+  /** `DepthTexture` types and formats (three.js's numbers; since
+   * API_MINOR 35): a depth texture holds the device's depth whatever its
+   * type says (24-bit, or 32-bit floats where the backend's depth format
+   * is those). */
+  export const UnsignedShortType: 1012;
+  export const UnsignedIntType: 1014;
+  export const UnsignedInt248Type: 1020;
+  export const DepthFormat: 1026;
+  export const DepthStencilFormat: 1027;
+  /** `DepthTexture.compareFunction` (three.js's numbers; since
+   * API_MINOR 35). */
+  export const NeverCompare: 512;
+  export const LessCompare: 513;
+  export const EqualCompare: 514;
+  export const LessEqualCompare: 515;
+  export const GreaterCompare: 516;
+  export const NotEqualCompare: 517;
+  export const GreaterEqualCompare: 518;
+  export const AlwaysCompare: 519;
   export const FloatType: 1015;
   export const HalfFloatType: 1016;
   export const RGBAFormat: 1023;
@@ -2691,8 +2763,8 @@ declare module "starhermit:scene" {
 
   // -- Textures ---------------------------------------------------------------
   /** An RGBA8 image on the GPU (sRGB-encoded), at most 4,096 pixels on a
-   * side (RangeError), counted against the game's image budget (56 MiB
-   * unless the manifest's `engine.limits.image_mib` sets it, up to 512 MiB
+   * side (RangeError), counted against the game's image budget (56 MiB,
+   * 256 MiB since API_MINOR 35, unless the manifest's `engine.limits.image_mib` sets it, up to 512 MiB
    * since API_MINOR 9; mipmaps add a third): prefer repeating a small
    * image over one large one (see `starhermit:canvas`). UVs follow three.js: (0, 0) is the
    * image's bottom-left. Sampling settings take effect at the next frame. */
@@ -2794,7 +2866,24 @@ declare module "starhermit:scene" {
    * Games declaring an older minor keep the clamped, sRGB-encoded floats.
    * Integer formats (`RGBAIntegerFormat` and the like) are not supported. */
   export class DataTexture extends Texture {
-    /** The pixels reach the GPU here. */
+    /** The pixels reach the GPU here. Since API_MINOR 25 float data is held
+     * as half floats, unclamped. Since API_MINOR 34
+     * (`FLOAT32_TEXTURES_MINOR`) `FloatType` data (a Float32Array) is held
+     * as 32-bit floats exactly, as three.js's: RGBA32F, and with `format`
+     * `RGFormat` or `RedFormat` RG32F or R32F (sampled as (r, g, 0, 1) and
+     * (r, 0, 0, 1)), 16, 8 and 4 bytes a texel against the image budget,
+     * for data such as a water kernel's spectrum that half floats would
+     * round or lose (below 6.1e-5, past 65504); `textureLoad` reads the
+     * values the game gave, and a `needsUpdate` uploads new ones exactly
+     * (new data must be a Float32Array). NaN is held as 0 and infinities as
+     * ±3.4e38. Where the device does not filter them linearly
+     * (OpenGL ES and WebGL2 without `OES_texture_float_linear`, Vulkan and
+     * Metal where the device says, WebGPU without `float32-filterable`)
+     * they sample nearest whatever the filters say; WebGPU without
+     * `float32-filterable` holds them as half floats (where
+     * `renderer.capabilities.floatRenderable` is true they are exact on
+     * every device). `HalfFloatType` with a Float32Array keeps half
+     * floats; games declaring an older minor keep half floats. */
     constructor(data: Uint8Array | Uint8ClampedArray | Uint16Array | Float32Array, width: number, height: number, format?: number, type?: number);
     /** The pixels the game holds, the same as `image.data` (null once
      * released). */
@@ -2960,6 +3049,53 @@ declare module "starhermit:scene" {
     addLayerUpdate(layerIndex: number): void;
     clearLayerUpdates(): void;
   }
+  /** Since API_MINOR 35 (`VOLUME_TEXTURES_MINOR`; a TypeError before):
+   * three.js r185's `Data3DTexture`, a real 3D texture of `width × height ×
+   * depth` texels (`image.data`: x fastest, then rows, then slices, `width ×
+   * height × depth × channels` values). Set `format` and `type` after
+   * making it, as three.js takes them: `UnsignedByteType` (default) with
+   * `RGBAFormat` (default) or `RedFormat` (a Uint8Array: RGBA8, R8);
+   * `HalfFloatType` with `RGBAFormat`, `RGFormat` or `RedFormat` (a
+   * Uint16Array of half-float bits, or a Float32Array: RGBA16F, RG16F,
+   * R16F); `FloatType` with `RedFormat` (a Float32Array: R32F); other pairs
+   * are a TypeError when it is first used. Missing channels read 0 (alpha
+   * 1). Nearest and clamped by default (three.js); `wrapS`, `wrapT` and
+   * `wrapR` wrap u, v and w, `magFilter` and `minFilter` filter linearly or
+   * not (R32F linearly only where 32-bit float textures filter, else
+   * nearest; every other format filters on every backend); no mipmaps or
+   * anisotropy. Its image is made when a material first uses it (its
+   * bytes count against the image budget as any image's, and it uploads
+   * as images do), made again when its sides, format or type changed, and
+   * sent again whole after `needsUpdate`; three.js r185 has no region
+   * update for a Data3DTexture (`addLayerUpdate` is DataArrayTexture's),
+   * so `renderer.copyTextureToTexture` writes a box of one Data3DTexture's
+   * data into another (or into a WebGL3DRenderTarget's texture). Sides are
+   * 1 to 2,048; every backend holds 256 (OpenGL ES's and WebGL2's least),
+   * and past what a device holds the image fails as an upload does
+   * (`resource-failed`). A ShaderMaterial's or a material hook's WGSL takes
+   * a uniform holding one as a `texture_3d<f32>` with `NAME_sampler`:
+   *   textureSample(NAME, NAME_sampler, uvw)    (fragment stage; and
+   *   textureSampleBias, textureSampleGrad), textureSampleLevel(NAME,
+   *   NAME_sampler, uvw, level), textureLoad(NAME, vec3i(x, y, z), 0)
+   *   (clamped into it), textureDimensions(NAME) (a vec3u)
+   * with x along u, row 0 at v = 0 and slice 0 at w = 0 (texel centres at
+   * (i + 0.5) / side), in any of the material's texture slots (it counts
+   * as one of them). Built-in materials' maps, `draw.image` and the UI do
+   * not take it (`draw.image` throws a TypeError). */
+  export class Data3DTexture extends Texture {
+    constructor(data?: Uint8Array | Uint8ClampedArray | Uint16Array | Float32Array | null, width?: number, height?: number, depth?: number);
+    readonly isData3DTexture: true;
+    readonly image: { data: Uint8Array | Uint8ClampedArray | Uint16Array | Float32Array | null; width: number; height: number; depth: number };
+    readonly depth: number;
+    /** `RGBAFormat` (default), `RGFormat` or `RedFormat`. */
+    format: number;
+    /** `UnsignedByteType` (default), `HalfFloatType` or `FloatType`. */
+    type: number;
+    /** How w wraps (`ClampToEdgeWrapping` by default). */
+    wrapR: string;
+    flipY: boolean;
+    unpackAlignment: number;
+  }
   /** Six images of an environment (three.js `CubeTexture`; faces +X, −X,
    * +Y, −Y, +Z, −Z, squares of one size): package paths or textures. Not
    * an image materials show: `scene.environment`, `envMap` and
@@ -3077,17 +3213,46 @@ declare module "starhermit:scene" {
    * prefiltering; false while its images decode or it prefilters, and for
    * null. */
   export function environmentReady(value: Texture | null): boolean;
+  /** Since API_MINOR 34: `renderer.capabilities`. */
+  export interface RendererCapabilities {
+    readonly floatRenderable: boolean;
+    readonly floatFilterable: boolean;
+  }
   /** Since API_MINOR 8: `RenderTarget`'s options (three.js's; others are
    * ignored). */
   export interface RenderTargetOptions {
+    /** Since API_MINOR 35: its depth as a texture (`DepthTexture`), which
+     * makes `depthBuffer` true. */
+    depthTexture?: DepthTexture | null;
     /** `UnsignedByteType` (default): RGBA8 holding what the window would
      * show (tone mapped, sRGB-encoded). `HalfFloatType` (or `FloatType`,
-     * taken as half floats): linear light, not tone mapped, past 1 where it
-     * is; where the device cannot render half floats it holds RGBA8 (a
-     * warning says so) and, since API_MINOR 10, counts RGBA8's 4 bytes a
+     * taken as half floats before API_MINOR 34): linear light, not tone
+     * mapped, past 1 where it is (clamped to 0–65504, alpha 1 unless
+     * blended); where the device cannot render half floats it holds RGBA8
+     * (a warning says so) and, since API_MINOR 10, counts RGBA8's 4 bytes a
      * pixel against the image budget (8 before). Built-in maps read either
      * as sRGB-encoded images;
-     * custom materials' programs read the values as they are. */
+     * custom materials' programs read the values as they are.
+     *
+     * Since API_MINOR 34 (`FLOAT_TARGETS_MINOR`) `FloatType` holds 32-bit
+     * floats, as three.js's (RGBA32F, and with `format` RG32F or R32F: 16,
+     * 8 and 4 bytes a pixel), for data passes such as an FFT's ping-pong:
+     * passes write their color as it is (a custom material's fragment
+     * unclamped, negative values and alpha included, without fog, as
+     * three.js's ShaderMaterial; built-in materials' light unclamped),
+     * unblended on every device (a blended material's color replaces what
+     * is there: WebGPU blends no 32-bit floats and WebGL2 needs
+     * `EXT_float_blend`), and `textureLoad` reads exact values. Where the
+     * device does not filter them linearly (`renderer.capabilities
+     * .floatFilterable` false) they sample nearest whatever the filters
+     * say. Where it does not render them (`floatRenderable` false: WebGL2
+     * and OpenGL ES without `EXT_color_buffer_float`, WebGPU without
+     * `float32-filterable`) the target holds the half floats of as many
+     * channels, still written unclamped (blended materials blend there),
+     * counting their bytes. With `generateMipmaps` an RGBA `FloatType`
+     * target holds RGBA16F on every device, written unclamped the same way
+     * (its mip chain made from that), and a `FloatType` DataTexture still
+     * holds half floats. */
     type?: number;
     /** The texture's sampling (default clamped and linear). */
     wrapS?: Wrapping;
@@ -3146,7 +3311,8 @@ declare module "starhermit:scene" {
    * what passes draw into it until they draw over it or the target is
    * resized (cleared again) or disposed; a lost and recovered GPU device
    * clears it too. Width and height are 1 to 4,096 (RangeError); a game
-   * holds at most 16 (RangeError), each counting its color and depth
+   * holds at most 16 (32 since API_MINOR 35, `RENDER_TARGETS_32_MINOR`;
+   * RangeError), each counting its color and depth
    * (four bytes a pixel each; half-float color eight, RG16F four and R16F
    * two where half floats render, else four) against the
    * image budget (`engine.budgets()`): a target of 4,096 pixels a side
@@ -3155,7 +3321,8 @@ declare module "starhermit:scene" {
    * target past the budget throws a RangeError saying so. Colors are premultiplied by alpha
    * where blending made them partly transparent, as three.js leaves them:
    * show a target with transparent edges with `premultipliedAlpha`
-   * materials. The runtime never reads a target back to the game. */
+   * materials. Since API_MINOR 35 the game may read a target back
+   * asynchronously (`renderer.readRenderTargetPixelsAsync`). */
   export class RenderTarget {
     constructor(width?: number, height?: number, options?: RenderTargetOptions);
     readonly isRenderTarget: true;
@@ -3164,6 +3331,12 @@ declare module "starhermit:scene" {
     readonly height: number;
     /** Whether passes into it depth-test (`RenderTargetOptions`). */
     readonly depthBuffer: boolean;
+    /** Since API_MINOR 35 (`DEPTH_TEXTURES_MINOR`; null by default, absent
+     * before): its depth as a texture custom materials sample (three.js
+     * r185's). Setting one (or another, or null) after the target was made
+     * makes it again, cleared, its depth buffer the texture's; `dispose()`
+     * disposes it with the target. */
+    depthTexture: DepthTexture | null;
     /** Where `renderer.render` draws once it is set as the render target
      * (three.js): x, y from the bottom left, width, height, in its pixels;
      * the whole target by default and after `setSize`. */
@@ -3176,6 +3349,104 @@ declare module "starhermit:scene" {
   /** Since API_MINOR 8: three.js's name for `RenderTarget`. */
   export class WebGLRenderTarget extends RenderTarget {
     readonly isWebGLRenderTarget: true;
+  }
+  /** Since API_MINOR 35 (`DEPTH_TEXTURES_MINOR`; a TypeError before):
+   * three.js r185's `DepthTexture`, a render target's depth as a texture,
+   * given as its `depthTexture` (or the option) before or after it is
+   * made. After passes into the target it holds the depth they left: 0 at
+   * the camera's near plane to 1 at its far one (as three.js reads
+   * `gl_FragCoord.z`; linear in view depth under an orthographic camera),
+   * rows as the target's color, so the same `uv` reads both. A custom
+   * material's (`ShaderMaterial` or hooks) texture uniform holding one is,
+   * in its WGSL:
+   *   NAME: texture_depth_2d, NAME_sampler: sampler
+   *     (`textureSampleLevel(NAME, NAME_sampler, uv, 0)` gives the depth,
+   *     an f32; nearest whatever its filters say: WebGPU binds depth to
+   *     non-filtering samplers alone), or with
+   *     `compareFunction` set
+   *   NAME: texture_depth_2d, NAME_sampler: sampler_comparison
+   *     (`textureSampleCompare(NAME, NAME_sampler, uv, reference)` in a
+   *     fragment, `textureSampleCompareLevel` anywhere: 1 where
+   *     `reference compareFunction storedDepth` holds, else 0; with
+   *     `LinearFilter` the four nearest texels' results blended
+   *     bilinearly, a shadow map's percentage-closer filter, where the
+   *     device filters it).
+   * A material binds depth textures among its first five textures (the
+   * engine orders them first). A draw whose depth texture's target is gone
+   * draws nothing, and a pass cannot sample the depth of the target it
+   * draws into (it draws without it). Built-in materials' maps and
+   * `draw.image` show nothing for one. It counts with its target (the
+   * target's depth, 4 bytes a pixel, against the image budget; no further
+   * image). Natively Vulkan samples a target's depth in place, OpenGL ES a
+   * DEPTH_COMPONENT24 texture, Direct3D 12 a typeless depth's R32 or R24
+   * view and Metal its Depth32Float texture; in browsers WebGL2 a
+   * DEPTH_COMPONENT24 texture and WebGPU a depth24plus one. */
+  export class DepthTexture extends Texture {
+    constructor(
+      width: number,
+      height: number,
+      type?: number,
+      mapping?: number,
+      wrapS?: string,
+      wrapT?: string,
+      magFilter?: string,
+      minFilter?: string,
+      anisotropy?: number,
+      format?: number,
+    );
+    readonly isDepthTexture: true;
+    /** `LessEqualCompare` and the others, or null (default): no
+     * comparison. */
+    compareFunction: number | null;
+    /** three.js's (default `UnsignedIntType`, `DepthFormat`). */
+    type: number;
+    format: number;
+  }
+  /** Since API_MINOR 34 (a TypeError before): three.js's
+   * `WebGLArrayRenderTarget`, `depth` layers of `width × height` (a
+   * water's FFT cascades, a shadow's slices). The engine keeps them
+   * stacked top to bottom in one image of `width × height·depth`, so
+   * `height × depth` is at most 4,096 (RangeError), and the image counts
+   * against the budget as a target of that size. Its `texture` is a
+   * `texture_2d_array<f32>` of `depth` layers in a `ShaderMaterial`'s WGSL,
+   * as a `DataArrayTexture` is (`textureSample(t, t_sampler, uv, layer)`,
+   * `textureLoad(t, coords, layer, 0)`, `textureNumLayers`); built-in
+   * maps and `draw.image` show the whole stack. `height` and `viewport` are
+   * a layer's; `renderer.setRenderTarget(target, layer)` draws into one
+   * layer (three.js's `activeCubeFace`; RangeError past the last), and a
+   * pass may draw every layer at once through `renderer.setViewport(0, 0,
+   * width, height * depth)` after it (layer `l` is the rows from `l ×
+   * height` down from the top, as `f.coord.y` counts them). */
+  export class WebGLArrayRenderTarget extends RenderTarget {
+    constructor(width?: number, height?: number, depth?: number, options?: RenderTargetOptions);
+    readonly isWebGLArrayRenderTarget: true;
+    readonly depth: number;
+  }
+  /** Since API_MINOR 35 (`VOLUME_TEXTURES_MINOR`; a TypeError before):
+   * three.js r185's `WebGL3DRenderTarget`, `depth` slices of `width ×
+   * height` whose `texture` is a Data3DTexture (a `texture_3d<f32>` in a
+   * ShaderMaterial's WGSL; zeros at first), for simulations kept in 3D
+   * (smoke, fire, clouds). `renderer.setRenderTarget(target, layer)` picks
+   * the slice `render` and `clear` draw into (three.js's `activeCubeFace`;
+   * RangeError past the last): each pass draws into the target's own 2D
+   * image (with its depth buffer unless `depthBuffer: false`), which is
+   * then copied into that slice on the GPU, in order with the passes
+   * around it, on every backend. `readRenderTargetPixelsAsync` reads that
+   * 2D image, the slice last drawn (three.js reads the layer last
+   * attached; `activeCubeFaceIndex` is not a 3D target's). UnsignedByteType
+   * with RGBAFormat or RedFormat, HalfFloatType with RGBAFormat, RGFormat
+   * or RedFormat, FloatType with RedFormat (other formats are a TypeError);
+   * no mipmaps or depthTexture. Sides 1 to 2,048 (RangeError past them;
+   * 256 on every device, past what one holds the 3D texture fails as an
+   * image does). Its 2D image and its 3D texture count as two images, each
+   * of its own bytes, and go together. `setSize(width, height, depth)`
+   * makes both again, cleared. */
+  export class WebGL3DRenderTarget extends RenderTarget {
+    constructor(width?: number, height?: number, depth?: number, options?: RenderTargetOptions);
+    readonly isWebGL3DRenderTarget: true;
+    readonly texture: Data3DTexture;
+    readonly depth: number;
+    setSize(width: number, height: number, depth?: number): void;
   }
   /** Loads package images (PNG or WebP; an animated WebP's first frame)
    * through the engine's decoders. Loads requested at once read their
@@ -4175,6 +4446,8 @@ declare module "starhermit:scene" {
      * material draws whatever is nearer and writes no depth, as in
      * three.js, whatever its `depthFunc`. */
     depthTest?: boolean;
+    /** Since API_MINOR 35: see `Material.colorWrite`. */
+    colorWrite?: boolean;
     /** The depth test's comparison (three.js `depthFunc`; a `DepthModes`
      * constant such as `LessDepth`). Default: `LessEqualDepth` from
      * API_MINOR 20 (three.js's, so of two coplanar surfaces the later
@@ -4237,6 +4510,13 @@ declare module "starhermit:scene" {
     shadowSide: Side | null;
     depthWrite: boolean;
     depthTest: boolean;
+    /** Since API_MINOR 35 (`COLOR_WRITE_MINOR`; absent before): three.js
+     * r185's `colorWrite` (default true). False draws no color: the
+     * material's draws still test and write depth as `depthTest` and
+     * `depthWrite` say (a depth-only occluder or mask, a depth prime);
+     * shadow maps and `renderer.sceneDepth` take it as before. Every
+     * backend masks the color target's writes in the draw's pipeline. */
+    colorWrite: boolean;
     /** Since engine 1.20.2 (any minor): see `MaterialParameters.depthFunc`.
      * Reads the default the game's minor takes until one is set. */
     depthFunc: DepthModes;
@@ -4354,7 +4634,8 @@ declare module "starhermit:scene" {
   //     (black and 0 without one); fogged in display color as the scene's
   //     fog is (or in linear light before the post effects' tone mapping).
   //     Read-only: the fragment's world position, view depth and window
-  //     position (rows from the top, for screen_uv and renderer.sceneDepth)
+  //     position (rows from the top, for screen_uv, renderer.sceneDepth
+  //     and renderer.sceneColor)
   //     and the camera's position.
   //   fn model_matrix() -> mat4x4f       object to world, instance included
   //   fn vertex_index() -> u32           (both vertex stage only)
@@ -4408,7 +4689,9 @@ declare module "starhermit:scene" {
   //   var<uniform> uniforms: Uniforms    the material's uniforms by name
   //   NAME: texture_2d<f32>, NAME_sampler: sampler   each texture uniform
   //   (a DataArrayTexture's NAME is a texture_2d_array<f32>; since
-  //   API_MINOR 25, see DataArrayTexture)
+  //   API_MINOR 25, see DataArrayTexture; a Data3DTexture's or a
+  //   WebGL3DRenderTarget's texture a texture_3d<f32>; since API_MINOR 35,
+  //   see Data3DTexture)
   //   const NAME                          each define
   // The hooks, each optional:
   //   fn vertex(v: Vertex) -> Vertex     every pass: the shadows and the
@@ -4449,7 +4732,16 @@ declare module "starhermit:scene" {
    * `array<vec4f, n>` or `array<mat4x4f, n>`; a Texture (or null, the
    * white texture) a texture and sampler (at most 5 a material since
    * API_MINOR 9, 4 before: with the material's own maps and the shadow
-   * maps that is the 16 a WebGL2 fragment stage is sure to sample). Each
+   * maps that is the 16 a WebGL2 fragment stage is sure to sample; since
+   * API_MINOR 34 a `ShaderMaterial`, which replaces the material's maps,
+   * up to 12, the sixth on taking the maps' places, all readable in both
+   * stages; hooks keep 5; API_MINOR 35 keeps 12: with the four shadow
+   * maps a fragment stage then samples the 16 WebGPU, WebGL2, OpenGL ES
+   * and Vulkan are sure of, so pack more as the layers of an array
+   * texture or the channels of one). A `DataArrayTexture` (since API_MINOR 25) or a
+   * `WebGLArrayRenderTarget`'s texture (since 34) is a
+   * `texture_2d_array<f32>`; a `Data3DTexture` or a `WebGL3DRenderTarget`'s
+   * texture (since 35) a `texture_3d<f32>`, one of the textures. Each
    * member takes whole vec4 slots, 16,384 bytes in all since API_MINOR 10
    * (4,096 before; 1,024 vec4s, 256 matrices: WebGL2's least uniform block):
    * a larger block is refused (`compile()` throws a SyntaxError, the
@@ -4920,6 +5212,24 @@ declare module "starhermit:scene" {
      * from position, quaternion and scale. It draws decomposed (a shear
      * is lost). Older minors always compose it. */
     readonly matrix: Matrix4;
+    /** Before API_MINOR 34 each read composes the local matrix and
+     * multiplies it into the parent's world matrix, which is read the
+     * same way: O(depth) compositions and multiplications a read. Since
+     * API_MINOR 34 an object keeps its world matrix between reads and
+     * makes it again only when its position, quaternion or scale (or,
+     * while `matrixAutoUpdate` is false, its own `matrix`'s elements), its
+     * parent, or its parent's world matrix changed, compared bit for bit:
+     * a read walks the chain comparing those numbers (O(depth) compares),
+     * then composes and multiplies where something changed, with the same
+     * float operations, so every read gives the numbers an uncached read
+     * gives (likewise `getWorldPosition`, `getWorldQuaternion`,
+     * `getWorldScale`, `getWorldDirection`, `localToWorld`, `worldToLocal`
+     * and `lookAt`). The matrices handed out stay as an uncached read
+     * leaves them: `matrixWorld` returns the same Matrix4 each read,
+     * written with the current numbers, and once handed out it is
+     * written again at each read through the object or under it, as
+     * before. No call is needed after changing a transform, as before:
+     * `updateMatrixWorld` and `updateWorldMatrix` still do nothing. */
     readonly matrixWorld: Matrix4;
     visible: boolean;
     /** Lower draws first among opaque objects, and among blended ones before
@@ -4981,8 +5291,16 @@ declare module "starhermit:scene" {
     traverse(callback: (object: Object3D) => void): void;
     getObjectByName(name: string): Object3D | undefined;
     // Since API_MINOR 18.
-    /** The layers a Raycaster tests it on (layer 0 by default). The
-     * renderer draws every visible object whatever its layers. */
+    /** The layers a Raycaster tests it on (layer 0 by default). Since
+     * API_MINOR 35 (`LAYERS_MINOR`) also the layers the renderer tests, as
+     * three.js r185's: a pass (`renderer.render` into a target, and the
+     * window's frame) draws an object only when `object.layers.test(
+     * camera.layers)`, what is under it tested in turn; a light outside
+     * the camera's layers lights nothing and casts no shadow, and an
+     * object outside them casts none either (three.js's shadow maps test
+     * the camera's layers). A camera's own `layers` say what it sees.
+     * Older games' renderers draw every visible object whatever its
+     * layers. */
     readonly layers: Layers;
     /** three.js's (kept, not played). */
     animations: unknown[];
@@ -5024,7 +5342,8 @@ declare module "starhermit:scene" {
     updateWorldMatrix(updateParents?: boolean, updateChildren?: boolean): void;
   }
   /** Which of 32 layers an object is on (three.js `Layers`; since
-   * API_MINOR 18). */
+   * API_MINOR 18). Raycasters test them, and since API_MINOR 35
+   * (`LAYERS_MINOR`) the renderer too, against the camera's. */
   export class Layers {
     /** One bit a layer (layer 0 by default). */
     mask: number;
@@ -5057,9 +5376,11 @@ declare module "starhermit:scene" {
    * nearer. With `autoUpdate` the renderer updates it every frame for the
    * camera it draws (and in `renderer.render` for that call's camera), as
    * three.js's `WebGLRenderer` does for LODs under visible parents, before
-   * shadow maps draw: shadows cast from the level the camera sees. The
-   * engine draws whatever the objects' layers, so the update does not test
-   * them. Before API_MINOR 26 the constructor is a TypeError. */
+   * shadow maps draw: shadows cast from the level the camera sees. Before
+   * API_MINOR 35 the engine draws whatever the objects' layers, so the
+   * update does not test them; from 35 (`LAYERS_MINOR`), as three.js, only
+   * a LOD whose layers meet the camera's is updated. Before API_MINOR 26
+   * the constructor is a TypeError. */
   export class LOD extends Object3D {
     constructor();
     readonly isLOD: true;
@@ -5495,10 +5816,42 @@ declare module "starhermit:scene" {
      * takes the window's current aspect, as it draws; every other camera
      * (one kept for maths, such as a probe a view is fitted through, for
      * `project`, `unproject`, `Raycaster.setFromCamera` or a `Frustum`)
-     * takes its own on every minor. */
-    readonly projectionMatrix: Matrix4;
-    readonly projectionMatrixInverse: Matrix4;
+     * takes its own on every minor.
+     *
+     * Since API_MINOR 34 (`CAMERA_PROJECTION_MINOR`) it is the camera's own
+     * Matrix4, as three.js's: a game may write its elements (or assign
+     * another Matrix4), and the camera then draws with what it holds until
+     * `updateProjectionMatrix()` makes it again from the camera's settings.
+     * That is three.js's Reflector's oblique near plane (elements 2, 6, 10
+     * and 14 from the mirror plane, so the mirror camera clips exactly at
+     * it), or any projection a port builds (`makePerspective`, a jittered
+     * or shifted frustum). A written matrix decides the frame's clipping,
+     * depth and frustum culling (from its own clip volume, so an oblique
+     * near plane culls what lies wholly beyond it), `project`,
+     * `unproject` and `Raycaster.setFromCamera`, the background's
+     * directions, and the post effects' and ambient occlusion's
+     * projection; `near` and `far` stay the camera's (picking rays start
+     * at `near`, shadow cascades slice `near` to `far`, and `sceneDepth`
+     * and fog measure distance along the view axis, so neither reads the
+     * projection). The matrix is three.js's WebGL one (clip depth -1 to
+     * 1), mapped to each GPU's own. Unlike three.js, a camera whose matrix
+     * was never written follows its settings at once (changing `fov`
+     * draws without `updateProjectionMatrix()`, as on older minors). A
+     * matrix that is not finite draws with the settings' projection; a
+     * singular one draws nothing. Before API_MINOR 34 it is read-only in
+     * effect: it is made from the settings each time it is read, and
+     * what a game writes into it is lost. */
+    projectionMatrix: Matrix4;
+    /** The projection's inverse. Since API_MINOR 34 a game may write it as
+     * three.js's Reflector does (`projectionMatrixInverse.copy(
+     * projectionMatrix).invert()`); unless written it is the inverse of
+     * `projectionMatrix` as it is then (written or made). */
+    projectionMatrixInverse: Matrix4;
     readonly matrixWorldInverse: Matrix4;
+    /** three.js's: since API_MINOR 34 it makes `projectionMatrix` (and its
+     * inverse) from the camera's settings again, dropping a written one;
+     * before it the projection follows the settings without it. */
+    updateProjectionMatrix(): void;
   }
   /** A camera's view offset (three.js `camera.view`, since API_MINOR 16):
    * what `setViewOffset` sets. Its fields may be changed in place, as in
@@ -5543,7 +5896,8 @@ declare module "starhermit:scene" {
     /** three.js `clearViewOffset` (since API_MINOR 16): the projection is
      * centered on the window's aspect again. */
     clearViewOffset(): void;
-    /** Kept for ports; projection changes apply without it. */
+    /** Kept for ports; projection changes apply without it (since API_MINOR
+     * 34 it also drops a written `projectionMatrix`, as in three.js). */
     updateProjectionMatrix(): void;
   }
   /** From API_MINOR 20 three.js's projection: `left`, `right`, `top`,
@@ -5824,6 +6178,23 @@ declare module "starhermit:scene" {
     environmentIntensity: number;
     /** Turns the environment (three.js `environmentRotation`). */
     readonly environmentRotation: Euler;
+    /** Since API_MINOR 35 (`OVERRIDE_MATERIAL_MINOR`; absent before):
+     * three.js r185's `overrideMaterial` (default null). While set, every
+     * pass of the scene (`renderer.render(scene, camera)` into a target,
+     * and the window's frame) draws each object with it in its own
+     * material's place: each keeps its geometry (and draw range, groups
+     * and morphs), placement, skin, instances, instance colors and
+     * shadow flags, and an object its own material hides stays hidden, as
+     * in three.js. A pass of an object under the scene ignores it, as
+     * three.js's does. Its kind decides what it takes: a `PointsMaterial`
+     * the points, a `LineBasicMaterial` the lines, a `wireframe` material
+     * the wireframes, any other material the triangle meshes (what an
+     * object draws is its own material's geometry here: one that draws
+     * lines, points or a wireframe keeps its own material under an
+     * override of another kind); sprites keep their own. Set it, render into
+     * a target, set it back to null: a depth or ID pass, a shadow map of
+     * the game's own. */
+    overrideMaterial: Material | null;
   }
   export const scene: Scene;
 
@@ -6164,6 +6535,12 @@ declare module "starhermit:scene" {
      * (default 1), applied to everything the scene draws. */
     toneMapping: number;
     toneMappingExposure: number;
+    /** Since API_MINOR 34 (three.js's `capabilities`, the members this
+     * engine has): whether `FloatType` render targets hold 32-bit floats on
+     * this device (`floatRenderable`; else half floats) and whether those
+     * filter linearly (`floatFilterable`; else they sample nearest).
+     * Undefined before API_MINOR 34. */
+    readonly capabilities: RendererCapabilities | undefined;
     /** three.js's output color space: `SRGBColorSpace` (the default) or,
      * since API_MINOR 26, `LinearSRGBColorSpace`, which writes the scene's
      * light after tone mapping without the sRGB transfer (three.js r185's
@@ -6179,8 +6556,11 @@ declare module "starhermit:scene" {
 
     // Render targets (since API_MINOR 8). The scene draws itself every
     // frame; `render` draws into a render target.
-    /** The target `render` and `clear` draw into, or null (the default). */
-    setRenderTarget(target: RenderTarget | null): void;
+    /** The target `render` and `clear` draw into, or null (the default);
+     * for a `WebGLArrayRenderTarget` (since API_MINOR 34) the layer
+     * (three.js's `activeCubeFace`, default 0), for a
+     * `WebGL3DRenderTarget` (since 35) the slice. */
+    setRenderTarget(target: RenderTarget | null, activeCubeFace?: number): void;
     getRenderTarget(): RenderTarget | null;
     /** Whether `render` clears the target to the clear color first
      * (default true, as three.js). Set it false to draw over what the
@@ -6246,6 +6626,27 @@ declare module "starhermit:scene" {
      * render half floats it stays 65504. Nearest filtering by default (one
      * object a game; disposing it does nothing). */
     readonly sceneDepth: Texture;
+    /** Since API_MINOR 34 (`SCENE_COLOR_MINOR`; undefined before): the
+     * scene's color as a texture for transparent custom materials
+     * (refraction, depth fog, shorelines; three.js's transmission pass):
+     * give it as a texture uniform and read it at the fragment's window
+     * position, offset for refraction:
+     * `textureSampleLevel(behind, behind_sampler, screen_uv(f.coord), 0.0)`.
+     * It holds the frame's background (sky, clear color) and the opaque
+     * objects drawn before the first blended object (or the first that
+     * samples it), in linear light (fogged, before the tone mapping and
+     * the output encoding; alpha the coverage), at the
+     * window's size, rows from the top. When a frame's objects sample it,
+     * the renderer copies the scene's color there (resolving it when
+     * multisampled) and draws the frame through the post effects' half
+     * floats, as `post` does, so that frame's blended objects blend in
+     * linear light (8 bytes a pixel of the window, plus the post buffers);
+     * frames whose objects do not sample it cost nothing. Objects that
+     * sample it, and blended objects before them, are not in it.
+     * Render-target passes read the last frame's; where the device cannot
+     * render half floats it stays transparent black. Linear filtering by
+     * default (one object a game; disposing it does nothing). */
+    readonly sceneColor: Texture | undefined;
     /** Since API_MINOR 9: the frame this call makes, as the PNG bytes of a
      * screenshot (a photo mode): the scene, and with `ui: true` the game's
      * 2D overlay (`starhermit:draw`, `starhermit:ui`) over it, as drawn,
@@ -6268,6 +6669,53 @@ declare module "starhermit:scene" {
      * (`engine.usage().waitingUploads`) holds the first frame that has sent
      * every mesh and image made before it. */
     capture(options?: { ui?: boolean }): Promise<Uint8Array>;
+    /** Since API_MINOR 35 (`TARGET_READS_MINOR`; undefined before):
+     * three.js r185's asynchronous read of a render target. `width ×
+     * height` texels at (`x`, `y`) from the target's bottom left, rows
+     * from the bottom, in the target's channels (4 for RGBAFormat, 2 for
+     * RGFormat, 1 for RedFormat) and type: a Uint8Array for
+     * UnsignedByteType (what the target holds: RGBA8 targets hold the
+     * output as the window shows it, tone mapped and sRGB-encoded), a
+     * Uint16Array of half-float bits for HalfFloatType, a Float32Array for
+     * FloatType. With `buffer` (an array of that kind holding them) the
+     * texels go into it and the promise resolves with it; without, with a
+     * new array. `activeCubeFaceIndex` picks a WebGLArrayRenderTarget's
+     * layer; `textureIndex` is 0.
+     *
+     * The texels are what the passes queued before the call drew. The GPU
+     * copies them while the game goes on, and the promise settles as the
+     * second frame after the call's begins (a read asked for in frame N
+     * settles before frame N + 2's callbacks run), on every backend and in
+     * replays and checks alike: when it settles depends on the frames
+     * alone. A read the renderer could not make (no GPU drew the game's
+     * frames) rejects then with an Error. Reads are bounded: at most 16
+     * wait at once and a frame reads at most 1 MiB of texels (as the game
+     * gets them); past either the promise rejects with a RangeError, as it
+     * does with an Error (three.js's) for bounds outside the target or a
+     * value that is no render target, and with a TypeError or RangeError
+     * for a buffer of the wrong kind or too short. The call's fuel pays
+     * for the bytes. */
+    /** Since API_MINOR 35 (`VOLUME_TEXTURES_MINOR`; absent before): three.js
+     * r185's `copyTextureToTexture` for 3D textures, the engine's region
+     * update of one: the box `srcRegion` (a Box3 of whole texels, max
+     * exclusive; all of the source when null) of the Data3DTexture
+     * `srcTexture`'s `image.data` written into `dstTexture` (a
+     * Data3DTexture or a WebGL3DRenderTarget's texture, of the same format
+     * and type) at `dstPosition` (a Vector3; the origin when null), in
+     * order with the passes around it (`dstTexture`'s own pending data is
+     * sent first). Levels are 0. Other textures are a TypeError; a region
+     * outside either a RangeError. */
+    copyTextureToTexture?(srcTexture: Texture, dstTexture: Texture, srcRegion?: Box3 | null, dstPosition?: Vector3 | null, srcLevel?: number, dstLevel?: number): void;
+    readRenderTargetPixelsAsync?(
+      renderTarget: RenderTarget,
+      x: number,
+      y: number,
+      width: number,
+      height: number,
+      buffer?: Uint8Array | Uint16Array | Float32Array,
+      activeCubeFaceIndex?: number,
+      textureIndex?: number,
+    ): Promise<Uint8Array | Uint16Array | Float32Array>;
   }
   export const renderer: Renderer;
 
@@ -9356,6 +9804,9 @@ declare module "starhermit:platform" {
     stopped: (reason: SocketStop) => void;
     /** The server script's broadcast data. */
     game: (data: JsonValue) => void;
+    /** A platform error or a refused command. A broadcast frame over this
+     * socket's limit is not sent; it arrives here instead as
+     * `frame_too_large (N bytes, limit M): …`. */
     error: (message: string) => void;
     presence: (userId: string, online: boolean) => void;
     membership: (data: JsonValue) => void;
@@ -9365,8 +9816,9 @@ declare module "starhermit:platform" {
     abandoned: (reason: string) => void;
   }
   /** The session's game socket (`ws/v1/games`): commands and realtime input
-   * to the game's server script, its broadcasts back. Text frames of at
-   * most 16 KB. It connects with the game's current build (`?build=`), so
+   * to the game's server script, its broadcasts back. Text frames: at most
+   * 16 KB to the server, and up to 4 MiB from it (the socket declares
+   * `maxMessage=4194304`; the platform's operator may cap it lower). It connects with the game's current build (`?build=`), so
    * once the game's server is redeployed with another build a reconnection
    * stops with `build-mismatch` (the player updates the game). */
   export class GameSocket {
