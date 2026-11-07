@@ -1,0 +1,17 @@
+# Tier bench: solo campaign from the garrison, fly and fire across the first sector (busy stretch measured).
+until 300 CHOOSE YOUR ALLEGIANCE
+click START SOLO CAMPAIGN
+frames 60
+key KeyW 90
+key Space 30
+frames 30
+measure start
+key KeyW 120
+key Space 60
+key KeyD 60
+key Space 60
+key KeyW 120
+key Space 60
+key KeyA 60
+key Space 60
+measure stop

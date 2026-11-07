@@ -27,7 +27,7 @@
     "src/fire-feedback.js": {"sha256": "9c8705b878cb3fb730a949c2bc5bb68d88e3f62c01ce35838ec7da89d4e69d02", "size": 1301},
     "src/flight-authority.js": {"sha256": "b137c80c2ec238088f02820f2117f9485c055ed094d20eaccdbc87945d4ca8c9", "size": 5016},
     "src/input-timeline.js": {"sha256": "82c8eaacd3395dd5050cbcbedde4e8ad7395002024b4e0e3baa4a16b7a81bef4", "size": 1949},
-    "src/main.ts": {"sha256": "e26bb45badcf33d100f4a49fc45b0cef0895b881c45cff07159ea4024167e8ea", "size": 45007},
+    "src/main.ts": {"sha256": "4fe3990e18e4bfb9f1811f2076b2322fb31a1274af6d6a2c05ba3959cd74b8a3", "size": 45940},
     "src/mining-drones.js": {"sha256": "759280a48f0d2d65e41451431e7597b9f05265175da7215368e668c604d7952f", "size": 4156},
     "src/online.ts": {"sha256": "159d7769b7e7ef15e77cf900e8f175f9856fcb124a841fc21c314cef9cd3d4b4", "size": 17755},
     "src/prediction.js": {"sha256": "0825b0e2a6667911d20dfdd67bf5af5f324b65fa3849a4fb918cc313bcd2ed6f", "size": 7091},

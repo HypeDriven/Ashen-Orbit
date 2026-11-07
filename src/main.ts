@@ -12,7 +12,7 @@ import * as draw from 'starhermit:draw';
 import {OffscreenCanvas,createImageBitmap} from 'starhermit:canvas';
 import type {ImageBitmap} from 'starhermit:canvas';
 import {storage} from 'starhermit:storage';
-import {createClip,play} from 'starhermit:audio';
+import {createClip,OfflineAudioContext,SoundBank,setMuted,isMuted} from 'starhermit:audio';
 import type {AudioClip} from 'starhermit:audio';
 import {createGame,update,emp,interact,upgrade,jump,clear,dist,SECTORS,SECTOR_INFO,UPGRADES,TREES,ENEMIES,upgradeStatus,routes,tractorRange,WEAPONS,COMPONENTS,HULLS,stats,hullStatus,expandHull,fitStatus,fit,selectTarget,selectedTarget,campaignStatus,chooseRole,toggleCloak,layMine} from './sim.js';
 import {online,onSnapshot,refresh,signIn,host,join,start,daily,leave,updateOnline,resumeLaunch,enterUniverse,universeCommand,quitOnline} from './online.js';
@@ -20,12 +20,12 @@ const ink='#dedbc5',dim='#8a8d83',line='#3b403c',black='#101516',accent='#c2b698
 const camera=new PerspectiveCamera(50,1,.1,100);camera.position.z=10;renderer.camera=camera;scene.background=new Color(0x101516);
 let soloTimeline=new InputTimeline(),soloSequence=0,replayingAction=false;const soloActions:{id:string;at:number}[]=[];
 let flightSource='keyboard',selectedFaction=0;
-let state=createGame(),soloState=state,mode='title',paused=false,muted=false,showHelp=false,tree=0,coopTractor=false,mountSlot=0,weaponPage=0,routePage=0;
+let state=createGame(),soloState=state,mode='title',paused=false,showHelp=false,tree=0,coopTractor=false,mountSlot=0,weaponPage=0,routePage=0;
 const worldMenus=['worldrefit','worldoutfit','worldroles','worldchart'];
 const onlineMode=()=>mode==='coop_play'||worldMenus.includes(mode)||mode==='worldresults';
 onSnapshot(s=>{if(!onlineMode()||Math.hypot(s.player.x-cx,s.player.y-cy)>650){cx=s.player.x;cy=s.player.y;}state=s;if(online.shared&&online.ended)mode='worldresults';else if(!worldMenus.includes(mode))mode='coop_play';});
 let W=1440,H=900,K=1,ox=0,oy=0,cx=0,cy=0,zoom=1,shake=0,saveClock=0;
-let images:ImageBitmap[]=[];let station:ImageBitmap;let sounds:Record<string,AudioClip>={};
+let images:ImageBitmap[]=[];let station:ImageBitmap;const sounds:Record<string,SoundBank>={};
 let buttons:{x:number,y:number,w:number,h:number,id:string}[]=[];
 let starTile:OffscreenCanvas|null=null;
 const stars=Array.from({length:64},()=>{return{x:Math.random()*6000-3000,y:Math.random()*6000-3000,s:Math.random()>.92?2:1,a:Math.random()};});
@@ -60,7 +60,7 @@ function act(id:string){
  if(id.startsWith('fit:')){if(online.shared)universeCommand({type:'fit',slot:mountSlot,item:id.slice(4)||null});else{fit(state,mountSlot,id.slice(4)||null);save();}return;}
  if(id==='zoom-in'){zoom=Math.min(3.6,zoom*1.2);return;}if(id==='zoom-out'){zoom=Math.max(.55,zoom/1.2);return;}
  if(id==='target'){if(mode==='play'||mode==='coop_play')selectTarget(state);return;}
- if(id==='help'){showHelp=!showHelp;return;}if(id==='sound'){muted=!muted;return;}if(id==='pause'){if(mode==='play')paused=!paused;return;}
+ if(id==='help'){showHelp=!showHelp;return;}if(id==='sound'){setMuted(!isMuted());return;}if(id==='pause'){if(mode==='play')paused=!paused;return;}
  if(id==='tractor'){if(mode==='coop_play')coopTractor=!coopTractor;else state.tractorOn=!state.tractorOn;return;}
  if(id==='lobby'){if(mode==='play'||mode==='dock')save();soloState=state;mode='lobby';refresh();return;}
  if(id==='sign-in'){signIn();return;}if(id==='host'){host();return;}if(id==='join'){join();return;}if(id==='online-start'){start();return;}if(id==='daily'){daily();return;}if(id==='refresh'){refresh();return;}
@@ -76,9 +76,26 @@ function act(id:string){
  if(id.startsWith('tree:')){tree=Number(id.slice(5));return;}
  if(id.startsWith('buy:')){if(online.shared)universeCommand({type:'upgrade',id:id.slice(4)});else{upgrade(state,id.slice(4));save();}return;}
 }
-function audio(name:string){if(!muted&&sounds[name])play(sounds[name],{gain:name==='shot'?.08:.18,pitch:.9+Math.random()*.2});}
+function audio(name:string){sounds[name]?.play();}
+// Effects baked once, natively: a sine whose frequency ramps linearly (the old loop's phase ω0·t − k·t²), or seeded
+// white noise for the boom, under a (1 − t/T)² envelope at 22.05 kHz. The bank adds the old ±10% pitch per play.
+const SFX_RATE=22050;
+async function bake(seconds:number,level:number,omega0:number,omega1:number):Promise<AudioClip>{
+ const off=new OfflineAudioContext(1,Math.round(seconds*SFX_RATE),SFX_RATE),env=off.createGain(),curve=new Float32Array(65);
+ for(let i=0;i<65;i++)curve[i]=level*(1-i/64)**2;
+ env.gain.setValueCurveAtTime(curve,0,seconds);
+ let source;
+ if(omega0){const osc=off.createOscillator();osc.frequency.setValueAtTime(omega0/(2*Math.PI),0);osc.frequency.linearRampToValueAtTime(omega1/(2*Math.PI),seconds);source=osc;}
+ else source=off.createNoise({seed:11,seconds});
+ source.connect(env).connect(off.destination);source.start();
+ return createClip(await off.startRendering());
+}
+async function bakeSounds(){
+ const shot=3500/SFX_RATE,pulse=16000/SFX_RATE,clips=await Promise.all([bake(shot,.4,1900,1900-14000*shot),bake(11000/SFX_RATE,.65,0,0),bake(pulse,.45,1500,1500-2200*pulse),bake(shot,.4,2400,2400-14000*shot)]);
+ ['shot','boom','pulse','buy'].forEach((name,i)=>{sounds[name]=new SoundBank({clips:[clips[i]],gain:name==='shot'?.08:.18,pitchJitter:.1});});
+}
 onQuit(quitOnline);
-onStart(async()=>{setFixedRate(60);starTile=new OffscreenCanvas(512,512);const sky=starTile.getContext('2d');if(sky)for(const st of stars){sky.fillStyle=st.a>.65?'#aaa99b':'#424944';sky.fillRect((st.x%512+512)%512,(st.y%512+512)%512,st.s,st.s);}resumeLaunch();images=await Promise.all(Array.from({length:10},(_,i)=>createImageBitmap('assets/rock'+i+'.png')));station=await createImageBitmap('assets/station.png');for(let name of ['shot','boom','pulse','buy']){let n=name==='boom'?11000:name==='pulse'?16000:3500;let arr=new Float32Array(n);for(let i=0;i<n;i++){let t=i/22050,env=Math.pow(1-i/n,2);arr[i]=env*(name==='boom'?(Math.random()*2-1)*.65:name==='pulse'?Math.sin(t*(1500-t*1100))* .45:Math.sin(t*(name==='buy'?2400:1900)-t*t*7000)*.4);}sounds[name]=createClip([arr],22050);}input.setCursor('crosshair');input.setTouchControls([{kind:'stick',up:'up',down:'down',left:'left',right:'right',anchor:'bottom-left',offset:[100,215],radius:66},{kind:'button',action:'fire',label:'FIRE',anchor:'bottom-right',offset:[90,215],radius:42},{kind:'button',action:'boost',label:'BOOST',anchor:'bottom-right',offset:[190,185],radius:30},{kind:'button',action:'cloak',label:'CLOAK',anchor:'bottom-right',offset:[265,215],radius:26},{kind:'button',action:'mine',label:'MINE',anchor:'bottom-right',offset:[265,145],radius:26},{kind:'button',action:'talk',label:'PTT',anchor:'bottom-right',offset:[190,275],radius:24}]);});
+onStart(async()=>{setFixedRate(60);starTile=new OffscreenCanvas(512,512);const sky=starTile.getContext('2d');if(sky)for(const st of stars){sky.fillStyle=st.a>.65?'#aaa99b':'#424944';sky.fillRect((st.x%512+512)%512,(st.y%512+512)%512,st.s,st.s);}resumeLaunch();images=await Promise.all(Array.from({length:10},(_,i)=>createImageBitmap('assets/rock'+i+'.png')));station=await createImageBitmap('assets/station.png');void bakeSounds();input.setCursor('crosshair');input.setTouchControls([{kind:'stick',up:'up',down:'down',left:'left',right:'right',anchor:'bottom-left',offset:[100,215],radius:66},{kind:'button',action:'fire',label:'FIRE',anchor:'bottom-right',offset:[90,215],radius:42},{kind:'button',action:'boost',label:'BOOST',anchor:'bottom-right',offset:[190,185],radius:30},{kind:'button',action:'cloak',label:'CLOAK',anchor:'bottom-right',offset:[265,215],radius:26},{kind:'button',action:'mine',label:'MINE',anchor:'bottom-right',offset:[265,145],radius:26},{kind:'button',action:'talk',label:'PTT',anchor:'bottom-right',offset:[190,275],radius:24}]);});
 input.onPointerMove((x,y)=>{ptx=(x-ox)/K;pty=(y-oy)/K;if(input.primaryPointer()==='fine'){hasMouse=true;flightSource='pointer';}});
 input.onPointerButton(e=>{if(!e.pressed||e.button!==0)return;ptx=(e.x-ox)/K;pty=(e.y-oy)/K;if((mode==='play'||mode==='coop_play')&&pty>105&&pty<H-110)selectTarget(state,(ptx-W/2)/zoom+cx,(pty-H/2)/zoom+cy);for(let i=buttons.length-1;i>=0;i--){let b=buttons[i];if(ptx>=b.x&&ptx<=b.x+b.w&&pty>=b.y&&pty<=b.y+b.h){act(b.id);break;}}});
 input.onWheel((_,y)=>{zoom=Math.max(.55,Math.min(3.6,zoom*Math.exp(-y*.075)));});
@@ -122,7 +139,7 @@ if(mode==='play'){let targets:{x:number,y:number}[]=state.nests.filter(n=>n.hp>0
 function hud(){
  const coop=onlineMode();rect(0,0,W,96,black);ln(26,95,W-26,95);text('R / R',28,25,26,ink,'serif');text('RIGHTEOUS REPUBLIC',125,26,12);text(coop?(online.shared?FACTIONS[state.faction].name:'TWO-PILOT OPERATIONS'):'REPUBLIC FLEET / REBELLION CAMPAIGN',125,49,9,dim);
  if(W>900){text(coop?online.summary:(state.faction===1?SECTORS[state.sector].replace('REBEL','REPUBLIC'):SECTORS[state.sector]),W/2,27,12,ink,'monospace','center');text(coop?online.partner:SECTOR_INFO[state.sector].risk+' RISK / '+SECTOR_INFO[state.sector].hazard.toUpperCase(),W/2,50,9,dim,'monospace','center');}
- text('SCRAP / '+state.scrap,W-220,24,13);if(!coop||online.shared)text('RESEARCH / '+state.tech,W-220,46,10,accent);button('sound',muted?'MUTE':'SOUND',W-86,27,60,30);
+ text('SCRAP / '+state.scrap,W-220,24,13);if(!coop||online.shared)text('RESEARCH / '+state.tech,W-220,46,10,accent);button('sound',isMuted()?'MUTE':'SOUND',W-86,27,60,30);
  rect(0,H-106,W,106,black);ln(26,H-106,W-26,H-106);if(!coop&&mode==='play'){text(HULLS[state.hull].name+' / HEAT '+Math.ceil(state.heat)+'%'+(state.overheated?' COOLING':''),W/2,94,9,state.overheated?danger:dim,'monospace','center');}
  text('HULL '+Math.max(0,Math.ceil(state.player.hp))+'/'+state.player.max,28,H-87,12);rect(28,H-62,125,4,line);rect(28,H-62,125*Math.max(0,state.player.hp/state.player.max),4,ink);text('SHIELD '+Math.ceil(state.player.shield||0),28,H-43,9,dim);text(state.wing+' WINGMEN',28,H-25,9,dim);
  const beam=coop?coopTractor:state.tractorOn;
