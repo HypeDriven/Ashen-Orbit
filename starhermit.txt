@@ -46,3 +46,7 @@ control.target=Tab | Cycle nearby target
 control.cloak=KeyC | Toggle cloak
 control.mine=KeyL | Lay proximity mine
 control.talk=KeyV | Push to talk
+
+# Game language (saved per player); Automatic follows the account/device.
+control.localization=F2 | Language
+engine.group.localization=Interface
