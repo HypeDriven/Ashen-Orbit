@@ -28,7 +28,8 @@
     "assets/rock9.png": {"sha256": "8164e919b56fbbb0011a6dfc70fe627cd0d7903757b45b17e4872b424b1f6ac6", "size": 17111},
     "assets/station.png": {"sha256": "53e63b668c3e35e65c6875da233705fdcf89844c5a16404fc74b9a27e0de418a", "size": 78908},
     "assets/strings.json": {"sha256": "67f9c84d78d7a689855fa37b97cf58e911b5bc9250c4c0f04169e348c0183170", "size": 1674771},
-    "index.html": {"sha256": "66047362d3dbb50c373bbfc13d4080a7e7eaf776681487fcd0d81fee359a5ab4", "size": 1967},
+    "index.html": {"sha256": "31e0e60b8e321a06e90ee5c8a8a7755222353a49700f9d659c0d5d7d7b6f8d3b", "size": 1967},
+    "publication.json": {"sha256": "8d9dff614fcd3ff2558605206195c3f235d6319e694462cd55bc2eda468eaea3", "size": 3230},
     "server.js": {"sha256": "86deb5336f67ad7a8ba39ab2d0474e60dd813af3d151058ae87a1bd1e1c64a7f", "size": 109261},
     "spec.md": {"sha256": "f573575cf9eb5163109caa92ed833addce92a47315c1e692a131e3a6813db885", "size": 2207},
     "src/arsenal.js": {"sha256": "f19dbf4e454ba34689c2821c9c92df8179cde1f06568fe4f9dd4d21552bb089b", "size": 9962},
@@ -57,7 +58,7 @@
     "src/sim.js": {"sha256": "88035faf3ee192cd99cd0e4e46ed5798b26f52330e28e18847dd0b07bc045cdf", "size": 33826},
     "src/universe-rules.js": {"sha256": "d0fa11cbc834f87c7008fd25acd89bcfbacbdab7cbbd1be3232a2c7400c25d5d", "size": 6965},
     "src/wire.js": {"sha256": "24dbb83b18a75ece26abb04a1a4ca19cc96e437b91e0a0c74825b68dff8a5fdc", "size": 1220},
-    "starhermit.txt": {"sha256": "09244a82590e253c1ac9de1eec59829c94270598489154ab46e969558821317a", "size": 2248}
+    "starhermit.txt": {"sha256": "e6da12c12deca3dcd64b6c4e41779403a8b43d54409a1fcd112a37c2fed80f41", "size": 2248}
   },
   "excluded": ["README.md", "package.json", "scripts/", "src/universe-ai.js", "src/universe-combat.js", "src/universe-server.js", "tests/"],
   "format": 1
