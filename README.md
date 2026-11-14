@@ -1,5 +1,7 @@
 # Righteous Republic
 
+**[▶ Play Righteous Republic on StarHermit](https://dashboard.starhermit.com/play/5927108a-f5a9-4bf2-953f-e5df9e9cd87e)**
+
 Choose Republic or Rebellion on the main menu and enter the common universe.
 The authoritative server supports 32 online pilots, mid-game joins, faction bases,
 contested relays, patrols, mining, respawns, and saved ship progression. Solo
