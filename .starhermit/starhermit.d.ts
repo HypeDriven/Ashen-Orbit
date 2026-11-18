@@ -77,7 +77,7 @@
 // --native DIR` writes its file index for a folder upload the StarHermit
 // client installs and plays natively, and `starhermit package --web DIR --out
 // UPLOAD` writes its web upload, its loader pinned to the same release on
-// https://wiki.starhermit.com/engine/. `cargo starhermit` has the same
+// https://engine.starhermit.com/engine/. `cargo starhermit` has the same
 // commands for engine developers.
 //
 // Modules. Scripts are ECMAScript modules; `import` takes the built-in
@@ -330,6 +330,127 @@ declare module "starhermit:engine" {
   /** The runtime's minor version of the host API (members it added). */
   export const API_MINOR: number;
 
+  // -- Host API 1.43's minors (since API_MINOR 43) ----------------------------
+  // Each is 43 for games declaring engine.minor=43 or later and undefined
+  // for older games (a named import fails to link): feature-detect with
+  // `import * as engine from "starhermit:engine"` and, say,
+  // `engine.HOOK_ACCESS_MINOR !== undefined`. Every host-API minor constant
+  // of 1.43 is here; some are also in the module of their feature
+  // (`starhermit:scene`'s COLOR_LUT_MINOR, DECALS_MINOR, DISTORTION_MINOR,
+  // LIGHT_PROBE_MINOR, POST_ACCESS_MINOR and SCENE_DEPTH_PRECISION_MINOR).
+  /** Mipmapped `DataArrayTexture`s. */
+  export const ARRAY_MIPMAPS_MINOR: number;
+  /** Two-channel (BC5) normal maps' z rebuilt; BC5 packaging of normals. */
+  export const BC5_NORMALS_MINOR: number;
+  /** Clustered point and spot lights (up to 64 a frame). */
+  export const CLUSTERED_LIGHTS_MINOR: number;
+  /** `renderer.colorLut`. */
+  export const COLOR_LUT_MINOR: number;
+  /** `CompressedArrayTexture` and KTX2 texture arrays. */
+  export const COMPRESSED_ARRAYS_MINOR: number;
+  /** Projected decals and materials' `receiveDecals`. */
+  export const DECALS_MINOR: number;
+  /** The distortion material. */
+  export const DISTORTION_MINOR: number;
+  /** `GLTFLoader`'s block-compressed (`KHR_texture_basisu`) images. */
+  export const GLTF_COMPRESSED_MINOR: number;
+  /** Lights in material hooks, and texture uniforms' color spaces (sRGB
+   * textures sampled as linear). */
+  export const HOOK_ACCESS_MINOR: number;
+  /** `bakeSkinnedAnimations` and `InstancedSkinnedMesh`. */
+  export const INSTANCED_SKINNING_MINOR: number;
+  /** sRGB views leave the runtime's interface room (opening the menu never
+   * changes how the game's frames draw). */
+  export const INTERFACE_ROOM_MINOR: number;
+  /** JPEG images. */
+  export const JPEG_IMAGES_MINOR: number;
+  /** `SphericalHarmonics3` and `LightProbe`. */
+  export const LIGHT_PROBE_MINOR: number;
+  /** Particle flipbooks' frames and queued bursts. */
+  export const PARTICLE_FLIPBOOK_MINOR: number;
+  /** `main_light_shadow` and `renderer.post.texture` in post programs. */
+  export const POST_ACCESS_MINOR: number;
+  /** `renderer.sceneDepth` at full precision (`renderer.sceneDepthPrecision`). */
+  export const SCENE_DEPTH_PRECISION_MINOR: number;
+  /** Vertex hooks' `skin_index` and `skin_weight`. */
+  export const SKIN_ATTRIBUTES_MINOR: number;
+  /** The spot shadow atlas. */
+  export const SPOT_SHADOW_ATLAS_MINOR: number;
+  /** WebAssembly games' entry module. */
+  export const WASM_ENTRY_MINOR: number;
+
+  // -- Host API 1.44's minors (since API_MINOR 44) ----------------------------
+  // Each is 44 for games declaring engine.minor=44 or later and undefined
+  // for older games, feature-detected as 1.43's are.
+  //
+  // Migrating to 1.44 (raising engine.minor from 43 to 44):
+  // - Hooks on glTF meshes see glTF's UVs as written (PHYSICAL_MATERIAL_MINOR:
+  //   GLTFLoader no longer turns v into 1 - v, and its textures have flipY
+  //   false, as in three.js r185). A material hook or ShaderMaterial that
+  //   samples its own texture (TextureLoader, canvas, DataTexture) at s.uv
+  //   on such a mesh reads it upside down. Sample at vec2f(uv.x, 1.0 - uv.y),
+  //   or set flipY false and let a built-in map read it. This covers every
+  //   s.uv sample on a glTF mesh (the file's own maps passed as uniforms too)
+  //   and anything derived from uv.y: dpdx/dpdy tangent frames, v scrolling,
+  //   gradients over v. The file's built-in maps and the engine's own
+  //   geometries are unaffected.
+  // - InstancedSkinnedMesh.setAnimationAt writes custom slot 3's w as
+  //   2 + the instance index (1.43 wrote 1); a hook expecting 1 needs updating.
+  // - renderer.toneMappingExposure applies before renderer.colorLut's lookup
+  //   (LUT_EXPOSURE_MINOR, unless toneMapping is NoToneMapping): take any
+  //   exposure baked into the table out of it, or set the exposure to 1.
+  // - Unchanged: an untagged (NoColorSpace) texture uniform reads as stored
+  //   at every minor; a hook's own srgb_to_linear decodes it once.
+  // - Web: engine 1.44 draws in browsers with WebGPU alone, at every minor
+  //   (no WebGL 2 fallback); without WebGPU the game shows its cannot-draw
+  //   page. Native builds are unchanged.
+  /** Actions sharing a key, and actions with no default key
+   * (`starhermit:input`'s Actions). */
+  export const BINDINGS_MINOR: number;
+  /** `starhermit:scene`'s lens: `renderer.bokeh`, `renderer.lens` and
+   * `renderer.sensorNoise`. */
+  export const LENS_EFFECTS_MINOR: number;
+  /** `renderer.toneMappingExposure` applied before `renderer.colorLut`'s
+   * lookup (unless `toneMapping` is `NoToneMapping`). */
+  export const LUT_EXPOSURE_MINOR: number;
+  /** `starhermit:scene`'s physical materials (iridescence, transmission,
+   * sheen, specular, anisotropy, image environments as r185's cube UV,
+   * GLTFLoader's KHR_materials_* extensions). */
+  export const PHYSICAL_MATERIAL_MINOR: number;
+  /** `usage().renderTargets` and `budgets().renderTargets`, and engine
+   * modules that run on without the render targets they are refused during
+   * their frame steps (a GPU emitter on the CPU; see `Usage.renderTargets`)
+   * where older games' frame steps threw. */
+  export const RENDER_TARGET_BUDGET_MINOR: number;
+  /** `starhermit:scene`'s `renderer.underwater`, and starhermit:water's
+   * surfaces seen from below. */
+  export const UNDERWATER_MINOR: number;
+  /** Material programs' array uniforms (Float32Array, arrays of numbers,
+   * vectors and colours) and starhermit.h's `uniform_set` of any length. */
+  export const UNIFORM_ARRAYS_MINOR: number;
+  /** Material hooks' access as 1.44 fixes it: a LightProbe's slots give
+   * `punctual_light` no light (older games read them as a point light).
+   * (An sRGB-tagged texture uniform reading decoded where the renderer has
+   * no room for its sRGB view is a runtime 1.44.0 fix for every minor from
+   * 43, not gated by this.) */
+  export const HOOK_ACCESS_FIXES_MINOR: number;
+  /** WebAssembly games' module_call and module_call_async follow dotted
+   * names ("recording.request"), called on the object holding them. */
+  export const WASM_ENTRY_CALLS_MINOR: number;
+  /** `starhermit:scene`'s InstancedSkinnedMesh bone overrides
+   * (`setBoneOverrideJoints`, `setBoneOverrides`, `setBoneOverrideAt`,
+   * `clearBoneOverrides`). */
+  export const INSTANCED_BONE_OVERRIDES_MINOR: number;
+  /** KTX2 files of up to 22.3 MiB (a 4096² BC7 image with its full mip
+   * chain): `TextureLoader`'s packaged `<image>.ktx2`, `KTX2Loader`'s files
+   * and `.layers` arrays. Older games' KTX2 files hold 16 MiB, as every
+   * package file read; past the limit a packaged one is left for its
+   * image, with a console warning naming its size and the limit. */
+  export const LARGE_KTX2_MINOR: number;
+  /** `imageUsage()`: the images the image budget counts, one by one; and
+   * render checks print the largest held at the peak. */
+  export const IMAGE_USAGE_MINOR: number;
+
   /** Removes the callback or listener it was returned for. */
   export type Unsubscribe = () => void;
   /** An sRGB color; see the conventions at the top of this file. */
@@ -576,8 +697,11 @@ declare module "starhermit:engine" {
     | "quantum" | "atomic" | "molecular" | "cellular" | "terrestrial"
     | "planetary" | "stellar" | "galactic" | "cosmic" | "infinite";
   /** The player's Graphics choice (since API_MINOR 14): Auto, the default,
-   * or a level. */
-  export type GraphicsSetting = "auto" | GraphicsLevel;
+   * or a level; since API_MINOR 42 also `"raytraced"`, the infinite level
+   * with the scene's shadows traced by the GPU's ray-tracing hardware
+   * (offered where the device has it and the game's `engine.ray_tracing`
+   * is not `off`; older games hear it as `"infinite"`). */
+  export type GraphicsSetting = "auto" | GraphicsLevel | "raytraced";
   /** The graphics levels, lowest first (since API_MINOR 14). */
   export const levels: readonly GraphicsLevel[];
   /** What a level asks for (since API_MINOR 14; `levelSettings()`). The
@@ -737,8 +861,7 @@ declare module "starhermit:engine" {
     /** Each kind of pass's GPU time, for benchmarking (since API_MINOR
      * 34; absent before). Null where the device times nothing: OpenGL ES
      * without GL_EXT_disjoint_timer_query, WebGPU without
-     * `timestamp-query`, WebGL2 without `EXT_disjoint_timer_query_webgl2`
-     * (browsers often leave it out). The first read starts the runtime's
+     * `timestamp-query` (browsers often leave it out). The first read starts the runtime's
      * timer where passes are not timed already (OpenGL ES and browsers;
      * Vulkan, Direct3D 12 and Metal always time them), so a game that
      * never reads it adds no GPU work; it reads null, then
@@ -746,6 +869,24 @@ declare module "starhermit:engine" {
      * Results always lag a few frames behind the frame drawn. One frozen
      * object a frame. */
     readonly gpu?: GpuStats | null;
+    /** The fraction of the drawing buffer's size (`renderer.setSize` ×
+     * `setPixelRatio`) the scene renders at this frame, temporal
+     * anti-aliasing or resampling bringing it back to full size (since
+     * API_MINOR 41; absent before): the player's render scale times the
+     * engine's dynamic resolution, which follows the frame budget (always
+     * under the Auto graphics preset, under a chosen level with the
+     * player's adaptive resolution; 0.5 of the player's scale at least,
+     * in steps of 1/32). 1 at full size, and for games that draw at the
+     * window's size. Engine-internal: `renderer.getPixelRatio()` and the
+     * drawing buffer's size never include it, as in three.js. */
+    readonly resolutionScale?: number;
+    /** Whether this frame's shadows are traced by the GPU's ray-tracing
+     * hardware rather than mapped (since API_MINOR 42; absent before): the
+     * ray-traced graphics tier in use, chosen by the player or climbed to
+     * by Auto within the frame budget. The scene looks the same either way
+     * up to the shadows' edges; a game may use it to drop its own faked
+     * contact shadows. */
+    readonly rayTraced?: boolean;
   }
   /** GPU pass times (`stats().gpu`, since API_MINOR 34): each kind of
    * pass's mean time a frame in milliseconds over about the latest 60
@@ -875,7 +1016,8 @@ declare module "starhermit:engine" {
     /** The lights the latest frame drawn asked for besides ambient light
      * and its first directional light (which always draw): past
      * `budgets().lights` they are left out (`stats().skippedObjects`
-     * counts them). */
+     * counts them). Since API_MINOR 43 the clustered point and spot
+     * lights count too. */
     readonly lights: number;
     /** Meshes and images made past a frame's upload bound that wait for
      * later frames, and their bytes (since API_MINOR 15). A frame sends
@@ -890,6 +1032,54 @@ declare module "starhermit:engine" {
      * waits for that. */
     readonly waitingUploads: number;
     readonly waitingUploadBytes: number;
+    /** Since API_MINOR 44 (`RENDER_TARGET_BUDGET_MINOR`; absent before):
+     * the render targets the game holds, the engine modules' among them,
+     * each texture of a target of several (`count`) counting one; making
+     * one past `budgets().renderTargets` throws a RangeError. The engine
+     * modules hold: `SkyAtmosphere` up to 8 (its three tables at the full
+     * and reduced tiers, the aerial table, the background, the
+     * environment, the Milky Way and the moon), `WeatherEffects` up to 6
+     * (the clouds' shadow map, panorama and two screen targets; rain's
+     * cover map and rain map), a `WindField` 1, a `VolumeEffects` group 1
+     * (the shared 3D noise; frame lighting 10 more, and up to 3 cascades),
+     * a `VolumeLayer` 5 or 6, an `Ocean` 8 on its GPU tier (two pairs of
+     * two-texture targets) and 1 each for its seabed, planar reflection
+     * and waterline maps, and each `GPUParticleEmitter` 4 (two states of
+     * two textures). Water materials, surfaces and the EffectComposer
+     * hold none. A frame whose transmissive `MeshPhysicalMaterial` reads
+     * the scene (`PHYSICAL_MATERIAL_MINOR`) holds 1 for the renderer's
+     * transmission target, and its bytes (about 140 MB at 1080p: half
+     * floats at 4 samples with depth and mips) count against the image
+     * budget. GPU emitters give way to it (it counts as reserved while
+     * wanted and not held); the game's own targets and images come first,
+     * and where it then does not fit it falls back to 1 sample, then a
+     * half, quarter and eighth of the scene's size, then to none
+     * (transmissive materials read `renderer.sceneColor` unblurred), with
+     * one console warning, and never throws. A module that is refused its targets during its frame
+     * step (the game's or the image budget full) lets go of what it made,
+     * warns once on the console and runs as on a device without them: a
+     * GPU emitter on the CPU (`tier` "cpu"), the sky analytic (or off),
+     * the clouds off, rain without its cover map, the wind field minimal,
+     * an ocean's waves on the CPU, volumes lit per box. Older games'
+     * modules threw from the frame step instead.
+     *
+     * Priority (since API_MINOR 44): the engine's modules come before GPU
+     * particle emitters. A `SkyAtmosphere` (8), `WeatherEffects` (4 for
+     * the clouds with a sky, 2 for rain), a `WindField` (1) and an `Ocean`
+     * (11, 12 with `planarReflection`) reserve the most they may hold from
+     * when they are made until disposed (`renderTargetsReserved`: what of
+     * that they do not hold yet). A `GPUParticleEmitter` takes its 4 only
+     * where they fit beside those reservations, else runs on the CPU; one
+     * on the GPU lets its targets go and runs on the CPU from then (the
+     * newest first, its live particles gone) when an engine object made
+     * later, or volumes' frame lighting, needs the room. The game's own
+     * render targets are not held back by reservations: they are refused
+     * only past `budgets().renderTargets`. */
+    readonly renderTargets?: number;
+    /** Since API_MINOR 44 (absent before): the engine modules'
+     * reservations not yet held (see `renderTargets`); a GPU emitter may
+     * take `budgets().renderTargets - renderTargets - renderTargetsReserved`. */
+    readonly renderTargetsReserved?: number;
   }
   /** The budgets: the manifest's limits within the engine's (1,024
    * clips and 64 MiB of clip data in the mixer) less what the runtime
@@ -925,7 +1115,8 @@ declare module "starhermit:engine" {
    * browsers): 131,072 nodes, 65,536 objects, 262,144 instances, 1,024
    * InstancedMeshes (or what `engine.limits.instanced_meshes=` sets, at
    * most 4,096, since API_MINOR 14), 16,384 sprites, 4,096 materials, 256
-   * programs and 16 lights a frame. */
+   * programs and 16 lights a frame (80 since API_MINOR 43: 16 and 64
+   * clustered point and spot lights; see Lights in starhermit:scene). */
   export interface Budgets {
     readonly meshes: number;
     readonly meshBytes: number;
@@ -945,9 +1136,57 @@ declare module "starhermit:engine" {
     readonly materials: number;
     readonly programs: number;
     readonly lights: number;
+    /** Since API_MINOR 44: the render targets a game holds at most (32;
+     * 16 before API_MINOR 35). See `Usage.renderTargets`. */
+    readonly renderTargets?: number;
   }
   export function usage(): Usage;
   export function budgets(): Budgets;
+
+  /** One image `imageUsage()` lists. */
+  export interface ImageUsageEntry {
+    /** Its source file, else its kind and id ("render target #12",
+     * "transmission target"). */
+    readonly name: string;
+    /** The package file it was loaded from (`TextureLoader`, `KTX2Loader`,
+     * `GLTFLoader`, ...), or null for an image the game made. */
+    readonly source: string | null;
+    /** `texture` (an image the game made or loaded, canvases' and
+     * bitmaps' among them), `renderTarget` (a texture of a render target,
+     * the game's or an engine module's: the sky, weather, water, volumes,
+     * GPU particle emitters), `environment` (a prefiltered environment) or
+     * `engine` (the renderer's own transmission target). */
+    readonly kind: "texture" | "renderTarget" | "environment" | "engine";
+    readonly width: number;
+    readonly height: number;
+    /** A 3D texture's slices, else 1. */
+    readonly depth: number;
+    /** As held: "RGBA8", "RGBA16F", "R32F", ..., or a compressed image's
+     * block format ("BC7", "BC5", ...; "RGBA8" where the device unpacked
+     * it). */
+    readonly format: string;
+    /** What it counts against the image budget, its mips included. */
+    readonly bytes: number;
+  }
+  export interface ImageUsage {
+    /** What the images hold now (`usage().textureBytes`): the entries'
+     * sum. */
+    readonly bytes: number;
+    /** The image budget (`budgets().textureBytes`). */
+    readonly budget: number;
+    /** The most they have held (or were about to hold as a budget check
+     * let them), the peak a render check reports. */
+    readonly peakBytes: number;
+    /** Every image counted, largest first. */
+    readonly images: readonly ImageUsageEntry[];
+  }
+  /** Since API_MINOR 44 (`IMAGE_USAGE_MINOR`; absent before): which images
+   * count against the image budget (`engine.limits.image_mib`), largest
+   * first, for a game or its developer to see what fills it. It costs fuel
+   * for each image listed, so call it when looking, not every frame;
+   * `usage().textureBytes` is the cheap total. `--render-check` prints the
+   * largest images held when they held the most. */
+  export function imageUsage(): ImageUsage;
 
   /** Opens the runtime's Options menu (the player can always press F1). */
   export function openMenu(): void;
@@ -990,6 +1229,44 @@ declare module "starhermit:engine" {
    * loopback development page in browsers) without a launch token opens
    * declared links unreviewed, the confirmation saying so. */
   export function openLink(id: string): Promise<LinkOutcome>;
+
+  // -- Video recordings ---------------------------------------------------------
+  /** How a {@link recording} request went: the player pressed Record (the
+   * recording runs) or Save clip (the kept seconds are being saved), or
+   * Not now; or it could not be asked now (no press, a recording or a
+   * question already there, the player keeps no last seconds for
+   * `saveClip`, or this device cannot record). */
+  export type RecordOutcome = "started" | "saved" | "declined" | "unavailable";
+  /** Video recordings of the game the player takes (since API_MINOR 42,
+   * `RECORDING_MINOR`; undefined for games declaring an older
+   * `engine.minor`). The player always controls recording: Ctrl+Shift+F1 starts
+   * and stops one, the Options menu (F1) has Record video and "Keep the
+   * last 30 seconds" with Save clip, for every game. A game may
+   * only *ask*: each request shows the runtime's own dialog, which the game
+   * cannot draw over, style or answer, and nothing records until the player
+   * accepts. While a recording runs the runtime shows a REC mark with its
+   * time (a REPLAY mark while the last seconds are kept); the marks, menus
+   * and dialogs are never in the clip, which holds the game's frame and
+   * overlay (at most 30 frames a second) and its sound. Clips are saved on
+   * the player's device only, never uploaded: natively as WebM (VP8, Opus)
+   * in the player's videos folder (`StarHermit` in `~/Videos`, `~/Movies`
+   * on macOS), in browsers as a download (WebM, or MP4 where the browser
+   * records only that). Call `request` and `saveClip` while handling the
+   * player's press (an action, key, pointer or gamepad press), one at a
+   * time; otherwise they resolve "unavailable" with a warning on the
+   * console. */
+  export const recording: {
+    /** Asks the player to record a video of the game, for at most
+     * `seconds` (a whole number, 1 to 600; no limit by default: the player
+     * stops it). Resolves once the player answered. */
+    request(options?: { seconds?: number }): Promise<RecordOutcome>;
+    /** Asks the player to save the last 30 seconds as a clip, when they
+     * keep them (the Options menu's "Keep the last 30 seconds"). */
+    saveClip(): Promise<RecordOutcome>;
+    /** Ends the recording the player accepted for the game (it is saved).
+     * A recording the player started themselves is theirs to stop. */
+    stop(): void;
+  } | undefined;
 
   // -- Seeded random generators -----------------------------------------------
   /** A random generator of the game's own (since API_MINOR 37,
@@ -1673,7 +1950,9 @@ declare module "starhermit:engine" {
   // -- Permissions and the clipboard -----------------------------------------
   /** `microphone` needs the `voice` capability, `clipboard-read` the
    * `clipboard` capability; without it the permission is `unavailable`. */
-  export type PermissionKind = "microphone" | "clipboard-read";
+  /** `motion` (since API_MINOR 42) needs the `motion` capability; see
+   * `starhermit:input`'s `requestMotion`. */
+  export type PermissionKind = "microphone" | "clipboard-read" | "motion";
   export type PermissionState = "granted" | "denied" | "prompt" | "unavailable";
   export function permission(kind: PermissionKind): PermissionState;
   /** Shows the runtime's prompt (above the game, which gets no input while
@@ -1792,8 +2071,30 @@ declare module "starhermit:input" {
   // `move_left`, `slot2`; no capitals, `-`, `.` or spaces), unique in the
   // manifest; its label (after `|`, the name when there is none) is 1 to
   // 128 bytes without `|` or control characters. Anything else refuses
-  // the package: `starhermit.txt control.Jump: invalid input action
-  // 'Jump'`. Games name actions exactly so (`isDown("move_left")`).
+  // the package, naming the line: `starhermit.txt line 9: action `Jump`:
+  // invalid input action 'Jump'`. Games name actions exactly so
+  // (`isDown("move_left")`).
+  //
+  // Its keys are one to four distinct `KeyboardEvent.code` names joined by
+  // `+`. F1 is never one, on any minor: it opens the runtime's Options menu
+  // (`starhermit.txt line 12: action `help` uses F1, which opens the
+  // runtime's Options menu and cannot be bound`), and the Options menu
+  // refuses it too. Before API_MINOR 44 a key serves one action and every
+  // action has a key (`line 12: action `repair` uses KeyR, which
+  // `next_robot` (line 11) already uses ...`). Since API_MINOR 44
+  // (BINDINGS_MINOR) two or more actions may share a key, and an action
+  // may have none (`control.map= | Map`, rebind-only):
+  // - a shared key presses (and releases) every action bound to it in
+  //   the active context, each with its own `onAction` edge carrying the
+  //   key's `code`; the game decides by its own state which one acts;
+  // - an action with no key is pressed by nothing until the player binds
+  //   it (gamepad, mouse and touch bindings still press it);
+  //   `bindingLabel` is `""` and `bindings` has no keyboard entry;
+  // - the Options menu's controls list shows a shared key on each of its
+  //   actions and an action with no key as "Unbound"; binding a key that
+  //   other actions have is taken with a note naming them (rather than
+  //   refused), and an action's last key may be removed.
+  // Gamepad controls and mouse inputs still serve one action each.
 
   /** Whether an action is held (its value is at least 0.5). An undeclared
    * action throws a TypeError. Nothing is held while the runtime's
@@ -1806,7 +2107,9 @@ declare module "starhermit:input" {
   export function wasReleased(action: string, slot?: number): boolean;
   /** What produced an input: keys, a mouse or pen, a gamepad, a finger
    * (on-screen touch controls included). */
-  export type InputSource = "keyboard" | "pointer" | "gamepad" | "touch";
+  /** `"motion"` (since API_MINOR 42): an action bound to tilt
+   * (`engine.motion.<action>=`); never the player's press. */
+  export type InputSource = "keyboard" | "pointer" | "gamepad" | "touch" | "motion";
   export interface ActionEvent {
     readonly action: string;
     readonly pressed: boolean;
@@ -1907,6 +2210,24 @@ declare module "starhermit:input" {
     readonly pressed: boolean;
     /** The system's auto-repeat of a held key (not a user gesture). */
     readonly repeat: boolean;
+    /** The modifier keys held as this key went down or up, either side
+     * (since API_MINOR 41, `KEY_MODIFIERS_MINOR`; undefined before), as
+     * `KeyboardEvent`'s `shiftKey`, `ctrlKey`, `altKey` and `metaKey`: a
+     * modifier's own press holds it (`ShiftLeft` going down has `shiftKey`
+     * true) and its release no longer (unless the other side is still
+     * held), and an auto-repeat carries those held as it repeats. They are
+     * the keys the game heard go down and not up, the ones `isKeyDown`
+     * answers for, and the same an `ActionEvent` carries: none is held
+     * after the window loses focus or while the runtime's interface is
+     * open until it is pressed again, and the runtime's own releases (as
+     * its interface opens over the game) carry none. Right Alt is
+     * `altKey` (AltGr on Windows also holds `ControlLeft`, as browsers
+     * there report it); Caps Lock and Fn are none of them. The same
+     * natively and in browsers. */
+    readonly shiftKey?: boolean;
+    readonly ctrlKey?: boolean;
+    readonly altKey?: boolean;
+    readonly metaKey?: boolean;
     /** Keeps the text this key press types from `onText` and the game's UI
      * (as `preventDefault` does on the web): for a key that opens a text
      * field. */
@@ -1929,6 +2250,15 @@ declare module "starhermit:input" {
     readonly pressed: boolean;
     readonly x: number;
     readonly y: number;
+    /** The modifier keys held as the button went down or up (since
+     * API_MINOR 41, `KEY_MODIFIERS_MINOR`; undefined before), as
+     * `MouseEvent`'s and as `KeyEvent` has them (Shift-click,
+     * Ctrl-click); the runtime's own releases carry none. Wheel and
+     * motion listeners take numbers, not events: read `isKeyDown` there. */
+    readonly shiftKey?: boolean;
+    readonly ctrlKey?: boolean;
+    readonly altKey?: boolean;
+    readonly metaKey?: boolean;
   }
   export function onPointerMove(listener: (x: number, y: number) => void): Unsubscribe;
   export function onPointerButton(listener: (event: PointerButtonEvent) => void): Unsubscribe;
@@ -2151,6 +2481,10 @@ declare module "starhermit:input" {
     readonly mapping: "standard";
     readonly buttons: readonly { readonly pressed: boolean; readonly value: number }[];
     readonly axes: readonly number[];
+    /** Since API_MINOR 42: the pad's motion sensors where it has them and
+     * the platform reads them (`gyro` °/s about x, y, z; `accel` m/s²
+     * including gravity), else null. Absent before API_MINOR 42. */
+    readonly motion?: { readonly gyro: readonly [number, number, number]; readonly accel: readonly [number, number, number] } | null;
   }
   export function gamepads(): readonly GamepadState[];
   /** Rumbles a slot's gamepad (strength 0–1, at most 5,000 ms, RangeError
@@ -2161,6 +2495,85 @@ declare module "starhermit:input" {
    * the device cannot, and (as browsers' user activation) until the player
    * has pressed something since the game started. */
   export function vibrate(durationMs: number): void;
+
+  // -- Device motion (since API_MINOR 42) -------------------------------------
+  // The device's motion sensors (a phone's or tablet's accelerometer,
+  // gyroscope and orientation), as the W3C DeviceMotionEvent and
+  // DeviceOrientationEvent report them, read once a frame. Needs
+  // `engine.capabilities=motion`. Where the browser asks the player first
+  // (iOS) `requestMotion()` shows the runtime's own prompt, and only when
+  // the player allows it there the browser's (in the player's press, or
+  // behind a button of the page's own): a refusal holds for the session (or
+  // for good, if the player chose), so asking again resolves "denied"
+  // without a prompt. Elsewhere in browsers the sensors are the game's
+  // without a prompt, as gamepads are. Desktops (natively, and browsers
+  // without sensors) report "unavailable". The readings stop while the
+  // runtime's interface is open or the window has no focus.
+  //
+  // Readings are frame data: a play script's `motion` steps stand in for
+  // the sensors, and tilt and the actions bound to it are a function of
+  // the frames' readings alone, so a recorded run replays exactly.
+  // Undefined before API_MINOR 42.
+  export type MotionStatus = "granted" | "denied" | "prompt" | "unavailable";
+  /** One reading in the device's frame: x to the right of the screen in
+   * its natural orientation, y up it, z out of it. A part is null where
+   * the device does not report it. */
+  export interface MotionReading {
+    /** Linear acceleration without gravity, m/s² [x, y, z]. */
+    readonly acceleration: readonly [number, number, number] | null;
+    /** Acceleration including gravity, m/s² (face up on a table: about
+     * [0, 0, 9.81]). */
+    readonly accelerationIncludingGravity: readonly [number, number, number] | null;
+    /** °/s: alpha about z, beta about x, gamma about y. */
+    readonly rotationRate: { readonly alpha: number; readonly beta: number; readonly gamma: number } | null;
+    /** Degrees: alpha 0..360 about z, beta −180..180 about x, gamma
+     * −90..90 about y (intrinsic Z-X'-Y''). alpha reads 0 where the
+     * device gives none. */
+    readonly orientation: { readonly alpha: number; readonly beta: number; readonly gamma: number } | null;
+    /** Whether alpha is a compass heading rather than relative. */
+    readonly absolute: boolean;
+    /** The orientation as [x, y, z, w], screen-corrected: the quaternion of
+     * a camera looking out of the back of the device, its image upright on
+     * the screen as turned (`camera.quaternion.fromArray(q)` keeps the
+     * scene still as the player turns the device). Y up; null without an
+     * orientation. */
+    readonly quaternion: readonly [number, number, number, number] | null;
+    /** Milliseconds between the sensor's readings. */
+    readonly interval: number;
+    /** How far the screen's content is turned from the device's natural
+     * orientation, degrees counter-clockwise: 0, 90, 180 or 270. */
+    readonly screenAngle: number;
+  }
+  /** The `motion` permission (`engine.permission("motion")`). */
+  export const motionStatus: (() => MotionStatus) | undefined;
+  /** Asks for the sensors and starts reading them: resolves with the
+   * status once answered ("unavailable" at once without sensors). Games
+   * that bind actions to tilt read them without asking wherever no prompt
+   * is needed. Rejects with NotAllowedError without the capability. */
+  export const requestMotion: (() => Promise<MotionStatus>) | undefined;
+  /** This frame's reading (frozen; the same object all frame), or null. */
+  export const motion: (() => MotionReading | null) | undefined;
+  /** Tilt: how far the device leans from its rest pose, through the dead
+   * zone and smoothing, each −1..1: x positive with the screen's right side
+   * down (steering right), y positive with its top edge away from the
+   * player (a stick pushed forward). The first reading, and the first after
+   * `recentreMotion()`, is the rest pose. Actions bind to it with
+   * `engine.motion.<action>=TiltLeft+TiltRight+TiltForward+TiltBack` in
+   * starhermit.txt (pressed at 0.5, released below 0.4; `value()` reads
+   * the lean 0–1). */
+  export const tilt: (() => { readonly x: number; readonly y: number }) | undefined;
+  /** The next reading becomes the rest pose (calibration). */
+  export const recentreMotion: (() => void) | undefined;
+  export interface TiltOptions {
+    /** Degrees of lean for full deflection, 5–90 (default 30). */
+    range?: number;
+    /** A share of the range that reads 0, 0–0.5 (default 0.05). */
+    deadZone?: number;
+    /** Each frame keeps this share of the last value, 0–0.95 (default 0.5). */
+    smoothing?: number;
+  }
+  /** Sets tilt's options from the next frame (RangeError outside them). */
+  export const setTiltOptions: ((options: TiltOptions) => void) | undefined;
 }
 
 // ===========================================================================
@@ -2423,8 +2836,9 @@ declare module "starhermit:scene" {
   //   under it;
   // - `TextureLoader.load(url, onLoad, onProgress, onError)`.
   // Texture coordinates keep the engine's convention at every minor (v
-  // from the image's first row, no `flipY`; three.js-built geometries and
-  // glTF files map as in three.js).
+  // from the image's first row; three.js-built geometries and glTF files
+  // map as in three.js); from API_MINOR 42 built-in maps honour a
+  // texture's `flipY` (a DataTexture's first row at v = 0).
 
   // -- Math -------------------------------------------------------------------
   // Since API_MINOR 18 the math classes are three.js r185's (src/math),
@@ -3180,7 +3594,7 @@ declare module "starhermit:scene" {
    * fragment's color and alpha straight (not premultiplied), combined
    * with what the target or window holds as `equation(source × src,
    * destination × dst)`. Min and max take no factors. The same on every
-   * backend (Vulkan, Direct3D 12, OpenGL ES, WebGL2, WebGPU). Before
+   * backend (Vulkan, Direct3D 12, Metal, OpenGL ES, WebGPU). Before
    * API_MINOR 20 a custom blended material is drawn with the transparent
    * ones (sorted, no depth written unless `depthWrite` says so); from it,
    * as in three.js, only with `transparent` (otherwise with the opaque
@@ -3355,8 +3769,35 @@ declare module "starhermit:scene" {
      * `NoColorSpace` (the default) as stored, for a material's `map` and
      * `emissiveMap`, `scene.background` and an environment made from it.
      * Older games' color maps are always sRGB. Data maps (normal,
-     * roughness, metalness, ambient occlusion) are read as stored. */
+     * roughness, metalness, ambient occlusion) are read as stored. Since
+     * API_MINOR 42 (`SRGB_TEXELS_MINOR`) an sRGB map is decoded texel by
+     * texel before it is filtered, as three.js r185's `SRGB8_ALPHA8`
+     * textures are (a red-green edge's midpoint is 188, not 147, red);
+     * the GPU holds an sRGB copy of the texture's texels for it while a
+     * material shows it so. Compressed textures are still filtered before
+     * they are decoded. It is read at every sync, as texture uniforms'
+     * (`HOOK_ACCESS_MINOR`) are: set after a load resolved, or after the
+     * texture was drawn, it applies from the next frame (three.js r185
+     * takes a change at the next upload, after `needsUpdate`; here
+     * `needsUpdate` is not needed for it). */
     colorSpace: string;
+    /** Since API_MINOR 42 (`TEXTURE_FLIP_Y_MINOR`; absent before): three.js
+     * r185's `flipY` for built-in materials' maps and a texture
+     * background. True (a loaded or canvas texture's default) shows the
+     * image's first row at the top (v = 1); false (a `DataTexture`'s
+     * default) at v = 0, the bottom. A `CompressedTexture`'s is false and
+     * not flipped (three.js cannot flip one). It takes effect when set
+     * (three.js: at the next upload). Code in a `ShaderMaterial` or hook
+     * samples at its own coordinates, as before. Older games have no
+     * `flipY`, and their DataTextures show their first row at the top.
+     * Since API_MINOR 44 (`PHYSICAL_MATERIAL_MINOR`) it also turns a
+     * latitude-longitude environment (`scene.environment`, `envMap`,
+     * `PMREMGenerator.fromEquirectangular`) and background: false shows the
+     * first row straight down, as three.js r185 uploads it (before 1.44 a
+     * DataTexture's first row was straight up whatever its `flipY`).
+     * HDRLoader's and EXRLoader's textures are top first with `flipY` true,
+     * so they show the same at every minor. */
+    flipY: boolean;
     /** Set to re-upload a canvas or data texture's pixels this frame (the
      * upload counts against the frame's 96 MiB upload bound, past which it
      * waits for a later frame, since API_MINOR 15); each `true`
@@ -3390,6 +3831,668 @@ declare module "starhermit:scene" {
      * rotation, anisotropy, mapping, color space, mipmaps, name, userData
      * by JSON (since API_MINOR 18). */
     copy(source: Texture): this;
+    /** Engine extension (since API_MINOR 40, `COMPRESSED_TEXTURES_MINOR`;
+     * absent before): an alpha test (0 to 1; 0, the default, for none)
+     * whose coverage the texture's mips keep as they are made. A box
+     * filter thins a cut-out's strands (foliage, hair, fences, nets) until
+     * they vanish with distance; with the material's `alphaTest` here each
+     * mip level passes as much of each tile of the image as the full-size
+     * image does (Castaño 2010, per tile of a 4×4 grid, ties parted by a
+     * fixed pattern so it holds still), and colour is filled in under the
+     * holes so filtering at an edge never reaches a stray colour. For
+     * images loaded from the package (`TextureLoader`): set while one
+     * loads, or after (it then loads again, showing its image meanwhile).
+     * RangeError outside 0 to 1. A KTX2 texture keeps the mips it was
+     * packaged with (`engine.textures.cutouts`). */
+    preserveCoverage?: number;
+  }
+  /** A KTX2 file's BC blocks (three.js's `CompressedTexture` as its
+   * `KTX2Loader` makes it; since API_MINOR 40). Held as its blocks where
+   * `renderer.capabilities.compressedFormats` names its format, else
+   * unpacked to RGBA8 as it loaded (BC4 as (r, 0, 0, 1), BC5 as
+   * (r, g, 0, 1), as the GPU samples them); the image budget counts what
+   * is held. Its pixels never change. */
+  export class CompressedTexture extends Texture {
+    protected constructor();
+    /** `RGBA_S3TC_DXT1_Format` (BC1), `RGBA_S3TC_DXT5_Format` (BC3),
+     * `RED_RGTC1_Format` (BC4), `RED_GREEN_RGTC2_Format` (BC5) or
+     * `RGBA_BPTC_Format` (BC7). A BC5 texture as a material's `normalMap`
+     * has its z rebuilt from x and y since API_MINOR 43. */
+    readonly format: number;
+    readonly isCompressedTexture: true;
+    /** Engine extension: whether the device holds its blocks (false:
+     * unpacked to RGBA8). */
+    readonly isNative: boolean;
+  }
+  /** three.js r185's `CompressedArrayTexture` (since API_MINOR 43; the
+   * constructor throws a TypeError before): `depth` layers of
+   * `width × height` BC1, BC3, BC4, BC5 or BC7 blocks. `mipmaps` are its
+   * levels (`{ data, width, height }`, level 0 first, each level's data
+   * every layer's blocks one after another, layer 0 first, as three.js and
+   * KTX2 hold them). `KTX2Loader` makes one of a KTX2 array (`layerCount`
+   * past 1) or of a `.layers` file. A `ShaderMaterial`'s WGSL (or a material's `hooks`, its uniform) samples it as
+   * a `texture_2d_array<f32>`: `textureSample(t, t_sampler, uv, layer)`,
+   * `textureSampleLevel`, `textureSampleBias` and `textureSampleGrad`
+   * (a mipmap `minFilter` samples the layer's own levels, never another
+   * layer's; u and v wrap within the layer as `wrapS` and `wrapT` say),
+   * `textureLoad` (level 0), `textureDimensions` and `textureNumLayers`.
+   * The engine holds the layers as the cells of one image: as their blocks
+   * where `renderer.capabilities.compressedFormats` names the format
+   * (`isNative`; past 4,096 a side where the device holds it, so ten
+   * 2,048² layers keep their size), each layer keeping the levels that
+   * stay whole 4×4 blocks (2,048 to 4 for a 2,048² layer; the last levels
+   * sample as the 4×4 one); else unpacked to RGBA8 within 4,096 (from the
+   * first level whose layers fit). The image budget counts what it holds,
+   * its levels included. The game's blocks upload when a material first
+   * uses it, and again, all of them, after `needsUpdate`. Differences from
+   * a real array texture: no anisotropic filtering, and filtering stops at
+   * a layer's edge where u or v repeats. */
+  export class CompressedArrayTexture extends CompressedTexture {
+    constructor(mipmaps?: { data: ArrayBufferView; width: number; height: number }[], width?: number, height?: number, depth?: number, format?: number, type?: number);
+    readonly isCompressedArrayTexture: true;
+    mipmaps: { data: ArrayBufferView; width: number; height: number }[];
+    type: number;
+    /** three.js's; layers are never filtered across. */
+    wrapR: string;
+    readonly depth: number;
+    /** A layer's width and height, and the layers. */
+    readonly image: { width: number; height: number; depth: number };
+    /** Layers `addLayerUpdate` marked (three.js; the engine uploads every
+     * layer after `needsUpdate`). */
+    readonly layerUpdates: Set<number>;
+    addLayerUpdate(layerIndex: number): void;
+    clearLayerUpdates(): void;
+  }
+  /** three.js's compressed formats (since API_MINOR 40). */
+  export const RGBA_S3TC_DXT1_Format: 33777;
+  export const RGBA_S3TC_DXT5_Format: 33779;
+  export const RED_RGTC1_Format: 36283;
+  export const RED_GREEN_RGTC2_Format: 36285;
+  export const RGBA_BPTC_Format: 36492;
+  /** three.js's `KTX2Loader` addon (since API_MINOR 40; the constructor
+   * throws a TypeError before) for KTX2 files of BC1, BC3, BC4, BC5 and
+   * BC7 blocks, sRGB or linear, of one level or a full mip chain, without
+   * supercompression. three.js's transcodes Basis Universal (ETC1S and
+   * UASTC) payloads; this engine does not, and refuses such a file with an
+   * `EncodingError` that says so (package BC payloads instead:
+   * `engine.textures.compress=bc` makes them from PNG and WebP images at
+   * package time). Zstandard and ZLIB supercompression are refused the
+   * same way. The texture is held as its blocks where the device samples
+   * the format (Vulkan with `textureCompressionBC`, Direct3D 12, Metal on
+   * GPUs that sample BC, OpenGL ES with the S3TC, RGTC and BPTC
+   * extensions, WebGPU with `texture-compression-bc`), else unpacked to
+   * RGBA8 as it loads, so a game never fails for want of a format. Its
+   * image is the file's first level within 4,096 texels (files up to
+   * 16,384 a side load from their smaller levels), its mips the file's
+   * levels; a level 0 whose sides are not whole 4×4 blocks unpacks.
+   * A file whose data format descriptor says sRGB gives an
+   * `SRGBColorSpace` texture, as three.js's does. Errors are those of
+   * `TextureLoader`. Since API_MINOR 43 a KTX2 texture array (`layerCount`
+   * past 1) loads as a `CompressedArrayTexture`, as three.js's does (3D
+   * KTX2 files are refused, as three.js r185 has no compressed 3D
+   * texture), and so does a `.layers` file (engine extension: the KTX2
+   * array `engine.textures.compress=bc` made of its layer images, or where
+   * there is none, before packaging or for an `engine.textures.exact`
+   * one, its images themselves held unpacked: `format` `RGBAFormat`,
+   * `isNative` false). */
+  export class KTX2Loader {
+    constructor(manager?: unknown);
+    /** Engine extension: the largest side a texture unpacked to RGBA8
+     * keeps (0, the default, for the engine's 4,096): the file's larger
+     * levels are left out, which keeps a device without the format within
+     * its memory. */
+    maxUnpackedEdge: number;
+    /** three.js's; nothing to set here (no transcoder runs). */
+    setTranscoderPath(path: string): this;
+    setWorkerLimit(limit: number): this;
+    detectSupport(renderer: unknown): this;
+    detectSupportAsync(renderer: unknown): Promise<this>;
+    setPath(path: string): this;
+    dispose(): this;
+    loadAsync(path: string): Promise<CompressedTexture>;
+    /** three.js's `load(url, onLoad, onProgress, onError)` (`onProgress`
+     * is never called). */
+    load(path: string, onLoad?: (texture: CompressedTexture) => void, onProgress?: unknown, onError?: (error: Error) => void): void;
+  }
+  // -- Look assets (since API_MINOR 42, LOOK_ASSETS_MINOR) ------------------
+  // three.js r185's addons for colour-grading tables and HDR images,
+  // decoded natively. Below API_MINOR 42 none of these exist (an import of
+  // one fails to link). `load(url, onLoad, onProgress, onError)` reads the
+  // package file (`onProgress` is never called) and returns nothing usable:
+  // use `onLoad` or `loadAsync`. `setPath` prefixes the URLs.
+
+  /** three.js's `LUTCubeLoader` result; `texture1D` (an engine extension)
+   * for a .cube file with `LUT_1D_SIZE` and no `LUT_3D_SIZE`, which
+   * three.js refuses: `texture3D` is then null. `domainMin`/`domainMax`
+   * are read and, as three.js's `LUTPass`, not applied. */
+  export interface LUTCubeResult {
+    title: string | null;
+    size: number;
+    domainMin: Vector3;
+    domainMax: Vector3;
+    texture3D: Data3DTexture | null;
+    texture1D?: DataTexture;
+  }
+  /** three.js r185's `LUTCubeLoader`: Adobe/Resolve .cube tables (size
+   * 1–128; a 1D table up to 4,096 entries) as a `Data3DTexture` of
+   * `UnsignedByteType` (the default; values × 255 stored as a Uint8Array
+   * stores them) or `FloatType` (`setType`). */
+  export class LUTCubeLoader {
+    constructor(manager?: unknown);
+    type: number;
+    setType(type: number): this;
+    setPath(path: string): this;
+    parse(text: string): LUTCubeResult;
+    load(url: string, onLoad?: (result: LUTCubeResult) => void, onProgress?: unknown, onError?: (error: unknown) => void): void;
+    loadAsync(url: string): Promise<LUTCubeResult>;
+  }
+  /** three.js r185's `LUT3dlLoader`: .3dl tables (a grid line of size
+   * 1–128, then blue-fastest values scaled by the power of two at or above
+   * the largest). */
+  export class LUT3dlLoader {
+    constructor(manager?: unknown);
+    type: number;
+    setType(type: number): this;
+    setPath(path: string): this;
+    parse(text: string): { size: number; texture3D: Data3DTexture };
+    load(url: string, onLoad?: (result: { size: number; texture3D: Data3DTexture }) => void, onProgress?: unknown, onError?: (error: unknown) => void): void;
+    loadAsync(url: string): Promise<{ size: number; texture3D: Data3DTexture }>;
+  }
+  /** three.js r185's `LUTImageLoader`: a PNG or WebP image of a table's
+   * slices side by side (size² × size) or stacked (size × size²), size
+   * 1–128, read as three.js's canvas reads it (`flip` too). */
+  export class LUTImageLoader {
+    constructor(manager?: unknown);
+    flip: boolean;
+    setPath(path: string): this;
+    parse(data: ArrayLike<number>, size: number): { size: number; texture3D: Data3DTexture };
+    load(url: string, onLoad?: (result: { size: number; texture3D: Data3DTexture }) => void, onProgress?: unknown, onError?: (error: unknown) => void): void;
+    loadAsync(url: string): Promise<{ size: number; texture3D: Data3DTexture }>;
+  }
+  /** three.js r185's `LUTPass`: the shown color (clamped to 0..1) looked
+   * up in `lut` with trilinear interpolation between its entries (0 and 1
+   * on its first and last), mixed in by `intensity` (default 1), alpha
+   * kept. `lut` is a table's `Data3DTexture` (bytes, half floats or
+   * floats; a cube up to 128 a side) or a 1D table's `texture1D`. Assign it
+   * to `renderer.lut`. A table whose entries are exactly their own grid
+   * coordinates (an identity: bytes where 255·k/(size−1) is whole, or
+   * floats) is left out, so it changes no pixel; others run through the
+   * lookup, in half floats. */
+  export class LUTPass {
+    constructor(options?: { lut?: Data3DTexture | DataTexture | null; intensity?: number });
+    lut: Data3DTexture | DataTexture | null;
+    intensity: number;
+    enabled: boolean;
+    needsSwap: boolean;
+    clear: boolean;
+    renderToScreen: boolean;
+    readonly isPass: true;
+    setSize(width: number, height: number): void;
+    render(): void;
+    dispose(): void;
+  }
+  /** What `HDRLoader.parse` returns (three.js's `DataTextureLoader` data). */
+  export interface HDRTexData {
+    width: number;
+    height: number;
+    data: Uint16Array | Float32Array;
+    header: string;
+    gamma: number;
+    exposure: number;
+    type: number;
+    colorSpace: string;
+    minFilter: string;
+    magFilter: string;
+    generateMipmaps: boolean;
+    flipY: boolean;
+  }
+  /** three.js r185's `HDRLoader` (r180's new name for `RGBELoader`):
+   * Radiance RGBE .hdr images (flat or run-length encoded, `-Y h +X w`) of
+   * up to 4,096 on a side as a linear `DataTexture` of `HalfFloatType`
+   * (the default; values truncated to half floats as three.js's
+   * `DataUtils.toHalfFloat`, clamped at 65504) or `FloatType`
+   * (`setDataType`), filtered linearly without mipmaps, the file's top row
+   * first (shown upright, as three.js's with `flipY`). For a sky and an
+   * environment set `mapping = EquirectangularReflectionMapping` and use
+   * it as `scene.background`, `scene.environment` or with
+   * `PMREMGenerator.fromEquirectangular`. Large files: on the web a
+   * package file over 16 MiB is not fetched. */
+  export class HDRLoader {
+    constructor(manager?: unknown);
+    type: number;
+    setDataType(type: number): this;
+    setPath(path: string): this;
+    parse(buffer: ArrayBuffer | ArrayBufferView): HDRTexData;
+    load(url: string, onLoad?: (texture: DataTexture) => void, onProgress?: unknown, onError?: (error: unknown) => void): void;
+    loadAsync(url: string): Promise<DataTexture>;
+  }
+  /** three.js's deprecated name for `HDRLoader` (it warns once made). */
+  export class RGBELoader extends HDRLoader {}
+  /** three.js r185's `EXRLoader` for common OpenEXR files: single-part
+   * scanline images of up to 4,096 on a side, uncompressed or RLE, ZIPS
+   * or ZIP compressed, HALF or FLOAT channels (R, G, B with or without A;
+   * Y; Y, RY, BY), as a `DataTexture` of `HalfFloatType` (the default) or
+   * `FloatType` and of `outputFormat` (`RGBAFormat`, `RGFormat`,
+   * `RedFormat`). PIZ, PXR24, B44(A) and DWAA/DWAB compression, tiled,
+   * deep and multi-part files, UINT and subsampled channels are refused
+   * with an Error naming them. Rows are top first with `flipY` true, as
+   * HDRLoader's (three.js's are bottom first with `flipY` false, which
+   * shows the same); `header` holds the compression alone. */
+  export class EXRLoader {
+    constructor(manager?: unknown);
+    type: number;
+    outputFormat: number;
+    setDataType(type: number): this;
+    setOutputFormat(format: number): this;
+    setPart(part: number): this;
+    setPath(path: string): this;
+    parse(buffer: ArrayBuffer | ArrayBufferView): { header: { compression: string }; width: number; height: number; data: Uint16Array | Float32Array; format: number; colorSpace: string; type: number; minFilter: string; magFilter: string; generateMipmaps: boolean; flipY: boolean };
+    load(url: string, onLoad?: (texture: DataTexture) => void, onProgress?: unknown, onError?: (error: unknown) => void): void;
+    loadAsync(url: string): Promise<DataTexture>;
+  }
+  // -- Colour grading in place of tone mapping (since API_MINOR 43) ---------
+  /** 43 from host API 1.43 (undefined before: feature-detect with
+   * `import * as scene from "starhermit:scene"` and
+   * `scene.COLOR_LUT_MINOR !== undefined`). */
+  export const COLOR_LUT_MINOR: number;
+  /** `renderer.colorLut`'s value (since API_MINOR 43, `COLOR_LUT_MINOR`). */
+  export interface ColorLut {
+    /** The table: a cube (width, height and depth alike, 1..128; 32 is
+     * typical) of RGBA texels as bytes (`UnsignedByteType`, read as
+     * value / 255), half floats (`HalfFloatType`, a Uint16Array) or floats
+     * (stored as half floats), red along x, green along y, blue along z
+     * (three.js's `Data3DTexture` layout, as `LUTCubeLoader` gives). Its
+     * entries are linear light. Read again after `needsUpdate`; a disposed
+     * texture draws without the table. */
+    texture: Data3DTexture;
+    /** How linear scene light becomes the table's coordinates, each then
+     * clamped to 0..1 (0 the first entry, 1 the last, interpolated
+     * trilinearly between entries, as Unity's `ApplyLut3D` with its
+     * half-texel scale and offset samples it):
+     * - `"logc"`: Unity URP's `LinearToLogC` as URP compiles it
+     *   (`USE_PRECISE_LOGC` 0; ARRI LogC EI 1000):
+     *   `0.244161 · log10(max(5.555556 · x + 0.047996, 0)) + 0.386036` for
+     *   every x. This is how URP's HDR grading mode reads its internal
+     *   table, so a table baked by URP's `LutBuilderHdr` (grid coordinates
+     *   to linear with its `LogCToLinear`) matches URP's frames.
+     * - `"logc-precise"`: the same curve above `cut` 0.011361 and
+     *   `5.301883 · x + 0.092819` at or below it (`LinearToLogC_Precise`).
+     * - `"linear01"`: the light clamped to 0..1 as it is. */
+    input: "logc" | "logc-precise" | "linear01";
+    /** How much of the table's result is mixed over the untoned linear
+     * light (0..1, default 1): 0 shows the (vignetted) light as
+     * `NoToneMapping` would. */
+    amount?: number;
+    /** Unity URP's vignette on the linear light just before the lookup
+     * (URP's order), or null (the default: none). With uv 0..1 over the
+     * viewport from its bottom left (Unity's convention) and the aspect
+     * width / height of the drawing buffer:
+     * `d = abs(uv - center) · intensity · 3`, `d.x ·= aspect` when
+     * `rounded`, `f = saturate(1 − d·d) ^ (smoothness · 5)`,
+     * `light ·= mix(color, 1, f)`. */
+    vignette?: ColorLutVignette | null;
+  }
+  /** `ColorLut.vignette` (URP's `Vignette` override's fields). */
+  export interface ColorLutVignette {
+    /** The centre, 0..1 from the viewport's bottom left (default
+     * [0.5, 0.5]). */
+    center?: [number, number];
+    /** 0..1 (URP's intensity; 0 changes nothing). */
+    intensity: number;
+    /** 0.01..1 (URP's smoothness). */
+    smoothness: number;
+    /** Round on any aspect (default false: stretched with the viewport). */
+    rounded?: boolean;
+    /** The color at the edge (default black), its components used as given
+     * (URP's shader takes its Color's values unconverted). */
+    color?: Color | [number, number, number];
+  }
+
+  // -- The lens and the underwater light (since API_MINOR 44) ---------------
+  /** 44 from host API 1.44 (undefined before: feature-detect with
+   * `import * as scene from "starhermit:scene"` and
+   * `scene.LENS_EFFECTS_MINOR !== undefined`): `renderer.bokeh`,
+   * `renderer.lens` and `renderer.sensorNoise`. */
+  export const LENS_EFFECTS_MINOR: number;
+  /** 44 from host API 1.44 (undefined before): `renderer.underwater`. */
+  export const UNDERWATER_MINOR: number;
+  /** `renderer.bokeh`'s value (since API_MINOR 44, `LENS_EFFECTS_MINOR`):
+   * three.js r185 `BokehPass`'s `focus`, `aperture` and `maxblur`, as
+   * engine disc bokeh. A pixel's circle of confusion has a radius of
+   * `0.4 × width × min(c, maxblur)` pixels (as `BokehShader` spreads its
+   * taps across the image), `c` being three.js's `aperture × |focus −
+   * depth|` or, with `thinLens`, `aperture × |1 − focus / depth|` (the
+   * circle a thin lens draws, `aperture` the circle far beyond the focus),
+   * depth the view depth. Each pixel gathers `samples` taps on a
+   * golden-angle spiral out to the largest circle, a tap counting where
+   * its own circle reaches the pixel (a sharp surface in front keeps its
+   * edge), weighted by its circle's area with a slightly brighter rim. */
+  export interface BokehSettings {
+    /** The view depth in focus (above 0, default 1, three.js's); with
+     * autofocus, where it looks when its probe finds nothing. */
+    focus?: number;
+    /** default 0.025 (three.js's), 0..65504. */
+    aperture?: number;
+    /** default 1 (three.js's), 0..1: the largest circle, as a share of
+     * 0.4 × the width. */
+    maxblur?: number;
+    /** Gather taps, 1..64 (default 32). */
+    samples?: number;
+    /** default false: three.js's circle of confusion. */
+    thinLens?: boolean;
+    /** Autofocus (an engine extension): true, its settings, or false (the
+     * default). The focus eases toward the nearest view depth among 13
+     * taps of the scene's depth in a disc of `radius` (0..0.5 of the
+     * image's height, default 0.02) around `x`, `y` (0..1 from the image's
+     * top left, default the centre), clamped to `near`..`far` (default
+     * 0.1..1000), in log space with a time constant of `smoothing` seconds
+     * (0..60, default 1/3; 0 jumps), as a lens motor does. Assigning
+     * `renderer.bokeh` a new object starts it afresh (it jumps). The focus
+     * is kept on the GPU. */
+    autofocus?: boolean | { x?: number; y?: number; radius?: number; smoothing?: number; near?: number; far?: number };
+  }
+  /** `renderer.lens`'s value (since API_MINOR 44, `LENS_EFFECTS_MINOR`).
+   * With `r` a point's distance from the image's centre in units of its
+   * height (x scaled by the aspect), the point shows the image at
+   * `(1 + distortion · r²)` of its offset, scaled so the corners stay in
+   * frame (the centre is magnified); red is read `(1 −
+   * chromaticAberration · r² / 2)` nearer the centre and blue `(1 +
+   * chromaticAberration · r²)` farther, so fringes grow toward the
+   * corners. */
+  export interface LensSettings {
+    /** Barrel distortion, 0..1 (default 0). */
+    distortion?: number;
+    /** Chromatic aberration, 0..1 (default 0). */
+    chromaticAberration?: number;
+  }
+  /** `renderer.sensorNoise`'s value (since API_MINOR 44,
+   * `LENS_EFFECTS_MINOR`): noise added to the shown image, mostly
+   * luminance, `intensity × (0.25 + 0.75 × (1 − smoothstep(0.02, 0.55,
+   * luma)))` strong (so strongest in the dark), never below 0. */
+  export interface SensorNoiseSettings {
+    /** 0..1 (default 0.02). */
+    intensity?: number;
+    /** The colour share, 0..1 (default 1; 0 grey noise). */
+    color?: number;
+    /** Fresh each frame (default true); false keeps one pattern. */
+    animated?: boolean;
+  }
+  /** `renderer.underwater`'s value (since API_MINOR 44, `UNDERWATER_MINOR`).
+   * The surface: `level`, or `heightfield` (with starhermit:water's
+   * ripples on top); `water` fills every unset field from a starhermit:water
+   * `Ocean` (its level, and the heights of the waves around the camera),
+   * `Pond` (its level and rectangle, its optics and ripples) or
+   * `WaterMaterial` (its optics and ripples; give the level or a
+   * heightfield). Fields set here win over the water's. */
+  export interface UnderwaterSettings {
+    /** A starhermit:water `Ocean`, `Pond` or `WaterMaterial`. */
+    water?: object | null;
+    /** The surface's height where no heightfield says otherwise (default 0,
+     * or the water's). */
+    level?: number;
+    /** Heights in a texture over a rectangle (row 0 at min z, bilinear
+     * between texels): `height` the channel holding them (0..3, default 0
+     * red), `depth` the channel holding the water's depth (null: water
+     * everywhere) with the water dry at or below `dry` (default 0), and
+     * `outsideDry` (default false: the level holds outside `bounds`). A
+     * FloatType or HalfFloatType DataTexture or render target. */
+    heightfield?: { texture: Texture; bounds: [number, number, number, number]; height?: number; depth?: number | null; dry?: number; outsideDry?: boolean } | null;
+    /** Without a heightfield: the level's water lies only inside these
+     * [minX, minZ, maxX, maxZ] (default unbounded, or a Pond's). */
+    bounds?: [number, number, number, number] | null;
+    /** Per unit, red, green and blue (0..100; default the water's, else
+     * [0.45, 0.07, 0.04]): absorption, and scattering ([0.002, 0.006,
+     * 0.007]); light is dimmed by exp(−(absorption + scattering) · length)
+     * and scattering is what lights the water. */
+    absorption?: [number, number, number];
+    scattering?: [number, number, number];
+    /** Toward the sun (default the water's, else (0.3, 0.8, 0.5)); its
+     * light, linear with its intensity (default the water's, else
+     * [3, 2.85, 2.63]); the sky's light in the water (default the water's,
+     * else [0.24, 0.38, 0.62]). Below the horizon the sun adds nothing. */
+    sunDirection?: Vector3 | [number, number, number];
+    sunColor?: Color | [number, number, number];
+    skyColor?: Color | [number, number, number];
+    /** The sun's scattered light's scale (light shafts; default 1). */
+    shafts?: number;
+    /** The caustics' strength (0..16, default 1: as the surface's
+     * curvature focuses the refracted sun; 0 even light). */
+    caustics?: number;
+    /** Henyey-Greenstein's anisotropy, 0..0.95 (default 0.6). */
+    anisotropy?: number;
+    /** starhermit:water's WaterMaterial ripples on the surface (its five
+     * trains at a wind `speed` and `direction` in radians, `scale` 0..16,
+     * default 1), null for none (default: the water's). */
+    ripples?: { scale?: number; speed?: number; direction?: number } | null;
+    /** Motes catching the sun near the eye: true, `{ density (0..1,
+     * default 0.02), size (default 0.005) }`, or false (the default). */
+    motes?: boolean | { density?: number; size?: number };
+    /** The march's steps (1..64, default 24) and reach (default 40). */
+    steps?: number;
+    reach?: number;
+    /** default 1.33. */
+    refractiveIndex?: number;
+    /** Seconds on the ripples' and motes' clock (default the water's, else
+     * the frame's time). */
+    time?: number;
+    /** How far above the surface the camera may be before nothing is drawn
+     * (default 1; only where the surface's height at the camera is known:
+     * an Ocean's, or a level without a heightfield). */
+    margin?: number;
+    /** default true. */
+    enabled?: boolean;
+  }
+
+  // -- Projected decals (since API_MINOR 43, DECALS_MINOR) ------------------
+  // Below API_MINOR 43 none of these exist: a named import fails to link,
+  // and a namespace import's `DECALS_MINOR` is undefined.
+
+  /** 43 from host API 1.43 (undefined before). */
+  export const DECALS_MINOR: number;
+  /** A DecalProjector's look. */
+  export interface DecalProjectorParameters {
+    /** The decal's image (its alpha the coverage; null white). Sampled at
+     * the decal's own coordinates the way up its `flipY` says (read when
+     * given; `set` again after changing it) and sRGB-decoded by its
+     * `colorSpace`, as texture uniforms are; its `offset`, `repeat` and
+     * `wrapS/T` do not apply. */
+    map?: Texture | null;
+    /** Tangent-space normal map (OpenGL convention) bending the lit
+     * surface under the decal, x and y times `normalScale` (default 1). */
+    normalMap?: Texture | null;
+    normalScale?: number;
+    /** Roughness times the map's green under the decal (lit decals). */
+    roughnessMap?: Texture | null;
+    /** Default 1 and 0. */
+    roughness?: number;
+    metalness?: number;
+    color?: ColorInput;
+    opacity?: number;
+    /** Lit by the scene's lights and shadows at the surface beneath it
+     * (default true; a MeshStandardMaterial's shading), or drawn as its
+     * color (false). Fixed when made. */
+    lit?: boolean;
+    /** NormalBlending (default), AdditiveBlending or MultiplyBlending (its
+     * color fades to white with its coverage: scorch marks and tracks
+     * darken what lies under them; unlit, unfogged). Fixed when made. */
+    blending?: Blending;
+    /** Radians between a surface's normal and the projector's +Z over
+     * which the decal fades out (default [π/3, 5π/12]: none past 75°, as
+     * normals rebuilt from the depth are a little noisy on surfaces seen
+     * edge-on). */
+    angleFade?: readonly [number, number];
+    /** Columns and rows of tiles in its maps (1 to 64; default [1, 1]). */
+    tiles?: readonly [number, number];
+    /** Decals it holds (1 to 65,536; default 1). Fixed when made. */
+    count?: number;
+  }
+  /** ENGINE EXTENSION (since API_MINOR 43; three.js has `DecalGeometry`
+   * but no projector): screen-space decals, as Unity's URP and HDRP draw
+   * them. Each decal is a box: the unit cube placed by its instance's
+   * matrix (`setMatrixAt`) and the projector's own transform (`scale`
+   * the box's size), projecting its map along its −Z axis onto the opaque
+   * surfaces inside it (u along +X, the image's top towards +Y). A ground
+   * decal is turned `rotation.x = -Math.PI / 2`. Each fragment of the
+   * box finds the scene's nearest opaque surface in `renderer.sceneDepth`
+   * (which the frame then draws first), its normal from the neighbouring
+   * pixels' depths, and is left out where that surface lies outside the
+   * box, has `receiveDecals` false, or faces away (`angleFade`). Lit
+   * decals are shaded at that surface's point and normal (shadows
+   * included), bent by `normalMap`, with `roughness`/`roughnessMap`.
+   *
+   * All of a projector's decals are one draw of a box each, so a battle's
+   * hundreds of scorch marks and tracks cost the pixels they cover (about
+   * six depth reads and a map read a pixel) and nothing per triangle of
+   * the ground; they draw with the transparent objects in `renderOrder`
+   * (default −1000, before others, so smoke draws over them), later decals
+   * over earlier ones. Their maps are sampled with the box's derivatives,
+   * so at a silhouette a decal may take a coarser mip level for a pixel.
+   * A RangeError or TypeError for parameters out of range. */
+  export class DecalProjector extends InstancedMesh {
+    constructor(parameters?: DecalProjectorParameters);
+    readonly isDecalProjector: true;
+    readonly lit: boolean;
+    /** Changes its look (all but `lit`, `blending` and `count`). */
+    set(parameters: DecalProjectorParameters): this;
+    /** Decal `index`'s tile of the maps (row by row from the top left). */
+    setTileAt(index: number, tile: number): this;
+    /** Decal `index`'s opacity (0 to 1, default 1), times the decal's: a
+     * mark fading out over its life. */
+    setOpacityAt(index: number, opacity: number): this;
+  }
+  /** three.js r185's `DecalGeometry` (examples/jsm, since API_MINOR 43):
+   * `mesh`'s triangles in world space (its `matrixWorld` as it is: update
+   * it first) clipped to the box of `size` at `position` turned by
+   * `orientation`, with uv across the box's x and y and the mesh's normals.
+   * Script work for each of the mesh's triangles. */
+  export class DecalGeometry extends BufferGeometry {
+    constructor(mesh?: Mesh, position?: Vector3, orientation?: Euler, size?: Vector3);
+  }
+
+  // -- Physical materials and array uniforms (since API_MINOR 44) ----------
+  /** 44 from host API 1.44 (undefined before): MeshPhysicalMaterial's ior,
+   * iridescence, transmission and translucency (see there). */
+  export const PHYSICAL_MATERIAL_MINOR: number;
+  /** 44 from host API 1.44 (undefined before): three.js's array uniforms
+   * (see `ShaderUniform`) and `starhermit.h`'s `uniform_set` into arrays. */
+  export const UNIFORM_ARRAYS_MINOR: number;
+
+  // -- Screen-space distortion (since API_MINOR 43, DISTORTION_MINOR) -------
+  /** 43 from host API 1.43 (undefined before). */
+  export const DISTORTION_MINOR: number;
+  export interface DistortionMaterialParameters {
+    /** Red and green push the scene behind right and up (0.5 none), alpha
+     * the coverage; sampled at the geometry's uv as stored. Null (default):
+     * a round bulge, strongest at the middle, fading to the edges. */
+    map?: Texture | null;
+    /** At a full push, this share of the screen's height at a view depth
+     * of one unit, less farther away (−10 to 10; default 0.05). */
+    strength?: number;
+    /** The bent scene's tint (default white). */
+    color?: ColorInput;
+    opacity?: number;
+    /** Map widths a second the map scrolls (`update(seconds)` advances it). */
+    scroll?: readonly [number, number];
+  }
+  /** ENGINE EXTENSION (since API_MINOR 43): a transparent ShaderMaterial
+   * drawing the scene behind it displaced (heat shimmer, shock waves,
+   * glass): `renderer.sceneColor` read at the fragment's window position
+   * pushed by its map times `strength` over the view depth, tinted, mixed
+   * in by its coverage (map alpha × `opacity` × the vertex/instance
+   * colour's alpha). It has `distortion` true and `depthWrite` false, so
+   * the colour it reads holds the transparent objects drawn before it; it
+   * is composited in the scene's linear light, before bloom, the grade and
+   * the tone mapping. Frames it draws in bring the scene-colour copy along
+   * (the post buffers and 8 bytes a pixel); where the device renders no
+   * half floats the colour stays black. GPU particle emitters take
+   * `distortion` too (`GPUParticleEmitterOptions.distortion`). */
+  export class DistortionMaterial extends ShaderMaterial {
+    constructor(parameters?: DistortionMaterialParameters);
+    readonly isDistortionMaterial: true;
+    set(parameters: DistortionMaterialParameters): this;
+    /** Advances the map's scroll by `seconds`. */
+    update(seconds: number): this;
+  }
+
+  // -- Alembic caches (since API_MINOR 42, ALEMBIC_MINOR) -------------------
+  // Baked simulations and animated meshes (fluid surfaces, splashes, cloth)
+  // played back; the engine's own (three.js r185 has no Alembic loader).
+  // Below API_MINOR 42 none of these exist: a named import fails to link,
+  // and a namespace import's `ALEMBIC_MINOR` is undefined, which is how a
+  // game built for older minors detects them.
+
+  /** 42 from host API 1.42 (undefined before: feature-detect with
+   * `import * as scene from "starhermit:scene"` and
+   * `scene.ALEMBIC_MINOR !== undefined`). */
+  export const ALEMBIC_MINOR: number;
+  /** Loads a package Alembic cache: a `.wabc` (tools/wabc.py bakes one
+   * from Blender or an OBJ sequence), or an `.abc` as Blender, Houdini and
+   * Maya export it (Ogawa, or classic HDF5 with superblock 0/1 and
+   * contiguous or compact datasets; converted as it loads, so a large one
+   * loads faster baked to `.wabc`). The file is read and parsed off the
+   * game's thread, at most 64 MiB, at most 1,048,576 vertices and
+   * 3,145,728 indices a sample and 65,536 samples a track; a game holds at
+   * most 32 caches and 256 MiB of them at once (`dispose()` frees one).
+   * Rejects with a `NotFoundError` for a missing file, a `SyntaxError` for
+   * an invalid or unsupported one and a `RangeError` past the limits. The
+   * cache starts at time 0, playing and looping. */
+  export function loadAlembic(path: string): Promise<AlembicCache>;
+  /** A mesh or points node of a cache. `name` and `path` are the
+   * archive's (`/Pond/Liquid`); transform-only nodes are folded into their
+   * children's transforms. */
+  export interface AlembicNode {
+    readonly name: string;
+    readonly path: string;
+    readonly kind: "mesh" | "points";
+    /** An ordinary Mesh (a MeshStandardMaterial shared by the cache's
+     * meshes at first) or Points (a PointsMaterial as wide as the cache's
+     * first point width). Assign any material (ShaderMaterial, hooks such
+     * as `light`); geometry, position, quaternion and scale are the
+     * cache's and replaced as samples change (move the cache instead). */
+    readonly object: Mesh | Points;
+  }
+  /** A playing Alembic cache: a Group of its nodes' objects. Each sample
+   * replaces a node's BufferGeometry attributes whole (`position`,
+   * `normal`, `uv`, the index; topology may change every sample, as a
+   * fluid's does), uploaded as any geometry and counted against the
+   * game's mesh budget. A vertex's velocity (Alembic `.velocities`,
+   * Blender's `velocity` attribute: Mantaflow speed vectors or Geometry
+   * Nodes'), when the cache has them, is the geometry's `custom` attribute
+   * (3 numbers a vertex, units a second, in the node's space; custom
+   * materials read `Vertex.custom.xyz`). A sample without vertices keeps
+   * the last arrays and draws none of them (`drawRange` count 0). Only a
+   * node whose sample changed is touched. */
+  export class AlembicCache extends Group {
+    /** `"AlembicCache"`. */
+    readonly type: string;
+    /** Seconds from the first sample to the end of the last (one sample
+     * interval after it, as an exporter's frame range: six frames at 24
+     * per second last 0.25 s); 0 for a static cache. */
+    readonly duration: number;
+    /** The archive time of the first sample, in seconds (the cache's time
+     * 0; 1/24 for a Blender export from frame 1). */
+    readonly startTime: number;
+    /** The sample shown, in seconds after the first: setting it is
+     * `setTime`. */
+    time: number;
+    /** Playback rate for `playing` (default 1; negative plays backwards). */
+    speed: number;
+    /** Whether time wraps within 0..duration (default true); otherwise it
+     * stops at the ends. */
+    loop: boolean;
+    /** Whether time advances by each update's delta × `speed` (default
+     * true), before the update callback. */
+    playing: boolean;
+    /** Shows the sample at `seconds` (wrapped when `loop`, else clamped
+     * to 0..duration). A RangeError for a non-finite time; a TypeError
+     * once disposed. */
+    setTime(seconds: number): void;
+    readonly nodes: readonly AlembicNode[];
+    /** The node of this name, or of this path. */
+    getNode(name: string): AlembicNode | undefined;
+    /** Frees the cache's samples and its nodes' geometries; it stops
+     * playing (call it when done: a cache is kept until then). */
+    dispose(): void;
   }
   /** A canvas's pixels; set `needsUpdate` after drawing to show changes. */
   export class CanvasTexture extends Texture {
@@ -3436,7 +4539,7 @@ declare module "starhermit:scene" {
      * values the game gave, and a `needsUpdate` uploads new ones exactly
      * (new data must be a Float32Array). NaN is held as 0 and infinities as
      * ±3.4e38. Where the device does not filter them linearly
-     * (OpenGL ES and WebGL2 without `OES_texture_float_linear`, Vulkan and
+     * (OpenGL ES without `OES_texture_float_linear`, Vulkan and
      * Metal where the device says, WebGPU without `float32-filterable`)
      * they sample nearest whatever the filters say; WebGPU without
      * `float32-filterable` holds them as half floats (where
@@ -3652,10 +4755,40 @@ declare module "starhermit:scene" {
       set data(value: Uint8Array | Uint8ClampedArray | Uint16Array | Float32Array | null);
     };
     /** Layers marked as changed (three.js); the next `needsUpdate`
-     * uploads the whole texture whichever are marked. */
+     * uploads the whole texture whichever are marked (since API_MINOR 43,
+     * with mipmaps, the marked layers alone, their levels made again, and
+     * the set is cleared). */
     readonly layerUpdates: Set<number>;
     addLayerUpdate(layerIndex: number): void;
     clearLayerUpdates(): void;
+    /** Since API_MINOR 43 (`ARRAY_MIPMAPS_MINOR`; absent before): three.js
+     * r185's mip levels, `{ data, width, height }` each (`width` and
+     * `height` a layer's at that level, `max(1, width >> k)` and
+     * `max(1, height >> k)`; `data` of every layer, layer after layer, in
+     * the texture's format and type), level 0 first, taken as given in
+     * place of `image.data` when not empty (r185's WebGLRenderer takes them
+     * for DataTextures and compressed array textures; the engine for array
+     * textures too). Give all or the first few; set `needsUpdate` after
+     * changing them.
+     *
+     * Mipmaps: with `generateMipmaps` (or `mipmaps` given) the texture has
+     * each layer's levels, made as it uploads (2 × 2 averages: values as
+     * they are, `SRGBColorSpace` colour in linear light), and again on
+     * `needsUpdate` (only the layers `addLayerUpdate` marked, if any). A
+     * mipmap `minFilter` (`NearestMipmapNearestFilter` and the others)
+     * then samples them in the material's WGSL: `textureSample` and
+     * `textureSampleBias` at the level the derivatives of `uv` choose,
+     * `textureSampleLevel` and `textureSampleGrad` at the level given, the
+     * nearest level or a blend of the two nearest as the filter says,
+     * clamped to the last; `textureDimensions(NAME, level)` is a level's
+     * size. Levels never blend across layers, and the engine chooses them
+     * from a layer's size (no anisotropic filtering). A layer keeps its
+     * levels down to one row tall (a layer wider than tall stops there;
+     * coarser levels sample as that one). The levels count against the
+     * image budget (about a third more). `FloatType` data (32-bit floats)
+     * has no mipmaps: the texture samples level 0. Levels are made when a
+     * material that samples the texture syncs. */
+    mipmaps: { data: Uint8Array | Uint8ClampedArray | Uint16Array | Float32Array; width: number; height: number }[];
   }
   /** Since API_MINOR 35 (`VOLUME_TEXTURES_MINOR`; a TypeError before):
    * three.js r185's `Data3DTexture`, a real 3D texture of `width × height ×
@@ -3739,7 +4872,18 @@ declare module "starhermit:scene" {
    * at the pole, as three.js's cube PMREM does; before, it read the
    * prefiltered image's first row at whatever longitude its normal's last
    * bits gave, on a room environment's floor up to about 20% short of
-   * three.js's diffuse light (and varying with the mesh). */
+   * three.js's diffuse light (and varying with the mesh). Since API_MINOR
+   * 44 (`PHYSICAL_MATERIAL_MINOR`) an image (`fromEquirectangular`,
+   * `fromCubemap`, or a texture as `scene.environment` or `envMap`) is
+   * prefiltered at its own size, as r185's `PMREMGenerator._setSize` makes
+   * it, on cube faces as its cube-UV texture lays them out, every lod kept
+   * and read as r185's `textureCubeUV` (neighbouring mips blended): faces of
+   * 2^⌊log2(width / 4)⌋ texels (a cube's own face size), 16 at least, so a
+   * surface smoother than about roughness 0.21 shows a 64-texel-wide
+   * image's own texels (before, its prefilter was made as for 256-texel
+   * faces); and a latitude-longitude texture whose `flipY` is false (a
+   * DataTexture's default) shows its first row straight down. Rooms and
+   * `fromScene` keep three's 256-texel faces. */
   export class PMREMGenerator {
     constructor(renderer?: Renderer);
     fromEquirectangular(texture: Texture): { readonly texture: Texture; readonly width: number; readonly height: number; dispose(): void };
@@ -3835,6 +4979,55 @@ declare module "starhermit:scene" {
      * and Metal 8), at most 8 everywhere; 4 until the runtime knows the
      * device (the first frame or two). */
     readonly maxColorAttachments?: number;
+    /** Since API_MINOR 40 (an engine extension; absent before): how
+     * `antialias: "taa"` runs here: "full" (half-float motion vectors and
+     * the temporal resolve) or "off" (no half-float color: FXAA stands in,
+     * noted in Options). A frame past the effect budget may still fall
+     * back for itself. */
+    readonly temporalAntialiasing?: "full" | "off";
+    /** Since API_MINOR 40 (`SCREEN_EFFECTS_MINOR`, an engine extension;
+     * absent before): how the screen-space effects run here: "full"
+     * (half-float color: reflections, illumination and exposure on linear
+     * light) or "reduced" (8-bit color: `ssr` and `ssgi` off, the
+     * environment, ambient light and occlusion standing in, and automatic
+     * exposure metering and scaling the tone-mapped image; noted in
+     * Options). */
+    readonly screenEffects?: "full" | "reduced";
+    /** Engine extension since API_MINOR 40 (`COMPRESSED_TEXTURES_MINOR`;
+     * absent before): the block-compressed formats this device holds as
+     * their blocks, of `"BC1"`, `"BC3"`, `"BC4"`, `"BC5"` and `"BC7"`;
+     * textures of other formats are unpacked to RGBA8 as they load. Empty
+     * until the runtime knows the device (the first frame or two). */
+    readonly compressedFormats?: readonly string[];
+  }
+  /** `renderer.ssr`'s settings (since API_MINOR 40). */
+  interface SSRSettings {
+    opacity?: number;
+    maxDistance?: number;
+    thickness?: number;
+    distanceAttenuation?: boolean;
+    fresnel?: boolean;
+    maxRoughness?: number;
+    steps?: number;
+  }
+  /** `renderer.ssgi`'s settings (since API_MINOR 40). */
+  interface SSGISettings {
+    giIntensity?: number;
+    radius?: number;
+    thickness?: number;
+    stepCount?: number;
+    aoIntensity?: number;
+    useTemporalFiltering?: boolean;
+  }
+  /** `renderer.exposure.auto`'s settings (since API_MINOR 40). */
+  interface AutoExposureSettings {
+    minEv?: number;
+    maxEv?: number;
+    speed?: number;
+    speedDown?: number;
+    compensation?: number;
+    night?: { minEv?: number; maxEv?: number };
+    daylight?: number | { readonly daylight: number };
   }
   /** Since API_MINOR 8: `RenderTarget`'s options (three.js's; others are
    * ignored). */
@@ -3864,12 +5057,12 @@ declare module "starhermit:scene" {
      * unclamped, negative values and alpha included, without fog, as
      * three.js's ShaderMaterial; built-in materials' light unclamped),
      * unblended on every device (a blended material's color replaces what
-     * is there: WebGPU blends no 32-bit floats and WebGL2 needs
-     * `EXT_float_blend`), and `textureLoad` reads exact values. Where the
+     * is there: WebGPU blends no 32-bit floats, nor does OpenGL ES
+     * without `EXT_float_blend`), and `textureLoad` reads exact values. Where the
      * device does not filter them linearly (`renderer.capabilities
      * .floatFilterable` false) they sample nearest whatever the filters
-     * say. Where it does not render them (`floatRenderable` false: WebGL2
-     * and OpenGL ES without `EXT_color_buffer_float`, WebGPU without
+     * say. Where it does not render them (`floatRenderable` false:
+     * OpenGL ES without `EXT_color_buffer_float`, WebGPU without
      * `float32-filterable`) the target holds the half floats of as many
      * channels, still written unclamped (blended materials blend there),
      * counting their bytes. With `generateMipmaps` an RGBA `FloatType`
@@ -3914,8 +5107,8 @@ declare module "starhermit:scene" {
      * never fall back, counting 2 and 1 bytes a pixel against the image
      * budget from the start (before API_MINOR 11 `UnsignedByteType`
      * with these formats was a TypeError). Where half floats do not
-     * render (WebGL2 without `EXT_color_buffer_float` or
-     * `EXT_color_buffer_half_float`, OpenGL ES likewise) RG16F and R16F
+     * render (OpenGL ES without `EXT_color_buffer_float` or
+     * `EXT_color_buffer_half_float`) RG16F and R16F
      * hold RGBA8 with a warning, as RGBA16F targets do,
      * and count its 4 bytes a pixel. Targets made before the game's first
      * frame (the runtime may not know the device yet) count the larger of
@@ -4035,8 +5228,8 @@ declare module "starhermit:scene" {
    * target's depth, 4 bytes a pixel, against the image budget; no further
    * image). Natively Vulkan samples a target's depth in place, OpenGL ES a
    * DEPTH_COMPONENT24 texture, Direct3D 12 a typeless depth's R32 or R24
-   * view and Metal its Depth32Float texture; in browsers WebGL2 a
-   * DEPTH_COMPONENT24 texture and WebGPU a depth24plus one. */
+   * view and Metal its Depth32Float texture; in browsers WebGPU a
+   * depth24plus one. */
   export class DepthTexture extends Texture {
     constructor(
       width: number,
@@ -4104,8 +5297,10 @@ declare module "starhermit:scene" {
     readonly depth: number;
     setSize(width: number, height: number, depth?: number): void;
   }
-  /** Loads package images (PNG or WebP; an animated WebP's first frame)
-   * through the engine's decoders. Loads requested at once read their
+  /** Loads package images (PNG or WebP; an animated WebP's first frame;
+   * since API_MINOR 43, `JPEG_IMAGES_MINOR`, JPEG too: `.jpg`, `.jpeg`,
+   * `.jpe` and `.jfif`, baseline or progressive, turned by their Exif
+   * orientation as browsers show them) through the engine's decoders. Loads requested at once read their
    * files side by side, each holding its file's size of the 64 MiB the
    * engine keeps for files being read; past that they wait for the ones
    * before them rather than fail. Their decoded pixels count against the
@@ -4126,7 +5321,15 @@ declare module "starhermit:scene" {
     loadAsync(path: string): Promise<Texture>;
     /** From API_MINOR 20 three.js's `load(url, onLoad, onProgress,
      * onError)` (`onProgress` is never called). Games declaring an older
-     * minor pass `onError` third: `load(path, onLoad, onError)`. */
+     * minor pass `onError` third: `load(path, onLoad, onError)`.
+     *
+     * Since API_MINOR 40 both also load `.ktx2` files of BC blocks, as
+     * `KTX2Loader` does (an engine extension), and a PNG or WebP image
+     * for which `starhermit package` made a KTX2 file
+     * (`engine.textures.compress`, the image's path with `.ktx2` added)
+     * loads that file in its place, or the image itself where that file
+     * fails to load. Images `engine.textures.exact` names get no KTX2 file
+     * and load byte for byte. */
     load(path: string, onLoad?: (texture: Texture) => void, onProgress?: unknown, onError?: (error: Error) => void): Texture;
   }
 
@@ -4192,8 +5395,11 @@ declare module "starhermit:scene" {
    * warning naming the image and the limit; one past the decoders' bounds
    * (16,384 pixels on a side, 16,777,216 in all) or with no image budget
    * left rejects the load with a RangeError naming the image and the
-   * limit. JPEG images are not decoded (the engine decodes PNG and WebP
-   * only); one, or an image that fails to decode or is missing, leaves its
+   * limit. JPEG images (baseline and progressive) decode the same way
+   * since API_MINOR 43 (`JPEG_IMAGES_MINOR`), their Exif orientation
+   * applied as `createImageBitmap` applies it, pixels as libjpeg-turbo
+   * decodes them; below 43 they are not decoded (the engine decodes PNG
+   * and WebP only); one, or an image that fails to decode or is missing, leaves its
    * maps out. `EXT_texture_webp`, required or optional, is read as
    * three.js reads it: the texture's WebP image first, its core `source`
    * when that fails (named in the warning). `KHR_lights_punctual`
@@ -4211,16 +5417,53 @@ declare module "starhermit:scene" {
    * way the model lights as three.js r185 lights it. A game
    * declaring an older minor loads the model without its lights (named in
    * the warning), whether the file uses or requires the extension (a
-   * required one failed to load before 1.20). Not applied: JPEG and other
-   * image formats (`KHR_texture_basisu`),
-   * `KHR_texture_transform`, UV sets past 0, other material extensions
-   * (clearcoat, transmission, sheen, …), cameras, animations, skins and
-   * morph targets. The rest of the model loads, and one console
+   * required one failed to load before 1.20). Not applied: JPEG (before
+   * API_MINOR 43) and other image formats (`KHR_texture_basisu`),
+   * `KHR_texture_transform` (before 1.44), UV sets past 0, other material
+   * extensions (clearcoat, transmission, sheen, … before 1.44), cameras,
+   * animations, skins and
+   * morph targets (since host API 1.40 morph targets load as three.js r185's
+   * GLTFLoader loads them: each primitive's POSITION and NORMAL targets,
+   * sparse or not, as relative `morphAttributes`, the mesh's `weights` and
+   * `extras.targetNames` as its influences and dictionary, a node's
+   * `weights` over them, and `weights` channels as
+   * `NAME.morphTargetInfluences` tracks). The rest of the model loads, and one console
    * warning per model names all that was not applied (also in `ignored`),
    * never silently. A file and its buffers are at most 64 MiB, and the
    * document within the reader's limits (1,048,576 vertices and 3,145,728
    * indices per primitive, 4,096 primitives, 16,384 nodes, 256 images,
    * 128 MiB of decoded buffers).
+   * From host API 1.44 (`PHYSICAL_MATERIAL_MINOR`) GLTFLoader is three.js
+   * r185's for physical materials: a material with KHR_materials_clearcoat,
+   * _dispersion, _iridescence, _sheen, _transmission, _volume, _ior,
+   * _specular or _anisotropy (and not unlit) is a `MeshPhysicalMaterial`
+   * with r185's settings for each (clearcoatFactor, clearcoatRoughnessFactor
+   * and their maps, clearcoatNormalMap with `clearcoatNormalScale` (scale,
+   * scale); dispersion (default 0); iridescence, iridescenceIOR, the
+   * thickness range (default [100, 400]) and maps; sheen 1 with sheenColor
+   * (default black), sheenRoughness (default 0) and maps; transmission and
+   * its map; thickness (default 0), thicknessMap, attenuationDistance
+   * (default Infinity) and attenuationColor; ior (default 1.5, 0 read as
+   * 1000); specularIntensity (default 1), specularColor and the
+   * specularIntensityMap and specularColorMap; anisotropy,
+   * anisotropyRotation and anisotropyMap), sheenColorMap and
+   * specularColorMap in `SRGBColorSpace` and the rest linear, as r185 sets
+   * them; such extensions may be required. A map's `KHR_texture_transform`
+   * gives it a texture of its own (r185's clone; each texture, transform
+   * and colour space loaded once more) with the transform's offset,
+   * rotation and scale as `offset`, `rotation` and `repeat`, and moves its
+   * `texCoord`. UVs are glTF's as written, every texture's `flipY` false;
+   * a primitive's `TANGENT` is its geometry's `tangent` (the physical
+   * program's vertex tangent, skinned as r185 skins it); and each
+   * primitive's material is r185's assignFinalMaterial's: without
+   * `TANGENT` a clone whose `normalScale.y` (and a physical one's
+   * `clearcoatNormalScale.y`) is negated, with `COLOR_0` one with
+   * `vertexColors`, one clone for each material and need; a material with
+   * a normal map on a primitive with `TANGENT` draws through the engine's
+   * physical program, which reads the vertex tangent (the built-in
+   * material derives its frame from the UVs). Below 1.44 these
+   * extensions, transforms and tangents are noted as not applied, and
+   * refused when required, as before.
    * Remote files (the document and its external buffers) are fetched
    * first (since API_MINOR 7, see `files`).
    * Rejects with a TypeError for a bad path, `NotFoundError` for a missing
@@ -4230,6 +5473,17 @@ declare module "starhermit:scene" {
     constructor();
     /** A prefix for the paths given to `load` and `loadAsync`. */
     setPath(path: string): this;
+    /**
+     * three.js r185's: the KTX2Loader for `KHR_texture_basisu` images (since host API 1.43; undefined before). The
+     * engine reads KTX2 images itself, so the loader given changes nothing and none is needed: from host API 1.43
+     * GLTFLoader loads KTX2 images of BC1, BC3, BC4, BC5 and BC7 blocks without supercompression (a texture's
+     * `KHR_texture_basisu` image first, then its WebP and core images where one fails, as Basis Universal ETC1S and
+     * UASTC images do), held as blocks where the device samples the format and unpacked to RGBA8 where not, counting
+     * what they hold (mips included) against the image budget; it loads the copy `starhermit package` made of a
+     * `.glb` or `.gltf` with `engine.textures.compress=bc` (`<file>.glb.ktx2.glb` or `<file>.gltf.ktx2.gltf`, e.g. `car.glb.ktx2.glb`, its embedded images compressed) in its
+     * place, and the KTX2 file packaged beside an external PNG or WebP image (`<image>.ktx2`) in the image's.
+     */
+    setKTX2Loader(loader: KTX2Loader | null): this;
     loadAsync(path: string): Promise<GLTF>;
     load(path: string, onLoad?: (gltf: GLTF) => void, onProgress?: unknown, onError?: (error: Error) => void): void;
   }
@@ -4467,6 +5721,17 @@ declare module "starhermit:scene" {
      * TypeError. Since API_MINOR 33 an InterleavedBufferAttribute too. */
     setAttribute(name: AttributeName, attribute: GeometryAttribute): this;
     getAttribute(name: AttributeName): GeometryAttribute | undefined;
+    /** Morph targets (since host API 1.40, three.js r185's): `position` (and `normal`) lists of attributes, one a
+     * target, each as many vertices as the geometry; a target's `name` keys its mesh's `morphTargetDictionary`.
+     * Meshes morph by their `morphTargetInfluences` in every pass's vertex stage (shadows and depth too), before
+     * skinning, through a morph texture (up to 1,024 targets and 2,048 rows of 2,048 texels: a header, the
+     * joints, and three texels a vertex a target, six with normals); one that does not fit is morphed on the CPU
+     * (a console warning once). Bounds (`computeBoundingBox`, `computeBoundingSphere`) take the targets in at
+     * full influence, as three.js's do. Copied and cloned with the geometry. `color` targets are not drawn. */
+    morphAttributes: { position?: BufferAttribute[]; normal?: BufferAttribute[]; [name: string]: BufferAttribute[] | undefined };
+    /** Whether the targets are displacements (true, as glTF's) or positions (false, three.js's default; the base
+     * then weighs 1 − the influences' sum). Since host API 1.40. */
+    morphTargetsRelative: boolean;
     /** A float `position` attribute of the points (z 0 for Vector2s), or,
      * when there is one, its first vertices set to them (as many as it
      * holds; a warning past it), as three.js (since API_MINOR 20):
@@ -5059,6 +6324,32 @@ declare module "starhermit:scene" {
     readonly type: "RoundedBoxGeometry";
     readonly parameters: { width: number; height: number; depth: number; segments: number; radius: number };
   }
+  /** Since API_MINOR 40 (`SKY_MINOR`; absent before): three.js r185's
+   * addon `Sky` (examples/jsm/objects/Sky.js), exported here as the engine
+   * has no addons path (and from `starhermit:sky` too): Preetham's
+   * analytic daylight over a unit box seen from inside, with r185's clouds
+   * and sun disc, its program in WGSL. Its box's corners go to the far
+   * plane (three.js's `gl_Position.z = gl_Position.w`, a hair inside it),
+   * so `sky.scale.setScalar(450000)` shows it whatever the camera's far;
+   * it is not frustum-culled. Set it through `sky.material.uniforms` as in
+   * three.js: `turbidity` (2), `rayleigh` (1), `mieCoefficient` (0.005),
+   * `mieDirectionalG` (0.8), `sunPosition` (a Vector3), `up` ((0, 1, 0)),
+   * `cloudScale` (0.0002), `cloudSpeed` (0.0001), `cloudCoverage` (0.4),
+   * `cloudDensity` (0.4), `cloudElevation` (0.5), `showSunDisc` (1) and
+   * `time` (0). Its light is linear and tone mapped as three.js's
+   * (`tonemapping_fragment`). For a physically based sky with the time of
+   * day see `starhermit:sky`'s `SkyAtmosphere`. */
+  export class Sky extends Mesh {
+    constructor();
+    readonly isSky: true;
+    static readonly SkyShader: {
+      readonly name: "SkyShader";
+      /** A new set of the uniforms at their defaults. */
+      readonly uniforms: Record<string, ShaderUniform>;
+      readonly vertexShader: string;
+      readonly fragmentShader: string;
+    };
+  }
 
   // -- Materials ----------------------------------------------------------------
   export interface MaterialParameters {
@@ -5104,6 +6395,8 @@ declare module "starhermit:scene" {
     depthTest?: boolean;
     /** Since API_MINOR 35: see `Material.colorWrite`. */
     colorWrite?: boolean;
+    /** Since API_MINOR 42: see `Material.forceSinglePass`. */
+    forceSinglePass?: boolean;
     /** The depth test's comparison (three.js `depthFunc`; a `DepthModes`
      * constant such as `LessDepth`). Default: `LessEqualDepth` from
      * API_MINOR 20 (three.js's, so of two coplanar surfaces the later
@@ -5173,6 +6466,30 @@ declare module "starhermit:scene" {
      * shadow maps and `renderer.sceneDepth` take it as before. Every
      * backend masks the color target's writes in the draw's pipeline. */
     colorWrite: boolean;
+    /** Since API_MINOR 42 (`DOUBLE_SIDE_PASSES_MINOR`; absent before):
+     * three.js r185's `forceSinglePass` (default false). A transparent
+     * `DoubleSide` material draws each object twice, its back faces and
+     * then its front faces, so its far side shows through its near side as
+     * three.js draws it; true draws it once with both sides, as older
+     * games' do. Shadow maps draw it once either way. */
+    forceSinglePass: boolean;
+    /** Since API_MINOR 43 (`DECALS_MINOR`; absent before), ENGINE
+     * EXTENSION: whether `DecalProjector`s land on this material's
+     * surfaces (default true). False (units over a scorched ground) marks
+     * its opaque surfaces in the scene-depth prepass (blue 1 in
+     * `renderer.sceneDepth`, 0 elsewhere), which decals read to leave them
+     * alone. */
+    receiveDecals: boolean;
+    /** Since API_MINOR 43 (`DISTORTION_MINOR`; absent before), ENGINE
+     * EXTENSION: the material distorts what lies behind it (default
+     * false). For a transparent material sampling `renderer.sceneColor`:
+     * when every object of a frame sampling it has `distortion`, the
+     * colour is copied before the first of them instead of before the
+     * first transparent object, so it holds the transparent objects drawn
+     * before them too (heat shimmer bending fire and smoke). Objects that
+     * sample it without `distortion` keep the older copy for all. See
+     * `DistortionMaterial`. */
+    distortion: boolean;
     /** Since engine 1.20.2 (any minor): see `MaterialParameters.depthFunc`.
      * Reads the default the game's minor takes until one is set. */
     depthFunc: DepthModes;
@@ -5224,10 +6541,15 @@ declare module "starhermit:scene" {
 
   // -- Custom materials (since API_MINOR 6) -------------------------------------
   // A game's WGSL (the WebGPU shading language; the subset starhermit-shader
-  // compiles: no switch, while, pointers or atomics) joined with the
-  // engine's mesh stages and compiled for every backend (SPIR-V, HLSL, GLSL
-  // ES 3.00, WGSL), so the same code draws on Vulkan, Direct3D 12, OpenGL
-  // ES, WebGPU and WebGL2. It is sandboxed: a part declares structs,
+  // compiles: no while, pointers or atomics; `switch` since engine 1.43, at
+  // every API_MINOR) joined with the engine's mesh stages and compiled for
+  // every backend (SPIR-V, HLSL, GLSL ES 3.00, WGSL), so the same code draws
+  // on Vulkan, Direct3D 12, Metal, OpenGL ES and WebGPU. A material's parts
+  // (its hooks, or a ShaderMaterial's vertexShader, fragmentShader and
+  // fogShader) are one module, each stage compiled from all of them: a
+  // struct, const or helper function declared in one part is visible in
+  // the others and is declared once (a second declaration of the name is
+  // an error, "declared twice in one scope"). It is sandboxed: a part declares structs,
   // constants and functions only (no variables, bindings, entry points or
   // attributes, no names the engine declares, nothing starting with `_`),
   // reads no engine globals but `uniforms` and its textures, and loops only
@@ -5248,25 +6570,37 @@ declare module "starhermit:scene" {
   //     color: vec4f, custom: vec4f, instance: vec4f, clip: vec4f,
   //     v0: vec4f, v1: vec4f, v2: vec4f, v3: vec4f,
   //     instance_color: vec4f, vertex_color: vec4f,
-  //     instance1: vec4f, instance2: vec4f, instance3: vec4f }
-  //     position and normal in object space; color the instance color times
+  //     instance1: vec4f, instance2: vec4f, instance3: vec4f,
+  //     skin_index: vec4u, skin_weight: vec4f }
+  //     position and normal in object space (skinned already on a
+  //     skinned mesh); color the instance color times
   //     the vertex color (when the material has vertexColors; white
   //     otherwise), each also given alone (instance_color, which includes
   //     the InstancedMesh's color, 0..65504, and vertex_color: a game may
   //     carry data in them and set color itself); custom the
   //     geometry's `custom` attribute (zeros without one); instance the
   //     InstancedMesh's `instanceCustom` slot 0 and instance1..3 its slots
-  //     1 to 3 (zeros otherwise); clip zero, or
+  //     1 to 3 (zeros otherwise; an animated InstancedSkinnedMesh's
+  //     slot 3 is its animation state, see InstancedSkinnedMesh);
+  //     skin_index and skin_weight the geometry's `skinIndex` (whole
+  //     numbers 0..65535) and `skinWeight` (0..1, in 1/65535 steps) on a
+  //     SkinnedMesh or an InstancedSkinnedMesh (since API_MINOR 43,
+  //     SKIN_ATTRIBUTES_MINOR; zeros on other meshes); clip zero, or
   //     set by the hook (w not 0) to place the vertex in clip space itself
   //     (depth -1..1 as view_projection() gives; the shadow pass ignores
   //     it); v0..v3 four varyings for the fragment stage.
   //   struct Surface { base_color: vec4f, emissive: vec3f, metalness: f32,
   //     roughness: f32, normal: vec3f, occlusion: f32, world: vec3f,
   //     uv: vec2f, color: vec4f, v0..v3: vec4f, front: bool }
+  //     (A MeshPhysicalMaterial's since API_MINOR 44 also has iridescence,
+  //     iridescence_thickness (nm), transmission and thickness: f32, its
+  //     settings times its maps, which the hook may change.)
   //     base_color linear after the map, color, opacity and vertex colors;
   //     emissive linear after its intensity and map; normal in world space
   //     after the normal map; occlusion 0..1 (1 none). The rest describe the
-  //     fragment (read-only).
+  //     fragment (read-only), but v0..v3, which arrive as the vertex
+  //     hook's varyings and go on, as the hook leaves them, to the light
+  //     hook's Light.
   //   struct Fragment { world: vec3f, normal: vec3f, uv: vec2f, color: vec4f,
   //     v0..v3: vec4f, front: bool, coord: vec4f }
   //     coord the fragment's window position (WGSL @builtin(position);
@@ -5283,7 +6617,22 @@ declare module "starhermit:scene" {
   //     surface's. The rest read-only: sun_direction toward the primary
   //     light, its color, the ambient color, and the fragment (normal the
   //     shading normal facing the viewer, the surface's base color and
-  //     varyings).
+  //     varyings). The primary light is the main light (see
+  //     main_light_direction): its direction, color and shadow come apart
+  //     here, and `shadow` already holds the light's `shadow.intensity`
+  //     (three.js r185's LightShadow.intensity: mix(1, shadow, intensity)),
+  //     so a partly shadowed main light needs no second, unshadowed fill
+  //     light. Since API_MINOR 43 (`HOOK_ACCESS_MINOR`) Light also has
+  //     `sun_diffuse: vec3f, sun_specular: vec3f` (before `ambient`): sun's
+  //     diffuse part (the standard BRDF's (1 - metalness) × base, Lambert's
+  //     and Phong's base, all of a toon surface's, times n·l and the light)
+  //     and the rest, its specular highlight; read-only (sun is what is
+  //     summed: `o.sun = l.sun_diffuse` drops the highlight, as URP's
+  //     _SPECULARHIGHLIGHTS_OFF). The environment's reflection stays in
+  //     `indirect`. v0..v3 are the surface hook's: what it writes to its
+  //     Surface's v0..v3 (from the vertex varyings, or set there) the
+  //     light hook reads (every minor), e.g. a mask kept apart from
+  //     base_color's alpha.
   //   struct Fog { color: vec3f, amount: f32, world: vec3f, depth: f32,
   //     coord: vec4f, camera: vec3f }               (since API_MINOR 9)
   //     color linear and amount 0 (none) to 1 (full): the scene's fog
@@ -5314,6 +6663,138 @@ declare module "starhermit:scene" {
   //                                      in view keeps its shadow solid
   //                                      (since API_MINOR 26; games below
   //                                      it may declare these names)
+  //   fn linear_fog() -> bool            whether this pass fogs in linear
+  //                                      light (drawn through post
+  //                                      buffers, tone mapped after) rather
+  //                                      than in display color (an engine
+  //                                      extension, since API_MINOR 40)
+  //   fn tone_mapped(c: vec3f) -> vec3f  a linear color tone mapped as
+  //                                      this fragment's is where the pass
+  //                                      draws straight (the renderer's
+  //                                      tone mapping and exposure; c for
+  //                                      a material not tone mapped; since
+  //                                      API_MINOR 40)
+  //   fn fog_amount(world: vec3f) -> f32 the scene's fog at a world point as
+  //                                      the pass fogs this material: 0
+  //                                      (none, and for `fog` false) to 1;
+  //                                      Fog's smoothstep from near to far
+  //                                      or FogExp2's 1 - exp(-(density ×
+  //                                      depth)²) of the view depth (an
+  //                                      engine function every minor has;
+  //                                      a fog hook's changes are not in it)
+  // The lights, since API_MINOR 43 (`HOOK_ACCESS_MINOR`; older games'
+  // programs neither have nor reserve these names):
+  //   struct PunctualLight { direction: vec3f, radiance: vec3f }
+  //   fn main_light_direction() -> vec3f toward the main light (Light's
+  //                                      sun_direction): the scene's first
+  //                                      directional light, shadow-casting
+  //                                      or not
+  //   fn main_light_color() -> vec3f     its color × intensity (three.js's
+  //                                      directLight.color; Light's
+  //                                      sun_color); black without one
+  //   fn main_light_shadow(world: vec3f) -> f32
+  //                                      its shadow at any world point (1
+  //                                      lit, 0 shadowed): the cascade
+  //                                      holding the point, filtered as the
+  //                                      receivers' lookups are (the shadow
+  //                                      map type, radius, bias and
+  //                                      intensity; PCF's noise and the
+  //                                      receiver plane's slope this
+  //                                      fragment's), with no normal offset
+  //                                      (normalBias); 1 where it casts no
+  //                                      shadow, outside its maps or
+  //                                      without a main light, whatever the
+  //                                      material's receiveShadow. At the
+  //                                      fragment's own world point it is
+  //                                      Light's `shadow` when normalBias
+  //                                      is 0.
+  //   fn punctual_light_count() -> u32   the other lights' slots the pass
+  //                                      takes (Light's `direct`:
+  //                                      directional, point, spot and
+  //                                      hemisphere lights after the main
+  //                                      light, a slot each, and a
+  //                                      LightProbe, two slots, in the
+  //                                      scene's order: the 16 light slots'
+  //                                      first, then the up to 64 clustered
+  //                                      point and spot lights; at most 80,
+  //                                      the engine's limit, past which
+  //                                      lights are left out). The main
+  //                                      light (the first directional
+  //                                      light: the sun) is never among
+  //                                      them, so slot 0 is the next light
+  //                                      the scene holds. It is the same
+  //                                      for every pixel of a draw (read
+  //                                      from the pass's uniforms). A loop
+  //                                      runs to a constant, so loop to 80u
+  //                                      and leave at the count:
+  //                                        let count = punctual_light_count();
+  //                                        for (var i = 0u; i < 80u; i++) {
+  //                                          if (i >= count) { break; }
+  //                                          let p = punctual_light(i, l.world);
+  //                                          ...
+  //                                        }
+  //                                      (a break on a uniform value keeps
+  //                                      control flow uniform, so
+  //                                      textureSample and derivatives
+  //                                      after the loop still work; runtimes
+  //                                      before 1.44.0 refused them, at
+  //                                      every minor. A break on a
+  //                                      per-pixel value, such as a light's
+  //                                      radiance, does not: skip a light
+  //                                      by multiplying by 0 instead). Lights
+  //                                      past the count give zero
+  //                                      radiance. Unlike the engine's own
+  //                                      lighting, which culls the
+  //                                      clustered lights per screen tile,
+  //                                      such a loop visits every light
+  //   fn punctual_light(i: u32, world: vec3f) -> PunctualLight
+  //                                      light i at a world point: the
+  //                                      direction toward it and its
+  //                                      radiance (color × intensity times
+  //                                      the distance decay, the distance
+  //                                      window and a spot's cone, as the
+  //                                      engine lights a surface; no
+  //                                      shadow). A hemisphere light's slot
+  //                                      and i past the count give zero
+  //                                      radiance, and from API_MINOR 44
+  //                                      (`HOOK_ACCESS_FIXES_MINOR`) a
+  //                                      LightProbe's two slots too (older
+  //                                      games' read its coefficients as a
+  //                                      point light's, light where none
+  //                                      is lit). A point light at
+  //                                      intensity 0 keeps its slot and
+  //                                      gives zero. Lambert diffuse in
+  //                                      three.js's units is base / PI ×
+  //                                      max(dot(n, direction), 0) ×
+  //                                      radiance; add main_light_*'s for
+  //                                      the main light.
+  //   fn punctual_light_shadow(i: u32, world: vec3f) -> f32
+  //                                      light i's shadow at a point, as
+  //                                      main_light_shadow's (point, spot
+  //                                      and directional lights' maps, a
+  //                                      clustered spot's in the shadow
+  //                                      atlas); 1 for a light without one
+  //                                      (and from API_MINOR 44 for a
+  //                                      LightProbe's slots)
+  // The shadow functions read the shadow maps, which only the lit pass has:
+  // they are for the light and fog hooks and a ShaderMaterial's fragment
+  // (and functions those call); the vertex and surface hooks, which the
+  // shadow pass also runs, may not call them (a SyntaxError naming the
+  // part). The rest work in every hook.
+  // All of a material's parts (vertex, surface, light, fog; vertexShader,
+  // fragmentShader, fogShader) compile as one WGSL module with the
+  // engine's: a struct, constant or function one part declares is seen by
+  // the others and is declared once, and no part may declare a name the
+  // engine declares (the structs, functions and constants above and the
+  // engine's own, e.g. `decode`, `tone`, `PI`, which code may call) or a
+  // name the shading languages' generated code takes: one starting with
+  // `_` or `p_`, or `a`, `l`, `o` or `v` and a digit (module-scope names;
+  // locals and members may). WGSL's keywords and reserved words (the
+  // WGSL specification's list, e.g. `patch`, `target`, `set`, `filter`,
+  // `type`) name nothing, as browsers' WebGPU refuses them. Uniform,
+  // texture and define names also may not be `sampler`, `texture_2d`,
+  // `ptr`, `atomic` or a WGSL type name, contain `__`, end in `_` or pass
+  // 64 bytes. WGSL's `radians(x)` and `degrees(x)` work at every minor.
   // Textures are RGBA8 as uploaded (a Uint8Array DataTexture's bytes as
   // they are, read as 0..1; since API_MINOR 25 a float or half-float
   // DataTexture's values as they are, below 0 and above 1, in half-float
@@ -5325,6 +6806,29 @@ declare module "starhermit:scene" {
   // level 0 only (the literal 0); x and y are clamped into the texture on
   // every runtime (WebGPU included), so outside it they read the texel at
   // its edge.
+  // Color spaces: since API_MINOR 43 (`HOOK_ACCESS_MINOR`), as three.js
+  // r185's WebGLRenderer uploads an SRGBColorSpace texture as
+  // SRGB8_ALPHA8, a texture uniform whose `colorSpace` is SRGBColorSpace is
+  // sampled sRGB-decoded (linear, decoded texel by texel before
+  // filtering, as built-in maps are; the GPU holds an sRGB copy of its
+  // texels while a material samples it so), and others as stored; read
+  // when the material syncs, so a changed `colorSpace` applies from the
+  // next frame. A block-compressed texture (KTX2 or `starhermit package`'s
+  // BC images) decodes too, so a hook reads the same linear values in a
+  // packaged build as from the PNG in development (within the blocks'
+  // loss): its blocks in the sRGB block format where the device samples it
+  // (BC1, BC3, BC7), else unpacked into an sRGB copy (BC4, BC5, or no such
+  // format), both decoded before filtering. The sRGB copy takes image
+  // memory beside the texture's own; where the renderer has no room left
+  // for it (a game near its image budget), the texture's reads
+  // (textureSample*, textureLoad) are decoded after filtering instead, as
+  // built-in maps are then (the same within filtering's blend of encoded
+  // texels); runtimes before 1.44.0 read it as stored there, at every
+  // minor. Float and render-target
+  // textures and depth and 3D textures have no sRGB copy and read as
+  // stored. Before 43 every
+  // texture reads as stored (an image's sRGB bytes undecoded: decode with
+  // srgb_to_linear).
   // Texture coordinates are WGSL's: (0, 0) is the image's first row as
   // uploaded (an image file's top, a DataTexture's first row of data) and v
   // grows down it. The geometry's uv arrives turned to that convention
@@ -5391,7 +6895,9 @@ declare module "starhermit:scene" {
    * maps that is the 16 a WebGL2 fragment stage is sure to sample; since
    * API_MINOR 34 a `ShaderMaterial`, which replaces the material's maps,
    * up to 12, the sixth on taking the maps' places, all readable in both
-   * stages; hooks keep 5; API_MINOR 35 keeps 12: with the four shadow
+   * stages; hooks keep 5 at every minor, as a hooked material's fragment
+   * stage already samples its seven map slots, five textures and four
+   * shadow maps, the 16 WebGL2 promises; API_MINOR 35 keeps 12: with the four shadow
    * maps a fragment stage then samples the 16 WebGPU, WebGL2, OpenGL ES
    * and Vulkan are sure of, so pack more as the layers of an array
    * texture or the channels of one). A `DataArrayTexture` (since API_MINOR 25) or a
@@ -5401,9 +6907,20 @@ declare module "starhermit:scene" {
    * member takes whole vec4 slots, 16,384 bytes in all since API_MINOR 10
    * (4,096 before; 1,024 vec4s, 256 matrices: WebGL2's least uniform block):
    * a larger block is refused (`compile()` throws a SyntaxError, the
-   * material draws without its program). */
+   * material draws without its program).
+   *
+   * Since API_MINOR 44 (`UNIFORM_ARRAYS_MINOR`), three.js's other array
+   * values too: a Float32Array of any length and an array of numbers are
+   * packed four floats to a vec4 (`array<vec4f, ⌈n / 4⌉>`, element `i`
+   * read as `u[i / 4][i % 4]`), and an array of Vector2, Vector3, Color
+   * (linear) or Vector4 takes a vec4 each (`array<vec4f, n>`, their
+   * components first). Every array is read afresh each frame, so changing
+   * its elements in place (`value[3] = 1`, `value.set(floats)`,
+   * `value[1].copy(v)`) shows the next frame, as in three.js. Older games
+   * refuse those values (a TypeError naming the uniform). */
   export interface ShaderUniform {
-    value: number | Vector2 | Vector3 | Vector4 | Color | Quaternion | Matrix4 | Texture | null | readonly Vector4[] | readonly Matrix4[] | Float32Array;
+    value: number | Vector2 | Vector3 | Vector4 | Color | Quaternion | Matrix4 | Texture | null | readonly Vector4[] | readonly Matrix4[] | Float32Array
+      | readonly number[] | readonly (Vector2 | Vector3 | Color | Vector4)[];
   }
   /** The game's WGSL hooked into a built-in material (three.js
    * `onBeforeCompile`, cleanly). */
@@ -5425,9 +6942,13 @@ declare module "starhermit:scene" {
   export interface ShaderMaterialParameters extends MaterialParameters {
     uniforms?: Record<string, ShaderUniform>;
     defines?: Record<string, number | boolean>;
-    /** WGSL declaring `fn vertex(v: Vertex) -> Vertex` (optional). */
+    /** WGSL declaring `fn vertex(v: Vertex) -> Vertex` (optional). It
+     * joins `fragmentShader` (and `fogShader`) in one module, as hooks'
+     * parts do: helpers, structs and consts declared in either are visible
+     * in both and declared once, not in each. */
     vertexShader?: string;
-    /** WGSL declaring `fn fragment(f: Fragment) -> vec4f`. Since
+    /** WGSL declaring `fn fragment(f: Fragment) -> vec4f`, in one module
+     * with `vertexShader` (see there). Since
      * API_MINOR 38 (`MRT_MINOR`) it may instead return a struct the same
      * code declares, each member a `vec4f` with one `@location(n)` (`n` 0
      * to 7, each once, 0 among them; the only attributes a game's WGSL
@@ -5468,7 +6989,20 @@ declare module "starhermit:scene" {
      * as before. Post effects tone map the composite either way. */
     straightToneMapping: boolean;
   }
+  /** `normalMapType`'s values (three.js's; since API_MINOR 44). */
+  export const TangentSpaceNormalMap: 0;
+  export const ObjectSpaceNormalMap: 1;
   export interface MeshStandardMaterialParameters extends MaterialParameters {
+    /** Since API_MINOR 44; see the class. */
+    lightMap?: Texture | null;
+    lightMapIntensity?: number;
+    alphaMap?: Texture | null;
+    alphaHash?: boolean;
+    displacementMap?: Texture | null;
+    displacementScale?: number;
+    displacementBias?: number;
+    normalMapType?: number;
+    envMapRotation?: Euler;
     /** 0–1 (default 0). */
     metalness?: number;
     /** 0–1 (default 1). */
@@ -5501,6 +7035,10 @@ declare module "starhermit:scene" {
   /** Metallic/roughness (glTF-style) shading with three.js's maps. */
   export class MeshStandardMaterial extends Material {
     constructor(parameters?: MeshStandardMaterialParameters);
+    /** Since API_MINOR 44 (`PHYSICAL_MATERIAL_MINOR`) a metalness between 0
+     * and 1 draws through the physical program, for three.js r185's
+     * image-based light (its dielectric and metallic scattering apart; the
+     * built-in split sum is r185's at 0 and 1). */
     metalness: number;
     roughness: number;
     emissive: Color;
@@ -5508,7 +7046,16 @@ declare module "starhermit:scene" {
     emissiveIntensity: number;
     /** Tangent-space normals (OpenGL convention: green up), x and y scaled
      * by `normalScale` (default (1, 1); flip y for maps with green down);
-     * the tangent frame comes from screen-space derivatives. */
+     * the tangent frame comes from screen-space derivatives. z is read
+     * from blue, except that since API_MINOR 43 a map of BC5 blocks (red
+     * and green alone: a `RED_GREEN_RGTC2_Format` `CompressedTexture`, or
+     * the KTX2 file `starhermit package` makes of an
+     * `engine.textures.normals` image) has its z rebuilt from the unscaled
+     * x and y, `sqrt(max(0, 1 − x² − y²))`, for every material that takes
+     * a normal map and their hooks. three.js r185's `WebGLRenderer` reads
+     * such a map's z from blue (0, so its normals point into the surface);
+     * its node materials rebuild it only for a map marked
+     * `NormalRGPacking`. Before 43 BC5 maps draw as they did, z −1. */
     normalMap: Texture | null;
     normalScale: Vector2;
     /** Roughness times the map's green, metalness times its blue (glTF;
@@ -5553,23 +7100,289 @@ declare module "starhermit:scene" {
     wireframeLinewidth: number;
     wireframeLinecap: string;
     wireframeLinejoin: string;
+    /** Since API_MINOR 44: a light map (default null) whose rgb times
+     * `lightMapIntensity` (default 1) is indirect diffuse irradiance, as
+     * three.js r185's lights_fragment_maps adds it (its UVs, `uv`, and its
+     * own transform; sRGB-decoded when its colorSpace says so). Kept and
+     * not drawn before 44. */
+    lightMap: Texture | null;
+    lightMapIntensity: number;
+    /** Since API_MINOR 44: opacity times the map's green (alphamap_fragment;
+     * default null), before `alphaTest` and in the shadow maps. */
+    alphaMap: Texture | null;
+    /** Since API_MINOR 44: three.js r185's alpha hashing (default false):
+     * a fragment whose alpha is below a stable hash of its object-space
+     * position (`getAlphaHashThreshold`) is discarded, in the shadow maps
+     * too. */
+    alphaHash: boolean;
+    /** Since API_MINOR 44: moves each vertex along its normal by the map's
+     * red (level 0) times `displacementScale` (default 1) plus
+     * `displacementBias` (default 0), before a vertex hook, in every pass
+     * (displacementmap_vertex). The normals are not changed (as in
+     * three.js). */
+    displacementMap: Texture | null;
+    displacementScale: number;
+    displacementBias: number;
+    /** Since API_MINOR 44: `TangentSpaceNormalMap` (0, the default) or
+     * `ObjectSpaceNormalMap` (1): the map's normals in the object's space,
+     * turned by its normal matrix (normal_fragment_maps). */
+    normalMapType: number;
+    /** Since API_MINOR 44: turns the material's own `envMap` (not
+     * `scene.environment`, which `scene.environmentRotation` turns) as
+     * three.js r185 does (the Euler's rotation, transposed; a CubeTexture
+     * mirrored in x). One for each material. */
+    envMapRotation: Euler;
   }
   export interface MeshPhysicalMaterialParameters extends MeshStandardMaterialParameters {
     /** 0–1 (default 0). */
     clearcoat?: number;
     /** 0–1 (default 0). */
     clearcoatRoughness?: number;
+    /** Since API_MINOR 44 (`PHYSICAL_MATERIAL_MINOR`); see the class. */
+    ior?: number;
+    iridescence?: number;
+    iridescenceIOR?: number;
+    iridescenceThicknessRange?: [number, number];
+    iridescenceMap?: Texture | null;
+    iridescenceThicknessMap?: Texture | null;
+    transmission?: number;
+    transmissionMap?: Texture | null;
+    thickness?: number;
+    thicknessMap?: Texture | null;
+    attenuationColor?: ColorInput;
+    attenuationDistance?: number;
+    dispersion?: number;
+    translucency?: number;
+    translucencyColor?: ColorInput;
+    translucencyDistortion?: number;
+    translucencyPower?: number;
+    translucencyScale?: number;
+    translucencyAmbient?: number;
+    translucencyWrap?: number;
+    translucencyShadow?: number;
+    sheen?: number;
+    sheenColor?: ColorInput;
+    sheenColorMap?: Texture | null;
+    sheenRoughness?: number;
+    sheenRoughnessMap?: Texture | null;
+    specularIntensity?: number;
+    specularIntensityMap?: Texture | null;
+    specularColor?: ColorInput;
+    specularColorMap?: Texture | null;
+    anisotropy?: number;
+    anisotropyRotation?: number;
+    anisotropyMap?: Texture | null;
+    clearcoatMap?: Texture | null;
+    clearcoatRoughnessMap?: Texture | null;
+    clearcoatNormalMap?: Texture | null;
+    clearcoatNormalScale?: Vector2;
+    reflectivity?: number;
   }
-  /** A standard material with a clear coat over it (three.js
-   * `MeshPhysicalMaterial`: `clearcoat`, `clearcoatRoughness`; its other
-   * physical properties are kept but not drawn: sheen, iridescence,
-   * transmission, thickness, specular and anisotropy are not supported,
-   * so `sheen`, `iridescence` and their colors, maps and ranges change
-   * nothing). */
+  /** A standard material with three.js r185's physical extensions
+   * (`MeshPhysicalMaterial`): a clear coat (`clearcoat`,
+   * `clearcoatRoughness`) at every minor; since API_MINOR 44
+   * (`PHYSICAL_MATERIAL_MINOR`) also `ior` (and `reflectivity`, its alias),
+   * iridescence, transmission, sheen, specular intensity and colour,
+   * anisotropy and the clearcoat's maps as r185 draws them, and the
+   * engine's thin-tissue translucency.
+   *
+   * Before API_MINOR 44 none of the settings past the clear coat are drawn
+   * (and they have no defaults: undefined until set).
+   *
+   * From API_MINOR 44 a physical material whose `ior` is not 1.5 or whose
+   * `iridescence`, `transmission` or `translucency` is above 0, that has
+   * `hooks`, or that has any of the sheen, specular, anisotropy or
+   * clearcoat map settings (or MeshStandardMaterial's light map, alpha
+   * map, alphaHash, displacement map, normalMapType or envMapRotation) set
+   * off its default (a colour, vector or rotation once read), draws
+   * through a program of the engine's (as hooks do): its settings in a
+   * uniform named `shPhysical`, its maps (`shPhysicalMaps…`, each distinct
+   * texture once, and `shPhysicalAtlas`) and, with transmission,
+   * `renderer.sceneColor` among its textures; those uniform names are the
+   * engine's there. The program binds five textures of its own, the
+   * hooks' first: the maps' distinct textures take what the hooks' and
+   * the scene's colour leave, and when they are more, the last of those
+   * slots is one atlas holding the rest (a render target the engine draws
+   * them into, a cell each of the largest map's side (a power of two, at
+   * most 1024; the atlas at most 4096), 8 bits a channel (sRGB-encoded,
+   * read decoded; the alpha the sheen roughness and specular intensity
+   * maps read in a cell of its own), with a mip chain, read as each map's transform, wrapping
+   * and filters say: filtering does not cross a repeating map's edge, and
+   * anisotropic filtering is not applied), drawn before the frame's sync
+   * the first time a material needs it and again when one of its maps
+   * changes (a material's first frame shows its atlas maps the next
+   * frame). So a fully mapped physical material fits with up to three
+   * hook textures with transmission and four without (with five hook
+   * textures, or four and transmission, its maps are not drawn). A
+   * hooked physical material's surface hook may read and change the
+   * `Surface`'s `iridescence`, `iridescence_thickness` (nm),
+   * `transmission`, `thickness`, `sheen_color` (sheenColor × sheen),
+   * `sheen_roughness`, `specular_color`, `specular_intensity`,
+   * `anisotropy` (the vector: strength × direction in the tangent frame),
+   * `clearcoat`, `clearcoat_roughness` and `clearcoat_normal` (world, as
+   * the surface's front faces), set from the settings and maps before it
+   * runs, e.g. a thickness from a varying.
+   *
+   * Tangents (three.js USE_TANGENT): from API_MINOR 44 a geometry's
+   * `tangent` attribute (four floats, w the handedness; what
+   * `computeTangents` makes) is uploaded as its custom attribute when it
+   * has none (so hooks read it as `Vertex.custom`), and such a material
+   * without hooks takes it as the vertex tangent for its normal map,
+   * anisotropy and clearcoat normal map where it has a normal map or
+   * anisotropy, as three.js does (not skinned or morphed: three.js skins
+   * it); else the frame comes from screen-space derivatives
+   * (getTangentFrame). A material without hooks drawn on a geometry with a
+   * custom attribute of its own reads that as the tangent. */
   export class MeshPhysicalMaterial extends MeshStandardMaterial {
     constructor(parameters?: MeshPhysicalMaterialParameters);
     clearcoat: number;
     clearcoatRoughness: number;
+    /** Since API_MINOR 44: the index of refraction (default 1.5), 1 to
+     * 2.333: the dielectric specular color is ((ior − 1) / (ior + 1))²
+     * (0.04 at 1.5), and transmission refracts by it. */
+    ior: number;
+    /** Since API_MINOR 44: a thin film's strength, 0–1 (default 0), as
+     * three.js r185's iridescence_fragment draws it (`evalIridescence`:
+     * Belcour and Barla's thin-film interference, the film over a
+     * dielectric base of the ior's specular color and a metallic base of
+     * the base color, mixed by metalness), its Fresnel taking the place of
+     * Schlick's in direct and image-based specular light. Times
+     * `iridescenceMap`'s red. */
+    iridescence: number;
+    /** Since API_MINOR 44: the film's index of refraction (default 1.3). */
+    iridescenceIOR: number;
+    /** Since API_MINOR 44: the film's thickness in nanometres (default
+     * [100, 400]): the second without `iridescenceThicknessMap`, else from
+     * the first to the second by its green. A thickness of 0 shows no
+     * film. */
+    iridescenceThicknessRange: [number, number];
+    iridescenceMap: Texture | null;
+    iridescenceThicknessMap: Texture | null;
+    /** Since API_MINOR 44: how much light passes through, 0–1 (default 0;
+     * times `transmissionMap`'s red), as three.js r185's
+     * transmission_fragment draws it: the diffuse light mixed toward the
+     * scene behind, read where the refracted view ray leaves the volume
+     * (`thickness` along it), times the base color, Beer–Lambert
+     * attenuation and one minus the environment BRDF. Above 0 the
+     * material draws after the opaque objects and before the transparent
+     * ones (three.js's transmissive list, whatever `transparent` says),
+     * reading the scene through `renderer.sceneColor` (see there: render
+     * targets read the last frame's, and a device without half-float
+     * color reads black). As three.js r185's transmission pass, the frame
+     * first draws the background and the opaque objects into a
+     * transmission target of its own (four samples whatever the frame's,
+     * half floats, with a mip chain), then double-sided transmissive
+     * objects' back faces (transparent ones blended); transmissive
+     * materials read it as r185 reads its target (`textureBicubic` at
+     * log2(width) × roughness × clamp(2 ior − 2, 0, 1)), so rough
+     * transmission blurs, while `renderer.sceneColor`'s other readers keep
+     * its copy and sampler. The thickness is scaled by the object's scale
+     * (its world matrix's columns; an InstancedMesh's object's, not its
+     * instances'), and the output's alpha is multiplied by r185's
+     * transmitted alpha (1 − (1 − alpha behind) × the mean transmittance,
+     * mixed by transmission). Difference from three.js r185: over a clear
+     * alpha below 1 without a background, what is behind where nothing
+     * opaque is drawn is the clear colour (r185's target: white at alpha
+     * 0.5). */
+    transmission: number;
+    transmissionMap: Texture | null;
+    /** Since API_MINOR 44: the volume's thickness (default 0; times
+     * `thicknessMap`'s green), for transmission's refraction and
+     * attenuation and for translucency's attenuation. */
+    thickness: number;
+    thicknessMap: Texture | null;
+    /** Since API_MINOR 44: the color white light becomes after
+     * `attenuationDistance` through the volume (default white;
+     * Beer–Lambert: the transmittance over a distance d is
+     * attenuationColor^(d / attenuationDistance)). One for each
+     * material, as three.js's. */
+    attenuationColor: Color;
+    /** Since API_MINOR 44: default Infinity (no attenuation). */
+    attenuationDistance: number;
+    /** Since API_MINOR 44: default 0. With transmission, red, green and
+     * blue refract by iors spread (ior − 1) × 0.025 × dispersion apart
+     * (three.js r185's USE_DISPERSION: three samples of what is behind),
+     * fringing what is seen through thick glass. */
+    dispersion: number;
+    /** ENGINE EXTENSION (three.js r185 has none in core; its
+     * SubsurfaceScatteringShader addon's lobe as material settings), since
+     * API_MINOR 44: thin-tissue translucency for leaves, petals, fins and
+     * ears, default 0 (none). Each light (the main light, the light slots
+     * and the clustered lights) also lights the surface from behind:
+     * `translucency × base color × translucencyColor × T ×
+     * (behind × (translucencyAmbient + lobe) + wrap) × light`, where T is
+     * the Beer–Lambert transmittance over `thickness` (`attenuationColor`,
+     * `attenuationDistance`), behind is how much the light reaches the
+     * other side (max(0, −n·l)), the lobe is the addon's
+     * pow(saturate(v · −normalize(l + n × translucencyDistortion)),
+     * translucencyPower) × translucencyScale (strongest looking toward the
+     * light through the surface), and wrap is diffuse wrapped past the
+     * terminator, max(0, saturate((n·l + w) / (1 + w)) − saturate(n·l)) for
+     * w = `translucencyWrap`. The light's shadow dims it by
+     * `translucencyShadow` (1: fully, as other light; 0.75 keeps a quarter
+     * of it through the surface's own shadow). It is direct light (the
+     * light hook's `direct`). */
+    translucency: number;
+    /** Since API_MINOR 44 (engine extension): default white. One for each
+     * material. */
+    translucencyColor: Color;
+    /** Since API_MINOR 44 (engine extension): default 0.1. */
+    translucencyDistortion: number;
+    /** Since API_MINOR 44 (engine extension): default 2. */
+    translucencyPower: number;
+    /** Since API_MINOR 44 (engine extension): default 1. */
+    translucencyScale: number;
+    /** Since API_MINOR 44 (engine extension): default 0. */
+    translucencyAmbient: number;
+    /** Since API_MINOR 44 (engine extension): default 0. */
+    translucencyWrap: number;
+    /** Since API_MINOR 44 (engine extension): default 1. */
+    translucencyShadow: number;
+    /** Since API_MINOR 44: the sheen layer's strength (default 0: none),
+     * three.js r185's (Estevez and Kulla's Charlie sheen: D_Charlie and
+     * V_Neubelt for each light, IBLSheenBRDF of the environment's
+     * irradiance, and the layer's albedo taken from the light beneath),
+     * its colour `sheenColor × sheen` (times `sheenColorMap`'s rgb). */
+    sheen: number;
+    /** Since API_MINOR 44: default black. One for each material. */
+    sheenColor: Color;
+    sheenColorMap: Texture | null;
+    /** Since API_MINOR 44: default 1 (clamped to 1e-4 to 1, then times
+     * `sheenRoughnessMap`'s alpha). */
+    sheenRoughness: number;
+    sheenRoughnessMap: Texture | null;
+    /** Since API_MINOR 44: the dielectric specular's strength (default 1;
+     * times `specularIntensityMap`'s alpha): the specular colour
+     * min(((ior − 1) / (ior + 1))² × specularColor, 1) × specularIntensity
+     * and its grazing reflectance (F90) mix(specularIntensity, 1,
+     * metalness), as r185's lights_physical_fragment makes them. */
+    specularIntensity: number;
+    specularIntensityMap: Texture | null;
+    /** Since API_MINOR 44: default white (times `specularColorMap`'s rgb).
+     * One for each material. */
+    specularColor: Color;
+    specularColorMap: Texture | null;
+    /** Since API_MINOR 44: anisotropic GGX (default 0: isotropic), its
+     * direction `anisotropyRotation` radians from the tangent (default 0),
+     * turned and scaled by `anisotropyMap` (red and green a direction,
+     * blue the strength), as r185 draws it (V_GGX_SmithCorrelated_Anisotropic,
+     * D_GGX_Anisotropic, and image-based light along its bent normal). */
+    anisotropy: number;
+    anisotropyRotation: number;
+    anisotropyMap: Texture | null;
+    /** Since API_MINOR 44: the clearcoat times the map's red. */
+    clearcoatMap: Texture | null;
+    /** Since API_MINOR 44: the clearcoat's roughness times the map's green. */
+    clearcoatRoughnessMap: Texture | null;
+    /** Since API_MINOR 44: the clear coat's own tangent-space normal map,
+     * x and y scaled by `clearcoatNormalScale` (default (1, 1); one for each
+     * material). */
+    clearcoatNormalMap: Texture | null;
+    clearcoatNormalScale: Vector2;
+    /** Since API_MINOR 44: three.js's alias of `ior` as a specular
+     * strength, clamp(2.5 (ior − 1) / (ior + 1), 0, 1); setting it sets
+     * `ior`. */
+    reflectivity: number;
   }
   export interface MeshLambertMaterialParameters extends MaterialParameters {
     emissive?: ColorInput;
@@ -5938,6 +7751,30 @@ declare module "starhermit:scene" {
      * they are drawn the occlusion of what lies behind them applies (sky
      * domes, light cones, nets). Sprites and points never take part. */
     noAO: boolean;
+    /** **Engine extension** (host API 1.42, `engine.minor=42`; UE's
+     * Mobility, ThreeRT's `Object3D.movable`; three.js has none): whether
+     * the object, and what is under it, moves. `null` (the default) leaves
+     * the renderer to its own heuristics, as before 1.42. `false` marks it
+     * static: the renderer keeps it in shadow maps' cached layers from its
+     * first frame (`shadow.cascades.cached` takes it at once instead of
+     * after 30 still frames; a directional or spot light's map drawn every
+     * frame keeps its static casters while its view holds, once they draw
+     * at least 8 million indices, below which drawing them is cheaper than
+     * the copy), custom materials'
+     * vertex code included, which a static object promises gives the same
+     * output every frame. `true` marks it movable: never cached, so a mover
+     * that pauses does not make the cache draw again when it stops and
+     * starts. A movable object makes everything under it movable; a static
+     * one under an unset parent is static. Pixels are the same either way:
+     * a static object that moves (placing a new object is not a move) is
+     * promoted to movable at its first move, with what is under it, the
+     * cached shadows drawn again once, and a console line names it (by
+     * its `name` when `movable` was set, else its `id`; one line a frame,
+     * counting any others promoted with it). Edits (geometry,
+     * material) and removal redraw the cache once. Anything other than
+     * `true`, `false`, `null` or `undefined` throws a TypeError. `copy` and
+     * `clone` take it. Older games' objects have no such property. */
+    movable: boolean | null;
     readonly parent: Object3D | null;
     readonly children: readonly Object3D[];
     /** The game's own data (never read by the runtime). */
@@ -6092,8 +7929,17 @@ declare module "starhermit:scene" {
      * infers, types it as an array; three.js's own typings say `Material |
      * Material[]`.) */
     material: TMaterial;
-    /** Vertex `index`'s model-space position (since API_MINOR 18). */
+    /** Vertex `index`'s model-space position (since API_MINOR 18), morphed by the influences since host API 1.40. */
     getVertexPosition(index: number, target: Vector3): Vector3;
+    /** Morph targets (since host API 1.40, three.js r185's): each target's influence (0 to start), made by
+     * `updateMorphTargets` (the constructor calls it) when the geometry has `morphAttributes`; undefined otherwise.
+     * Animate them with `.morphTargetInfluences[name]` tracks or glTF `weights` channels. */
+    morphTargetInfluences?: number[];
+    /** Each target's index by its attribute's `name` (or its index as a string; glTF's `extras.targetNames`). */
+    morphTargetDictionary?: Record<string, number>;
+    /** Makes `morphTargetInfluences` and `morphTargetDictionary` for the geometry's morph attributes (call it after
+     * giving a mesh a geometry with targets). Since host API 1.40. */
+    updateMorphTargets(): void;
   }
   // -- Skinning and keyframe animation (since API_MINOR 25; three.js r185's) --
   export const AttachedBindMode: "attached";
@@ -6254,6 +8100,340 @@ declare module "starhermit:scene" {
     static flattenJSON(jsonKeys: any[], times: number[], values: any[], valuePropertyName: string): void;
     static subclip(sourceClip: AnimationClip, name: string, startFrame: number, endFrame: number, fps?: number): AnimationClip;
     static makeClipAdditive(targetClip: AnimationClip, referenceFrame?: number, referenceClip?: AnimationClip, fps?: number): AnimationClip;
+    /** The engine's extension (since host API 1.40): `compressClip`. */
+    static compressClip(clip: AnimationClip, options?: CompressClipOptions): AnimationClip;
+  }
+  // -- Host API 1.40's animation extensions (the engine's; three.js has none of these) --
+  export interface CompressClipOptions {
+    /** Keys a second the tracks are resampled at (30). */
+    fps?: number;
+    /** A quaternion track whose keys all lie this close to its first keeps one key (1e-4). */
+    rotationTolerance?: number;
+    /** A vector or number track whose keys all lie this close to its first keeps one key (1e-4). */
+    translationTolerance?: number;
+  }
+  /** The engine's extension (since host API 1.40), after the Animation Compression Library: the clip resampled at
+   * `fps`, quaternion tracks kept in 48 bits a key (their three smallest components), vector and number tracks in
+   * 16 bits a component over each track's own range, a track that does not move as one key. A third of the memory
+   * or less; the mixer and AnimationGraph play it as any clip (errors about 1e-4 of a quaternion component and
+   * 1/131,070 of a track's range). String, boolean and color tracks are kept as they are. */
+  export function compressClip(clip: AnimationClip, options?: CompressClipOptions): AnimationClip;
+  /** A compressed clip's quaternion track: three 16-bit numbers a key (`values` a Uint16Array). Since host API 1.40. */
+  export class CompressedQuaternionKeyframeTrack extends QuaternionKeyframeTrack {
+    constructor(name: string, times: ArrayLike<number>, packed: Uint16Array);
+  }
+  /** A compressed clip's vector or number track: a 16-bit number a component (`values` a Uint16Array) over
+   * `minimum` to `minimum + extent`. Since host API 1.40. */
+  export class CompressedVectorKeyframeTrack extends VectorKeyframeTrack {
+    constructor(name: string, times: ArrayLike<number>, packed: Uint16Array, minimum: Float32Array, extent: Float32Array);
+    readonly minimum: Float32Array;
+    readonly extent: Float32Array;
+  }
+  /** Update intervals by distance (AnimationMixer's and AnimationGraph's `setUpdateIntervals`): the farthest level
+   * whose `distance` (from the camera) the root lies at or past gives the seconds between updates. */
+  export interface AnimationUpdateInterval {
+    distance: number;
+    interval: number;
+  }
+  /** A condition of a transition (since host API 1.42): a number parameter compared by `op` with `value` (`==` and
+   * `!=` within 1e-6); a boolean one `==` (the default) or `!=` `value` (true by default); a trigger holds while
+   * raised (no `op` or `value`), and the transition taking it lowers it. */
+  export interface AnimationGraphCondition {
+    parameter: string;
+    op?: "<" | ">" | "<=" | ">=" | "==" | "!=";
+    value?: number | boolean;
+  }
+  export interface AnimationGraphState {
+    /** A clip it plays (a name in the definition's `clips`; from host API 1.42 also an AnimationClip, or a name in
+     * the root's `animations` without `clips`); or a blend space by one number parameter (`blend1d`: each clip at a
+     * threshold, the two either side of the value sharing by distance, clamped at the ends) or two (`blend2d`). A
+     * blend's clips share one phase. */
+    clip?: string | AnimationClip;
+    blend1d?: { parameter: string; points: [number, string | AnimationClip][] };
+    /** Host API 1.40: inverse-distance-squared weights; from 1.42 gradient band interpolation (each clip 1 at its own
+     * place and 0 at every other's). */
+    blend2d?: { parameters: [string, string]; points: [number, number, string | AnimationClip][] };
+    /** States of one sync group keep one normalised phase across their fades; a looping state entered from a looping
+     * state of its group (or of none from none) starts at its phase. */
+    sync?: string;
+    /** How fast its cycle runs (1); from host API 1.42 times the number parameter `speedParameter` when given. */
+    speed?: number;
+    speedParameter?: string;
+    /** Since host API 1.42: wraps round (true) or plays once and holds its end. By default it loops unless its clips
+     * are `clips` entries with `loop: false`. */
+    loop?: boolean;
+  }
+  export interface AnimationGraphTransition {
+    /** A state, or "*" for any (but never into the state the layer is in). */
+    from: string;
+    to: string;
+    /** One test: a condition on `parameter` (host API 1.40's form; from 1.42 taken before `conditions`). */
+    parameter?: string;
+    op?: "<" | ">" | "<=" | ">=" | "==" | "!=";
+    value?: number | boolean;
+    /** Since host API 1.42: all must hold. A transition needs a test, conditions, an `exitTime` or some of them. */
+    conditions?: AnimationGraphCondition[];
+    /** Since host API 1.42: the state's normalised time (cycles played) the transition waits for: below 1 on a
+     * looping state, that point of each cycle on (until the cycle ends); 1 or more, once that many cycles have
+     * played. */
+    exitTime?: number;
+    /** Seconds the fade takes (0: a cut). A transition mid-fade fades on from the pose (from 1.42 the weights) as it
+     * stands. */
+    fade?: number;
+  }
+  export interface AnimationGraphLayerDefinition {
+    name?: string;
+    states: Record<string, AnimationGraphState>;
+    /** The state it begins in (from host API 1.42 the first by default). */
+    start?: string;
+    /** Checked in order; the first that holds is taken. */
+    transitions?: AnimationGraphTransition[];
+    /** Bone names whose branches (each with everything under it) the layer reaches; all without. */
+    mask?: string[];
+    /** Over the layers before it by `weight` ("override", the default) or added to them ("additive": its change
+     * from its state's pose at phase 0; from 1.42 its clips made additive by AnimationUtils.makeClipAdditive, from
+     * their first frame). The first layer is the base. */
+    blend?: "override" | "additive";
+    /** From host API 1.42 clamped to 0..1 (1). */
+    weight?: number;
+  }
+  export interface AnimationGraphDefinition {
+    /** Clips by the graph's names; a looping one (the default) wraps, `loop: false` holds its end. From host API 1.42
+     * also an array (by `clip.name`), or left out for the root's `animations`. */
+    clips?: Record<string, AnimationClip | { clip: AnimationClip; loop?: boolean }> | AnimationClip[];
+    /** Each parameter's first value: a number; from host API 1.42 also a boolean, or "trigger". */
+    parameters?: Record<string, number | boolean | "trigger">;
+    /** `notify` events as a layer's dominant clip crosses `time` (seconds into it), each wrap of a long step too. */
+    notifies?: { clip: string | AnimationClip; time: number; name: string }[];
+    /** From host API 1.42 at most 16 (256 states and 1024 transitions each; 16 conditions a transition, 64 blend
+     * points, 1024 notifies). */
+    layers: AnimationGraphLayerDefinition[];
+    /** Seconds a step (0: one step an update). With it, transitions and notifies fall alike at any frame rate
+     * (and alike natively and in browsers). */
+    fixedStep?: number;
+  }
+  /** The engine's extension (since host API 1.40), after Solstice's animation graphs: a state machine of clips over
+   * an object's tree, each layer's states playing a clip or blending clips by parameters, its transitions fading
+   * when their tests hold, sync groups, notifies from the dominant clip, and layers over the base masked by bone
+   * branches, overriding or additive. Events: `notify` ({ name, clip, state, layer }); from host API 1.42 also
+   * `transition` ({ layer, from, to }, the layer by index), after the update that took it.
+   *
+   * Host API 1.40 and 1.41: it samples and blends the clips itself and sets the bound properties as the mixer would;
+   * it uses no AnimationMixer, and the pose between fixed steps is looked ahead to.
+   *
+   * From host API 1.42 (`ANIMATION_GRAPH_MIXER_MINOR`) it drives an AnimationMixer's actions: the one given, or its
+   * own on the root given. It sets only their `weight`, `timeScale` and start times and updates the mixer, which
+   * samples and blends as three.js's does: a state of one clip at speed 1 plays exactly as
+   * `mixer.clipAction(clip).play()`, and other actions of the mixer blend with it. Parameters may be booleans and
+   * triggers, transitions may have several conditions and exit times, and a masked or additive layer plays clips of
+   * the tracks it reaches while the layers below give way there by its weight. Inverse kinematics solvers run
+   * after `update`, over its pose. It reads no clock and no random numbers: the same updates and parameters give the
+   * same pose. */
+  export class AnimationGraph extends EventDispatcher {
+    /** From host API 1.42 also `new AnimationGraph(mixer, definition)`. */
+    constructor(root: Object3D | AnimationMixer, definition: AnimationGraphDefinition);
+    readonly root: Object3D;
+    /** Since host API 1.42: the mixer it drives. */
+    readonly mixer: AnimationMixer;
+    /** Seconds a step (see `AnimationGraphDefinition.fixedStep`); from host API 1.42 the seconds of mixer time
+     * between transition checks, the pose moving on every update. */
+    fixedStep: number;
+    /** Solstice's `.anim` text as a definition, its clips by source name from `clips`: `clip NAME SOURCE
+     * [loop|once]`, `notify CLIP TIME NAME`, `param NAME VALUE`, `state NAME clip CLIP`, `state NAME blend1d PARAM
+     * AT CLIP ...`, `state NAME blend2d X Y AT_X AT_Y CLIP ...`, `start STATE`, `transition FROM|* TO PARAM OP VALUE
+     * fade SECONDS`; the engine's `layer NAME [override|additive] [weight W] [mask BONE ...]` (the lines after it
+     * are that layer's), `sync STATE GROUP`, `speed STATE N` and `step SECONDS`. `source` and `roles` lines are
+     * skipped; `#` starts a comment. A mistake throws a SyntaxError naming its line. */
+    static parse(text: string, clips: AnimationClip[] | Record<string, AnimationClip>): AnimationGraphDefinition;
+    /** Since host API 1.42: the layers' names (a layer without one is named by its index). */
+    readonly layers: string[];
+    /** A parameter's value (a boolean or trigger's as a boolean, since 1.42); 0 for one the graph lacks. Typed as a
+     * number by default so 1.40 code keeps compiling; read a boolean or trigger with `getParameter<boolean>(name)`. */
+    getParameter<T extends number | boolean = number>(name: string): T;
+    /** False for a parameter the graph lacks or a value of the wrong kind (a number parameter takes a finite number,
+     * a boolean or trigger one a boolean). */
+    setParameter(name: string, value: number | boolean): boolean;
+    /** Since host API 1.42: raises or lowers a trigger (throws for a name that is not one). */
+    trigger(name: string): this;
+    resetTrigger(name: string): this;
+    /** The base layer's state. */
+    readonly state: string;
+    stateOf(layer?: number | string): string;
+    /** How far through its cycle a layer's state is, 0 to 1. */
+    phaseOf(layer?: number | string): number;
+    /** Since host API 1.42. */
+    isTransitioning(layer?: number | string): boolean;
+    /** Since host API 1.42: a state's weight in its layer now, 0 to 1. */
+    weightOf(state: string, layer?: number | string): number;
+    /** Since host API 1.42. */
+    getLayerWeight(layer: number | string): number;
+    /** From host API 1.42 clamped to 0..1. */
+    setLayerWeight(layer: number | string, weight: number): this;
+    /** Fades a layer to a state now, whatever its transitions say (false for a state it lacks). */
+    goTo(state: string, fade?: number, layer?: number | string): boolean;
+    /** Moves the clock on by `delta` seconds (transitions checked every `fixedStep` when set) and sets the pose
+     * (from host API 1.42 by `mixer.update(delta)`); gives the notifies fired, in order. */
+    update(delta: number): string[];
+    /** Sets the pose as it stands now. */
+    evaluate(): this;
+    /** The pose set at most every `interval` seconds of the root's distance level from the camera (the
+     * renderer's, or `camera`); the clock and notifies keep every step. Null: every update. From host API 1.42 the
+     * mixer's own (`AnimationMixer.setUpdateIntervals`). */
+    setUpdateIntervals(levels: AnimationUpdateInterval[] | null, camera?: Object3D): this;
+    /** The bound properties back at the values they had when the graph was made. From host API 1.42 its actions
+     * stop, and the next update starts each layer's state again. */
+    stop(): this;
+    /** Since host API 1.42: each layer back at its start state, the parameters at their first values, its actions
+     * stopped. */
+    reset(): this;
+  }
+  /** A role file's text (Solstice's: each line a role and its bones, chains from the body out) as a map. Since host
+   * API 1.40. */
+  export function parseRoles(text: string): Record<string, string[]>;
+  export interface RetargetOptions {
+    preserveBoneMatrix?: boolean;
+    /** Leave the hip where it is. */
+    preserveHipPosition?: boolean;
+    useTargetMatrix?: boolean;
+    /** The hip's (pelvis's) name without role files ("hip"). */
+    hip?: string;
+    hipInfluence?: Vector3;
+    /** How far the hip travels for the source's (the leg-length ratio with role files, else 1). */
+    scale?: number;
+    /** Target bone name to source bone name. */
+    names?: Record<string, string>;
+    getBoneName?: (bone: Bone) => string;
+    hipPosition?: Vector3;
+    /** The engine's: both rigs' role files (text or `parseRoles`'s maps). With them bones pair by role and place
+     * along their chains, arm and leg chains are lined up at rest first (the hand by its palm, the fingers with
+     * it), rotations are carried across in each bone's rest frame, and the pelvis travels by the ratio of leg
+     * lengths. Without, bones pair by name. */
+    roles?: { source: string | Record<string, string[]>; target: string | Record<string, string[]> };
+    /** retargetClip's: the hip's first position taken off every frame's. */
+    useFirstFramePosition?: boolean;
+    /** retargetClip's keys a second (30). */
+    fps?: number;
+    /** retargetClip's start and end seconds. */
+    trim?: [number, number];
+  }
+  /** three.js r185's SkeletonUtils addon (since host API 1.40), carried across as Solstice's role files do (the
+   * `roles` option) or by bone names. */
+  export const SkeletonUtils: {
+    /** Poses `target`'s skeleton as `source`'s stands now. */
+    retarget(target: SkinnedMesh | Object3D, source: SkinnedMesh | Object3D | Skeleton, options?: RetargetOptions): void;
+    /** `clip` played on `source` carried onto `target`'s skeleton as a new clip sampled at `fps`: each paired
+     * bone's `.bones[NAME].quaternion` and the hip's `.position`. */
+    retargetClip(target: SkinnedMesh | Object3D, source: SkinnedMesh | Object3D, clip: AnimationClip, options?: RetargetOptions): AnimationClip;
+    /** A copy of the tree whose skinned meshes are bound to the copy's own bones. */
+    clone<T extends Object3D>(source: T): T;
+  };
+  /** A bone of a CCDIKSolver chain (three.js's `CCDIKSolver~BoneLink`). Since host API 1.42. */
+  export interface CCDIKLink {
+    /** Its index in the skeleton's `bones`. */
+    index: number;
+    /** The one axis (bone-local, unit) it turns about: a hinge such as a knee. */
+    limitation?: Vector3;
+    /** The least Euler angles (x, y, z, radians) it turns to. */
+    rotationMin?: Vector3;
+    /** The most Euler angles it turns to. */
+    rotationMax?: Vector3;
+    /** False: this link and those after it are left as they are (true). */
+    enabled?: boolean;
+  }
+  /** An IK chain (three.js's `CCDIKSolver~IK`). Since host API 1.42. */
+  export interface CCDIK {
+    /** The index of the bone the effector reaches for. */
+    target: number;
+    /** The index of the bone that reaches (the chain's tip). */
+    effector: number;
+    /** The chain from the effector's parent up, at most 64. */
+    links: CCDIKLink[];
+    /** Passes over the chain an update (1; at most 256 are made). */
+    iteration?: number;
+    /** The least and most a link turns in one step, radians. */
+    minAngle?: number;
+    maxAngle?: number;
+    /** How much of the solved pose the chain takes (0..1), over `update`'s. */
+    blendFactor?: number;
+  }
+  /** three.js r185's CCDIKSolver addon (examples/jsm/animation/CCDIKSolver.js; since host API 1.42): turns each
+   * chain's links (cyclic coordinate descent) so its effector bone reaches its target bone, as three.js does. Call
+   * `update()` after the mixer's `update(delta)`, so it layers over the clips. As three.js's, each update turns the
+   * links on from where they are: with no clip setting them, the turns carry over to the next update. At most 256
+   * chains, 64 links a chain and 256 iterations a chain an update; a bad bone index throws a RangeError. (Its
+   * `createHelper` and `CCDIKHelper` are not offered.) */
+  export class CCDIKSolver {
+    constructor(mesh: SkinnedMesh, iks?: CCDIK[]);
+    mesh: SkinnedMesh;
+    iks: CCDIK[];
+    /** Solves every chain; `globalBlendFactor` (1) for those with no `blendFactor`. */
+    update(globalBlendFactor?: number): this;
+    /** Solves one chain; `overrideBlend` (1) when it has no `blendFactor`. */
+    updateOne(ik: CCDIK, overrideBlend?: number): this;
+  }
+  /** Where a solver reaches or looks: an object (its world position, and its world rotation for
+   * `rotationWeight`) or a world position. Since host API 1.42. */
+  export type IKTarget = Object3D | Vector3;
+  export interface TwoBoneIKOptions {
+    /** The upper bone (a thigh, an upper arm). */
+    root: Object3D;
+    /** The middle joint (a knee, an elbow), under `root`. */
+    mid: Object3D;
+    /** The end (an ankle, a wrist), under `mid`: it reaches `target`. */
+    end: Object3D;
+    target: IKTarget;
+    /** Where the middle joint bends toward (none: the limb keeps its bend's side). */
+    pole?: IKTarget | null;
+    /** 0..1 (1): how much of the solved pose the bones take, slerped from the animated one. */
+    weight?: number;
+    /** 0..1 (0): how much `end` takes `target`'s world rotation (an Object3D target). */
+    rotationWeight?: number;
+  }
+  /** The engine's analytic two-bone IK (since host API 1.42): a foot on uneven ground, a hand reaching. Turns `root`
+   * and `mid` so `end` reaches the target exactly (or as far toward it as the limb is long), the limb's bend toward
+   * `pole`. Call `update()` each frame after the mixer's: it starts from the pose the animation set, and when nothing
+   * changed its bones since its last update (a mixer updating less often, or not animating them) from the pose
+   * before that update, so its turns never pile up. Deterministic, at a fixed small cost. */
+  export class TwoBoneIKSolver {
+    constructor(options: TwoBoneIKOptions);
+    readonly isTwoBoneIKSolver: true;
+    readonly root: Object3D;
+    readonly mid: Object3D;
+    readonly end: Object3D;
+    target: IKTarget;
+    pole: IKTarget | null;
+    /** 0..1: blends the solver in and out. */
+    weight: number;
+    rotationWeight: number;
+    update(): this;
+    /** The bones back as the animation left them (when nothing else turned them since the last update). */
+    reset(): this;
+  }
+  export interface LookAtIKOptions {
+    bone: Object3D;
+    target: IKTarget;
+    /** The bone's local direction that looks ((0, 0, 1)). */
+    forward?: Vector3;
+    /** The most it turns from where the animation pointed it, radians (π: no limit). */
+    maxAngle?: number;
+    /** 0..1 (1): how much of the turn it takes. */
+    weight?: number;
+  }
+  /** The engine's look-at constraint (since host API 1.42): turns a head, a neck or an eye so its `forward` points
+   * at the target, by the shortest turn, at most `maxAngle` from the animated direction, by `weight`. For a head and
+   * eyes make one for the neck (a part weight), the head and each eye, and update them in that order after the
+   * mixer. Like TwoBoneIKSolver it starts from the animated pose each update, so its turns never pile up. */
+  export class LookAtIKSolver {
+    constructor(options: LookAtIKOptions);
+    readonly isLookAtIKSolver: true;
+    readonly bone: Object3D;
+    readonly forward: Vector3;
+    target: IKTarget;
+    maxAngle: number;
+    weight: number;
+    update(): this;
+    /** The bone back as the animation left it (when nothing else turned it since the last update). */
+    reset(): this;
   }
   /** A track's path ("node.property[index]", "node.material.opacity",
    * ".bones[name].quaternion") resolved under a root (since API_MINOR 25). */
@@ -6348,6 +8528,10 @@ declare module "starhermit:scene" {
     uncacheClip(clip: AnimationClip): void;
     uncacheRoot(root: Object3D): void;
     uncacheAction(clip: AnimationClip | string, root?: Object3D): void;
+    /** The engine's extension (since host API 1.40): update intervals by distance. Its root's distance from the
+     * camera (the renderer's, or `camera`) picks the farthest level at or within it, and `update` gathers time
+     * until that level's `interval` has passed, then updates by all of it at once. Null: every update again. */
+    setUpdateIntervals(levels: AnimationUpdateInterval[] | null, camera?: Object3D): this;
   }
   /** One geometry and material drawn `count` times with per-instance
    * transforms and colors. A game's instanced meshes hold at most 262,144
@@ -6436,6 +8620,290 @@ declare module "starhermit:scene" {
     readonly distance: number;
     readonly hysteresis?: number;
   }
+  // -- Instanced skinning (since API_MINOR 43) --
+  // ENGINE EXTENSION: three.js r185 has no instanced skinning in core (its
+  // SkinnedMesh is one skeleton each; crowds take a mesh and a skeleton
+  // update apiece). The engine bakes clips once into a bone matrix texture
+  // and skins each instance of an InstancedSkinnedMesh from it in the
+  // vertex stage of every pass (colour, shadows of every light kind and
+  // cascade, the depth and normal prepasses, motion vectors), so a crowd
+  // of one geometry is one mesh, one draw a pass and no skeleton updates.
+  // Before API_MINOR 43 none of this is exported.
+  //
+  //   const baked = bakeSkinnedAnimations(robot, gltf.animations, { fps: 30 });
+  //   const crowd = new InstancedSkinnedMesh(robot.geometry, robot.material, 200, baked);
+  //   for (let i = 0; i < 200; i++) {
+  //     crowd.setMatrixAt(i, placement[i]);
+  //     crowd.setAnimationAt(i, "walk", t + i * 0.1, "shoot", t, fade[i]);
+  //   }
+  //   crowd.instanceMatrix.needsUpdate = true;
+  //
+  // The texture (`BakedSkinnedAnimations.texture`): RGBA8, 3,072 texels wide
+  // (`starhermit_sys::MESH_SKIN_BAKED_WIDTH`), each texel the little-endian
+  // bytes of an f32 (exact on every backend; float textures are half floats
+  // on WebGPU devices without float32-filterable). Row 0 is a header: the
+  // bone count and the frame count (u32), the fps (f32) and 0x4b425348.
+  // Frame f's bone b is cell f × bones + b, 256 cells a row from row 1, each
+  // twelve texels: the first three rows of bindMatrixInverse × bone world ×
+  // boneInverse × bindMatrix (the SkinnedMesh vertex stage's matrix), the
+  // mesh's own space. Limits: bones × frames ≤ 1,048,320 (4,095 rows; 12 KiB
+  // a row, 48 MiB at most, counted against the image budget like any
+  // texture: 30 bones at 30 fps is 1,165 s of clips), at most 1,024 clips,
+  // fps 1 to 240. A clip of duration d has ceil(d × fps) + 1 frames, evenly
+  // spaced over 0..d, both ends included (1 frame for d 0).
+  /** One baked clip: its frames from `start` among all the frames. */
+  export interface BakedSkinnedClip {
+    readonly name: string;
+    readonly clip: AnimationClip;
+    /** Seconds (the clip's, 0 for none). */
+    readonly duration: number;
+    readonly start: number;
+    readonly frames: number;
+  }
+  /** ENGINE EXTENSION (since API_MINOR 43): `bakeSkinnedAnimations`'s
+   * result. */
+  export class BakedSkinnedAnimations {
+    readonly isBakedSkinnedAnimations: true;
+    /** The bone matrices (the layout above): an InstancedSkinnedMesh binds
+     * it; a custom material may read it too (`textureLoad`). */
+    readonly texture: DataTexture;
+    readonly clips: readonly BakedSkinnedClip[];
+    readonly bones: number;
+    /** All the clips' frames together. */
+    readonly frames: number;
+    readonly fps: number;
+    /** The sphere every baked pose's vertices lie in, in the mesh's own
+     * space (each joint's matrices applied to the geometry's sphere):
+     * InstancedSkinnedMesh culls by it. */
+    readonly boundingSphere: Sphere;
+    /** A clip's index by index, name or the AnimationClip baked; -1 for
+     * none. */
+    clipIndex(clip: number | string | AnimationClip): number;
+    /** Where `time` (seconds) of a clip lies among all the frames: its
+     * `start` plus the frames into it (a fraction between two). Times wrap
+     * as a LoopRepeat action's, the duration exactly being the last frame.
+     * A RangeError for a clip not baked. */
+    frameAt(clip: number | string | AnimationClip, time: number): number;
+    /** Since API_MINOR 44 (INSTANCED_BONE_OVERRIDES_MINOR): the baked
+     * skeleton's bone names by index (what `setBoneOverrideJoints` takes);
+     * empty for animations baked by an older game. */
+    readonly boneNames: readonly string[];
+    dispose(): void;
+  }
+  /** ENGINE EXTENSION (since API_MINOR 43, INSTANCED_SKINNING_MINOR):
+   * samples each clip on `mesh` (a SkinnedMesh bound to its skeleton) with
+   * an AnimationMixer on `root` (default the mesh's topmost ancestor below
+   * a Scene, else the mesh) at `fps` (default 30) and keeps each frame's
+   * bone matrices in a texture. Each frame's matrices are what the
+   * SkinnedMesh's vertex stage would use posed by a mixer at that time
+   * (LoopOnce, clamped at the end). The pose of everything under `root` is
+   * put back. It runs in script once (each frame a mixer update and a
+   * skeleton walk: bake at load). Errors: a RangeError past the limits
+   * above, a TypeError for a mesh without a skeleton or a clip that is
+   * not an AnimationClip. */
+  export function bakeSkinnedAnimations(
+    mesh: SkinnedMesh,
+    clips: readonly AnimationClip[],
+    options?: { fps?: number; root?: Object3D },
+  ): BakedSkinnedAnimations;
+  /** ENGINE EXTENSION (since API_MINOR 43, SKIN_ATTRIBUTES_MINOR and
+   * INSTANCED_SKINNING_MINOR): an InstancedMesh with a skin. Its
+   * geometry's `skinIndex` and `skinWeight` reach custom materials' vertex
+   * hooks as `Vertex.skin_index` and `Vertex.skin_weight`. With
+   * `bakedAnimations` each instance is skinned where `setAnimationAt` put
+   * it, in every pass, built-in materials and hooks alike (a hook's
+   * `Vertex.position` and `normal` arrive skinned, as on a SkinnedMesh);
+   * without them the vertices are not moved. Its place in the animations
+   * is the instance's custom slot 3 (`instanceCustom` becomes 16 numbers
+   * an instance, `customSlots` 4; slots 0 to 2 stay the game's, and
+   * `setCustomAt(i, v, 3)` is a RangeError; hooks read slot 3 as
+   * `Vertex.instance3`: x the frame of the first clip, y the second's, z
+   * the second's weight, w 1; since API_MINOR 44 w is 2 + the instance's
+   * index, its bone overrides' row). It culls by the animations' sphere. It has
+   * no levels of detail (`setLevels` with anything but `[]` is a
+   * TypeError). Its sync runs in
+   * script (InstancedMesh's native sync is for InstancedMesh's own).
+   * DIFFERENCES from a SkinnedMesh posed by a mixer: between baked frames
+   * the two around are blended linearly (a mixer slerps each bone: at 30
+   * fps the poses differ by well under a pixel for most rigs), and a
+   * crossfade blends the two clips' final matrices linearly (a mixer
+   * blends each bone's transform, then walks the rig). Motion vectors take
+   * each instance's place the frame before from its kept instances, so a
+   * crowd's limbs leave no trail under temporal anti-aliasing. */
+  export class InstancedSkinnedMesh extends InstancedMesh {
+    constructor(
+      geometry: BufferGeometry,
+      material: Material,
+      count: number,
+      bakedAnimations?: BakedSkinnedAnimations | null,
+    );
+    readonly isInstancedSkinnedMesh: true;
+    /** The animations its instances play, or null (settable). */
+    bakedAnimations: BakedSkinnedAnimations | null;
+    /** Instance `index` at `time` seconds of `clip` (an index, a name or
+     * the AnimationClip baked), crossfading toward `time2` of `clip2` by
+     * `weight` (0 to 1; none with -1 or a weight of 0). Times wrap as
+     * `frameAt`'s. Sets `instanceCustom.needsUpdate`. A TypeError without
+     * animations, a RangeError for an instance or clip that is not
+     * there. */
+    setAnimationAt(
+      index: number,
+      clip: number | string | AnimationClip,
+      time: number,
+      clip2?: number | string | AnimationClip,
+      time2?: number,
+      weight?: number,
+    ): this;
+    // -- Bone overrides (since API_MINOR 44, INSTANCED_BONE_OVERRIDES_MINOR) --
+    // ENGINE EXTENSION: per-instance local rotations of a few joints on top
+    // of the shared clip (foot placement and foot locking on slopes, a head
+    // turned toward a target), applied after the clip's sample and before
+    // the bone hierarchy: a joint's descendants follow it, in every pass
+    // (colour, shadows, prepasses, motion vectors), built-in materials and
+    // hooks alike, on every backend.
+    //
+    //   crowd.setBoneOverrideJoints(["thigh.L", "shin.L", "foot.L", "thigh.R", "shin.R", "foot.R"]);
+    //   const legs = new Float32Array(crowd.count * 6 * 4); // instance-major, joint, xyzw
+    //   // each frame: solve each robot's leg IK into `legs`, then
+    //   crowd.setBoneOverrides(legs);
+    //
+    // A joint's local transform is its parent bone's world inverse times its
+    // own world, read from the baked pose where the instance stands (frames
+    // and crossfade blended as the vertex stage blends them; a bone without
+    // a parent bone is local to the mesh's own space). "replace" sets its
+    // rotation (three.js `bone.quaternion.copy(q)`), "multiply" turns the
+    // clip's by it (`bone.quaternion.multiply(q)`); its position and scale
+    // stay the clip's. Nested joints compose down the chain whatever order
+    // they are listed in. A quaternion of four zeros is no override (the
+    // clip's pose); others are normalized.
+    //
+    // COST: the runtime turns each frame's quaternions into one 3×4
+    // correction a joint an instance (about 0.25 ms of one CPU core a frame
+    // for 200 instances × 6 joints, none for instances without overrides),
+    // sent to the GPU as a texture of 48 bytes a correction (61 KB for 200
+    // × 6; 1,536 texels a row) that the vertex stage reads only for bones
+    // under an overridden joint. `setBoneOverrides` charges 1 fuel
+    // unit a number (4 a quaternion), as instance custom data does. The
+    // texture rides with the instances (not the image budget), as instance
+    // buffers do. DIFFERENCES from posing a SkinnedMesh's bones: the
+    // corrected joint's matrix is the blended baked one turned rigidly, so
+    // between frames and mid-crossfade it carries the blend's slight shear
+    // as the clip's own pose does; the culling sphere stays the baked
+    // poses' (an override reaching far outside it may be culled early);
+    // motion vectors take this frame's corrections for the frame before.
+    // Copies and clones start without overrides.
+    /** The declared joints (baked skeleton bone indices), in the order the
+     * overrides' data takes them; empty before `setBoneOverrideJoints`. */
+    readonly boneOverrideJoints: readonly number[];
+    /** How an override takes its joint's rotation. */
+    readonly boneOverrideMode: "replace" | "multiply";
+    /** Declares 1 to 16 joints (bone indices or `boneNames`) whose local
+     * rotation each instance may override, every override cleared, and
+     * sets each instance's custom slot 3's w to 2 + its index (its row);
+     * `null` takes the overrides away (so do new `bakedAnimations`). A
+     * TypeError without baked animations (or ones baked below 1.44) or for
+     * a mode that is neither; a RangeError for an unknown or repeated
+     * joint, past 16 joints or past 522,752 overrides (capacity ×
+     * joints). */
+    setBoneOverrideJoints(
+      joints: readonly (number | string)[] | null,
+      mode?: "replace" | "multiply",
+    ): this;
+    /** Writes overrides from instance `first` (default 0): for each
+     * instance in turn, for each declared joint in order, a quaternion's x,
+     * y, z, w (`data.length` a multiple of 4, at most (capacity − first) ×
+     * joints × 4; zeros: none). `null` clears every override. The one call
+     * a frame for a whole crowd: the numbers are copied, so the array may
+     * be reused. A RangeError for numbers past the capacity, a length not
+     * whole quaternions or a NaN or infinite number (nothing written); a
+     * TypeError before `setBoneOverrideJoints` or for anything but a
+     * Float32Array. */
+    setBoneOverrides(data: Float32Array | null, first?: number): this;
+    /** One instance's override of one declared joint (its place in
+     * `boneOverrideJoints`, or its bone name); null for none. */
+    setBoneOverrideAt(
+      index: number,
+      joint: number | string,
+      quaternion: Quaternion | null,
+    ): this;
+    /** Every instance's overrides cleared (the joints kept). */
+    clearBoneOverrides(): this;
+  }
+  // -- Levels of detail generation (since API_MINOR 40) --
+  /** three.js r185's addon `SimplifyModifier`
+   * (examples/jsm/modifiers/SimplifyModifier.js), exported here as the
+   * engine has no addons path (since API_MINOR 40; before it the
+   * constructor is a TypeError). `modify(geometry, count)` gives a new
+   * indexed geometry with `count` fewer vertices, counted as three.js
+   * counts them after merging vertices whose position, uv, normal, tangent
+   * and color agree within 1e-4 (`BufferGeometryUtils.mergeVertices`), and
+   * those attributes as Float32 attributes; morph targets, groups and
+   * other attributes go, as in three.js. A count of 0 (or NaN) removes
+   * none; a count that never counts down to 0 (negative, fractional,
+   * Infinity) as many as can go. DIFFERENCE: the engine chooses what goes
+   * by quadric error (half-edge collapse after Solstice's builder: every
+   * surviving vertex is an original one, UV seams and hard edges keep
+   * their sides' attributes, open borders never move, and a texture
+   * sliding counts as error) rather than three.js's Melax cost, so the
+   * triangles differ from three.js's for the same count. The same input
+   * gives the same output bits natively and in browsers. */
+  export class SimplifyModifier {
+    constructor();
+    modify(geometry: BufferGeometry, count: number): BufferGeometry;
+  }
+  /** ENGINE EXTENSION: `generateLods`'s options. */
+  export interface GenerateLodsOptions {
+    /** Levels made beyond the mesh's own: 1 to 16 (default 3; an
+     * InstancedMesh takes at most 7). Fewer come back where another level
+     * would not drop a twentieth of the triangles. */
+    levels?: number;
+    /** Each level's triangles as a fraction of the one before, above 0
+     * and below 1 (default 0.5). */
+    ratio?: number;
+    /** The most pixels a level may be off where it shows (default 1). */
+    errorPx?: number;
+    /** Thin a mesh of many (8 or more) separate small pieces, such as
+     * grass blades or leaves: each level keeps about `ratio` of the pieces
+     * (spread evenly by where they are, each level's among the last's) and
+     * enlarges the survivors, flat ones across first, tubes thicker, so
+     * the total area stays the same (default false). Pieces much wider
+     * than most, and the rest of the mesh, simplify as usual. */
+    thin?: boolean;
+    /** The camera whose `fov` the distances are for (default a fov of 50,
+     * PerspectiveCamera's default). */
+    camera?: PerspectiveCamera;
+    /** The viewport height in pixels the distances are for (default
+     * 1080). */
+    screenHeight?: number;
+    /** Each level's hysteresis, as `LOD.addLevel` takes it (default 0). */
+    hysteresis?: number;
+  }
+  /** ENGINE EXTENSION (since API_MINOR 40; before it a TypeError): levels
+   * of detail from a mesh's simplified geometries, made by quadric
+   * half-edge collapse as `SimplifyModifier` makes them, every surviving
+   * vertex keeping all its own attributes (UV seams, normals, colors,
+   * tangents and skin weights exactly) and open borders kept. Each level
+   * has about `ratio` of the triangles of the one before and its error in
+   * world units (the farthest any source vertex lies from it, how far a
+   * texture slid or changed weights could move a vertex, how far thinning
+   * moved one; more than the level before's, a level no farther off replacing it so no two switch at one distance) in its geometry's
+   * `userData.lodError`. A level shows from the camera distance where that
+   * error spans `errorPx` pixels on a `screenHeight`-pixel viewport:
+   * `error × screenHeight / (2 tan(fov / 2) × errorPx)`.
+   *
+   * For a Mesh: a three.js `LOD` taking the mesh's name and transform,
+   * level 0 a mesh of its own geometry and each further level one of a
+   * simplified geometry, all sharing its material and shadow flags (a
+   * SkinnedMesh's levels are SkinnedMeshes bound to its skeleton); the
+   * mesh itself is left as it was. For a BufferGeometry: the same with a
+   * new MeshStandardMaterial. For an InstancedMesh: `setLevels` with the
+   * simplified geometries and their distances, and the mesh back. A
+   * geometry with more than one group is a TypeError (one group, as
+   * built-in shapes have, carries over as a group of the whole level). The work is native, charged to
+   * the call's fuel in proportion to what it did; a geometry has at most
+   * 1,048,576 vertices and triangles (RangeError). */
+  export function generateLods(mesh: InstancedMesh, options?: GenerateLodsOptions): InstancedMesh;
+  export function generateLods(target: Mesh | BufferGeometry, options?: GenerateLodsOptions): LOD;
   /** Points (three.js `Points`): a square per vertex of the geometry's
    * `position` in its draw range, colored by its `color` attribute when the
    * material has `vertexColors`. Each point counts as a mesh instance (a
@@ -6467,7 +8935,9 @@ declare module "starhermit:scene" {
      * only bursts). */
     rate?: number;
     /** A particle's life in seconds, or [min, max] (uniformly between;
-     * 0.001 to 3600; default 1). */
+     * 0.001 to 3600; default 1). Since API_MINOR 40 longer lives too, and
+     * `Infinity` (alone or as the longer end): every particle lives until
+     * cleared, its ramps held at their first values. */
     life?: number | readonly [number, number];
     /** "world" (default): particles spawn where the emitter is and stay in
      * the world as it moves on. "local": they move with it. */
@@ -6475,8 +8945,9 @@ declare module "starhermit:scene" {
     /** Where particles start round the emitter's origin (or a burst's
      * point): "point" (default), "box" (anywhere within ±`extent` on each
      * axis), "sphere" (anywhere within radius `extent`) or "shell" (on
-     * that sphere). */
-    shape?: "point" | "box" | "sphere" | "shell";
+     * that sphere). Since API_MINOR 40 also "ring" (on a circle of radius
+     * `extent` in the emitter's XZ plane) and "disc" (anywhere within it). */
+    shape?: "point" | "box" | "sphere" | "shell" | "ring" | "disc";
     /** The box's half extents (a number: a cube) or the sphere's radius. */
     extent?: number | ParticleVector;
     /** A spawned particle's velocity (units a second; default 0), plus up
@@ -6517,6 +8988,129 @@ declare module "starhermit:scene" {
      * factor of each particle's own (default 0; never below 0), so pieces
      * of debris differ in shape. */
     scaleSpread?: number | ParticleVector;
+    // Since API_MINOR 40 (PARTICLE_FORCES_MINOR; unknown options before).
+    // Forces and colliders act in the particles' space: the world's, or the
+    // emitter's with `space: "local"`. Wind, curl and the vortex move the
+    // air, which carries a particle through its `drag` (without drag they
+    // do nothing), as Solstice's particles do. An emitter using any of
+    // these steps its particles one at a time (no column layout), still
+    // deterministically, natively and in browsers alike.
+    /** The air's velocity (units a second; default 0). */
+    wind?: ParticleVector;
+    /** Curl noise moving the air (swirls that neither bunch particles up
+     * nor thin them out): a strength (units a second), or { strength,
+     * scale (feature size, default 4), change (cells a second, default
+     * 0.2) }; null none. */
+    curl?: number | ParticleCurl | null;
+    /** Upward acceleration at birth, fading to none at the end of its life
+     * (hot gas; default 0). */
+    buoyancy?: number;
+    /** The air turning about `direction` through the emitter's origin,
+     * radians a second (default 0). */
+    vortex?: number;
+    /** Acceleration towards the emitter's origin (default 0). */
+    attract?: number;
+    /** A floor: its height (a +Y plane particles slide along, "clamp"), or
+     * a collider with a `height` (default null: none). */
+    floor?: number | (ParticleCollider & { height?: number }) | null;
+    /** Planes and heightfields, at most 4 with the floor. */
+    colliders?: readonly ParticleCollider[] | null;
+    /** A wobble drawn about each particle's path (it does not move the
+     * particle): an amplitude, or { amplitude (a number or per axis; x and
+     * y follow a sine, z its cosine, so equal x and z sway in a circle),
+     * frequency (cycles a second, or [min, max], each particle its own;
+     * default 1) }. Each particle has its own phase, hashed as twinkle's. */
+    sway?: number | ParticleSway | null;
+    /** How `speed` is pointed: "cone" (default: within `spread` of
+     * `direction`), "planar" (anywhere in the plane across `direction`: a
+     * ring of spray) or "radial" (out from the origin through the spawn
+     * point, `direction` at the origin). */
+    velocityMode?: "cone" | "planar" | "radial";
+    /** Each particle's size times 1 ± this (0 to 1, its own factor). */
+    sizeSpread?: number;
+    /** Point sprites lit as surfaces are (default false): camera-facing
+     * quads `material.size` world units across with a Lambert material made
+     * from the PointsMaterial (its color, map, opacity, blending), lit by
+     * the sun through its shadow maps with a Henyey–Greenstein phase
+     * (`phase`), by the environment and ambient light, and by the scene's
+     * other lights as a quad facing the camera. Every light a lit material
+     * takes reaches them (up to 16 a frame, each through its own shadow
+     * maps where the emitter receives shadows); unlike Solstice's
+     * particles, which trace only the two strongest lights at each
+     * particle past walls, no light is picked out or traced. GPU emitters'
+     * lit particles are lit the same way. ENGINE EXTENSION. */
+    lit?: boolean;
+    /** Point sprites fading into the scene where they meet it, over this
+     * many units of view depth (`renderer.sceneDepth`; default 0: none):
+     * camera-facing quads as with `lit`, blended. ENGINE EXTENSION. */
+    soft?: number;
+    /** A lit particle's scattering asymmetry, −1 to 1 (default 0.2: mostly
+     * onward, so mist glows with the sun behind it). */
+    phase?: number;
+    /** Point sprites as camera-facing quads `material.size` world units
+     * across, unlit (default false; `lit` and `soft` draw so too), as GPU
+     * emitters draw theirs. ENGINE EXTENSION. */
+    billboard?: boolean;
+    /** Since API_MINOR 40 (`PARTICLE_ROTATION_MINOR`; an unknown option
+     * before): each particle's angle as it spawns, in radians (default 0;
+     * −10^6 to 10^6), plus up to ± `rotationSpread` of its own (default 0;
+     * π: any angle). With `spin` it turns at `spin` radians a second (the
+     * same range; default 0), plus up to ± `spinSpread` of its own
+     * (default 0), so confetti flutters each at its own pace: its angle at
+     * age a is its start plus its spin × a (no drag, no ramp). Each
+     * particle's share of the spreads (and its axis) is hashed from its
+     * spawn number and the seed, never drawn from the random stream, so
+     * nothing else about the particles changes and live ones turn too.
+     * Point sprites (and `lit`, `soft` or `billboard` quads) turn in the
+     * view about their centres, counterclockwise on the screen for a
+     * positive angle (as three.js's `SpriteMaterial.rotation`), their `map`
+     * with them; instances turn about `rotationAxis`. */
+    rotation?: number;
+    rotationSpread?: number;
+    spin?: number;
+    spinSpread?: number;
+    /** Since API_MINOR 40: the axis instances turn about, in the
+     * particles' space (made a unit vector; not zero). Default null: each
+     * particle an axis of its own, uniform over the sphere, so debris
+     * tumbles. Point sprites and their quads ignore it. */
+    rotationAxis?: ParticleVector | null;
+  }
+  /** Since API_MINOR 40: a plane (the default) or a heightfield particles
+   * collide with, in the particles' space. */
+  export interface ParticleCollider {
+    /** A plane: solid below `normal · p = offset` (normal default +Y,
+     * offset default 0). */
+    normal?: ParticleVector;
+    offset?: number;
+    /** A heightfield instead: `columns × rows` heights (2 to 256 each way,
+     * x fastest, 65,536 at most over an emitter's colliders) over `size`
+     * ([x, z]) from `origin` ([x, z], its least corner), bilinear between
+     * them; solid below, nothing outside its area. */
+    heights?: ArrayLike<number>;
+    columns?: number;
+    rows?: number;
+    origin?: readonly [number, number];
+    size?: readonly [number, number];
+    /** "bounce" (a collider's default: `restitution` of the speed into
+     * the surface comes back out), "clamp" (a floor's default: it slides
+     * along), "stick" (it stays there, still ageing) or "kill". */
+    response?: "bounce" | "clamp" | "stick" | "kill";
+    /** 0 to 1 (default 0.5). */
+    restitution?: number;
+    /** The share of the speed along the surface lost at each contact, 0
+     * to 1 (default 0). */
+    friction?: number;
+  }
+  /** Since API_MINOR 40: see `ParticleEmitterOptions.sway`. */
+  export interface ParticleSway {
+    amplitude?: number | ParticleVector;
+    frequency?: number | readonly [number, number];
+  }
+  /** Since API_MINOR 40: see `ParticleEmitterOptions.curl`. */
+  export interface ParticleCurl {
+    strength?: number;
+    scale?: number;
+    change?: number;
   }
   /** A per-particle oscillation (since API_MINOR 38). Each particle has a
    * phase and a frequency of its own, hashed from its spawn number and the
@@ -6546,7 +9140,10 @@ declare module "starhermit:scene" {
   // camera, usually) moves `context.listener`, and each `PositionalAudio`
   // its PannerNode, once a frame after the scene's sync, ramping to where
   // their objects are over the frame's delta as three.js does (a
-  // PositionalAudio only while it plays). They need starhermit:audio
+  // PositionalAudio only while it plays; since API_MINOR 42,
+  // `AUDIO_FOLLOW_SUSPENDED_MINOR`, while the context is suspended they set
+  // their parameters at its time instead of ramping, so a held mixer clock
+  // never fills the automation queue). They need starhermit:audio
   // imported and `SPATIAL_AUDIO_MINOR` (37): a TypeError otherwise. Buffers
   // are starhermit:audio's `AudioBuffer`s (`context.decodeAudioData`,
   // `createBuffer`); sounds of clips placed in 3D are `play(clip, {
@@ -6662,16 +9259,24 @@ declare module "starhermit:scene" {
     /** A copy of its settings. */
     readonly options: ParticleEmitterOptions;
     /** Changes some settings (all but `capacity`); the live particles stay
-     * and keep their lives. */
+     * and keep their lives. Since API_MINOR 40 a set the range check
+     * refuses (a RangeError) leaves every setting as it was (before, the
+     * refused values stayed and the next frame's sync threw). */
     set(options: ParticleEmitterOptions): this;
     /** Spawns `count` particles (default 1) at the next step, at `at` in the
      * emitter's space (default its origin) plus the shape's offset. Past the
-     * capacity they are dropped. */
+     * capacity they are dropped. At most 256 bursts wait for a step: since
+     * API_MINOR 40 one more is a RangeError (before, it was dropped). Since
+     * API_MINOR 43 (`PARTICLE_FLIPBOOK_MINOR`) as many as its capacity wait
+     * (each burst spawns at least one particle, so a step's work stays
+     * within what the emitter holds; each call is charged as script). */
     burst(count?: number, at?: ParticleVector, options?: ParticleBurstOptions): this;
     /** Since API_MINOR 38 (absent before): runs it `seconds` (0 to 600)
      * ahead now, from where it is, as frames of at most 0.25 s would,
      * paused or not, so a steady emitter starts full. Charged as those
-     * steps (one unit each and one each 8 particles), each before it runs. */
+     * steps (one unit each and one each 8 particles), each before it runs.
+     * Since API_MINOR 40 it runs the settings a `set` made this frame (1.38
+     * and 1.39 ran the last frame's until the sync sent them). */
     prewarm(seconds: number): this;
     /** Lets every live particle go. */
     clear(): this;
@@ -7065,6 +9670,41 @@ declare module "starhermit:scene" {
   // first four directional or spot lights (in scene order) with
   // `castShadow` cast, each with its own shadow map; other lights' shadows
   // are ignored.
+  //
+  // Since API_MINOR 43 (games declaring `engine.minor=43` or later) point
+  // and spot lights are clustered, as Unity URP's Forward+ lights its
+  // additional lights: up to 64 a frame besides the 16 light slots (which
+  // keep directional, hemisphere and probe lights and point lights whose
+  // shadow takes a shadow map), so 80 lights besides ambient light draw
+  // (`budgets().lights`). The engine culls them per screen tile (16 × 9
+  // over the view) and depth bin (32 along it): a pixel shades only the
+  // lights whose reach (`distance`, and a spot's cone) can touch it, each
+  // with exactly the falloff, cone and reflection three.js r185 gives it.
+  // A light with no `distance` (0) reaches everywhere and costs every
+  // pixel; give lights a `distance` to keep them cheap. Past 64 clustered
+  // lights, the rest (in scene order) are left out and counted in
+  // `stats().skippedObjects`.
+  //
+  // Spot lights' shadows (`castShadow`, `shadow.mapSize` and the rest of
+  // `SpotLightShadow`, as in three.js) go to a shadow atlas, as URP's
+  // additional-lights shadow atlas: up to 8 spots a frame, each map 64 to
+  // 1024 texels a side (`mapSize` clamped), side by side in one of the
+  // four shadow maps (a grid of cells as wide as the largest map: 1, 2×2
+  // or 3×3). The atlas takes the map after the directional lights' (with
+  // three cascades, the fourth); point lights' maps come after it. When
+  // more spots cast than fit, 8 win: those whose reach (the cone's range)
+  // meets the camera's view, then the nearest the camera, then scene
+  // order; the others light unshadowed. `shadow.autoUpdate` false and
+  // `needsUpdate` work as in three.js: a kept spot keeps the view its map
+  // was drawn with until `needsUpdate`, and while every spot in the atlas
+  // is kept and nothing changed the whole atlas is kept (not drawn). When
+  // any spot draws (autoUpdate true, needsUpdate, a spot joining or
+  // leaving the atlas, or one moving to another cell), the whole atlas is
+  // drawn again, each kept spot from its kept view: the same map as
+  // three.js keeps unless that spot's casters moved meanwhile (three.js
+  // would still show them where they were). Lookups are three.js's PCF or
+  // basic (`receiverPlane` takes PCF). Older games' spot lights take one
+  // of the four maps each, as before.
   export abstract class Light extends Object3D {
     color: Color;
     intensity: number;
@@ -7108,8 +9748,12 @@ declare module "starhermit:scene" {
    * Since API_MINOR 33 a light may take the engine's receiver-plane
    * filter in place of three.js's (`receiverPlane`, not three.js).
    *
-   * Point lights cast no shadows; at most four lights cast (the first
-   * directional or spot lights with `castShadow` in scene order). */
+   * Before API_MINOR 40 point lights cast no shadows. Since API_MINOR 40
+   * a point light's `shadow` is three.js r185's `PointLightShadow` (see
+   * `PointLight.shadow`). At most four maps are drawn: the directional
+   * and spot lights' with `castShadow` in scene order (each cascade a
+   * map), then point lights', so point lights lose theirs first, to the
+   * slots and to the effect budget (with a note in Options). */
   export interface LightShadow {
     /** Since API_MINOR 23 the shadow camera (an `OrthographicCamera`, or a
      * spot's `PerspectiveCamera`), which three.js's `copy` clones. */
@@ -7149,8 +9793,14 @@ declare module "starhermit:scene" {
     /** Since API_MINOR 23, three.js's (default 8): `VSMShadowMap`'s blur,
      * which the engine does not draw (VSM draws as PCF). */
     blurSamples: number;
-    /** Since API_MINOR 23, three.js's (default true and false). The engine
-     * draws every map each frame whatever they say. */
+    /** Since API_MINOR 23, three.js's (default true and false). Since
+     * API_MINOR 40 they act as three.js r185's: with `autoUpdate` false
+     * the map is drawn once and then kept, with the camera it was drawn
+     * with (the light may move; its map and lookup do not follow), until
+     * `needsUpdate` is set true, which draws it again that frame and goes
+     * back to false (`renderer.shadowMap.autoUpdate` and `needsUpdate` do
+     * the same for every map). Before API_MINOR 40 the engine draws every
+     * map each frame whatever they say. */
     autoUpdate: boolean;
     needsUpdate: boolean;
     /** Before API_MINOR 23: a directional light's reach along the view
@@ -7176,7 +9826,35 @@ declare module "starhermit:scene" {
      * `renderer.shadowMap.type` apply to every map. Other values are a
      * RangeError, and setting it before API_MINOR 26 a TypeError, as the
      * scene syncs; spot lights ignore it. */
-    cascades?: { count?: number; maxDistance: number; splitLambda?: number } | null;
+    cascades?: {
+      count?: number;
+      maxDistance: number;
+      splitLambda?: number;
+      /** ENGINE EXTENSION (since API_MINOR 40, after Solstice's cached
+       * shadows; default false): the cascades keep their static casters.
+       * Casters that have not moved for 30 frames (and are neither skinned
+       * nor drawn through a custom material's code) are drawn once into a
+       * cache image per cascade, which is copied into the map each frame
+       * with the casters that move drawn over it; a cascade draws its
+       * cache again only when its view moves a coarse step (a 32nd of its
+       * padded width, in whole texels) or out of its padded depth range,
+       * when the light turns past its lag (0.03° for the nearest cascade
+       * to 0.37° for the farthest), or when a caster joins or leaves the
+       * cached ones (starts or
+       * stops moving, appears or goes). Since API_MINOR 41 a cached
+       * caster also leaves them for 30 frames when what it draws with
+       * changes though it stands still (its geometry or draw range, its
+       * opacity, its material's alpha, sides or map, that map's pixels
+       * written in place, an InstancedMesh's instances updated), a caster
+       * whose map is a render target's stays live, and a cascade draws
+       * its cache again when its light or the cascades' bounds change;
+       * before it only a caster's place counts. Far cascades take turns: at most
+       * one draws its cache again a frame. Each cache takes another map's
+       * bytes of the effect budget; one that does not fit draws every
+       * caster each frame, as without it. Not a boolean is a TypeError;
+       * before API_MINOR 40 it is not read. */
+      cached?: boolean;
+    } | null;
     /** ENGINE EXTENSION, not three.js (since API_MINOR 33; three.js r185
      * has no receiver-plane bias): a directional or spot light's
      * receiver-plane filter, false (the default) for the filter
@@ -7211,6 +9889,18 @@ declare module "starhermit:scene" {
     constructor(color?: ColorInput, intensity?: number, distance?: number, decay?: number);
     distance: number;
     decay: number;
+    /** Since API_MINOR 40, three.js r185's `PointLightShadow` (undefined
+     * before): a `PerspectiveCamera(90, 1, 0.5, 500)` per cube face (its
+     * far the light's `distance` when set), `mapSize` each face's side
+     * (default 512; the map holds the six faces, 3 × `mapSize` square, so
+     * at most 1365 a face), `bias` in the face's 0–1 depth, `normalBias`
+     * in world units, `radius`, `intensity`, `autoUpdate` and
+     * `needsUpdate` as `LightShadow`'s; `PCFShadowMap` filters five
+     * lookups on a disk across the direction, `BasicShadowMap` compares
+     * the nearest texel, and points nearer than `near` or past `far` are
+     * lit, as three.js's `getPointShadow`. The engine has no cube
+     * textures: the six faces lie side by side in one 2D depth map. */
+    readonly shadow: LightShadow;
   }
   /** A cone toward `target`: `angle` (radians, at most π/2) is its edge and
    * `penumbra` (0–1) the fraction of it that fades out. Point lights cast no
@@ -7231,6 +9921,87 @@ declare module "starhermit:scene" {
   export class HemisphereLight extends Light {
     constructor(skyColor?: ColorInput, groundColor?: ColorInput, intensity?: number);
     groundColor: Color;
+  }
+
+  // -- Post programs' access (since API_MINOR 43, POST_ACCESS_MINOR) ---------
+  /** 43 from host API 1.43 (undefined before: feature-detect with
+   * `import * as scene from "starhermit:scene"` and
+   * `scene.POST_ACCESS_MINOR !== undefined`): `renderer.post` programs
+   * may call `main_light_shadow(world)` and read `renderer.post.texture`
+   * (see `PostShader`), and `renderer.contactShadows` draw under
+   * `renderer.post`. */
+  export const POST_ACCESS_MINOR: number;
+
+  /** 43 from host API 1.43 (undefined before: feature-detect with
+   * `import * as scene from "starhermit:scene"` and
+   * `scene.SCENE_DEPTH_PRECISION_MINOR !== undefined`): `renderer.sceneDepth`
+   * holds the depth at full precision (red plus green) and
+   * `renderer.sceneDepthPrecision` reads `"full"`. */
+  export const SCENE_DEPTH_PRECISION_MINOR: number;
+
+  // -- Light probes (since API_MINOR 43, LIGHT_PROBE_MINOR) ------------------
+  // three.js r185's `SphericalHarmonics3` and `LightProbe`. Below API_MINOR
+  // 43 none of these exist: a named import fails to link, and a namespace
+  // import's `LIGHT_PROBE_MINOR` is undefined.
+
+  /** 43 from host API 1.43 (undefined before: feature-detect with
+   * `import * as scene from "starhermit:scene"` and
+   * `scene.LIGHT_PROBE_MINOR !== undefined`). */
+  export const LIGHT_PROBE_MINOR: number;
+  /** L2 spherical harmonics (bands 0 to 2) of RGB light, three.js r185's:
+   * `coefficients[i]` holds basis function i's red, green and blue (x, y,
+   * z), in three.js's order and normalization (the basis is
+   * `getBasisAt`'s: 0.282095; 0.488603 × y, z, x; 1.092548 × xy, yz;
+   * 0.315392 × (3z² − 1); 1.092548 × xz; 0.546274 × (x² − y²)). */
+  export class SphericalHarmonics3 {
+    constructor();
+    readonly isSphericalHarmonics3: true;
+    /** Nine coefficients. */
+    coefficients: Vector3[];
+    set(coefficients: Vector3[]): this;
+    zero(): this;
+    /** The radiance in the direction of the unit `normal`, into `target`. */
+    getAt(normal: Vector3, target: Vector3): Vector3;
+    /** The irradiance in the direction of the unit `normal` (the radiance
+     * convolved with the cosine lobe: 0.886227, 1.023328, 0.858086,
+     * 0.743125 z² − 0.247708 and 0.429043 times the bands' terms), into
+     * `target`: what a `LightProbe` of intensity 1 lights a surface facing
+     * `normal` with. */
+    getIrradianceAt(normal: Vector3, target: Vector3): Vector3;
+    add(sh: SphericalHarmonics3): this;
+    addScaledSH(sh: SphericalHarmonics3, s: number): this;
+    scale(s: number): this;
+    lerp(sh: SphericalHarmonics3, alpha: number): this;
+    equals(sh: SphericalHarmonics3): boolean;
+    copy(sh: SphericalHarmonics3): this;
+    clone(): SphericalHarmonics3;
+    /** The coefficients from 27 numbers (each one's r, g, b in turn) at
+     * `offset`. */
+    fromArray(array: ArrayLike<number>, offset?: number): this;
+    toArray<T extends { [index: number]: number } = number[]>(array?: T, offset?: number): T;
+    /** The nine basis functions at the unit `normal`, into `shBasis`. */
+    static getBasisAt(normal: Vector3, shBasis: number[]): void;
+  }
+  /** Irradiance from spherical harmonics, three.js r185's `LightProbe`:
+   * the scene's probes add up (each coefficient times its probe's
+   * `intensity`; `color` is unused, the position and rotation too) and
+   * every lit material (standard, physical, Lambert, Phong, toon, and
+   * custom materials' `light` hooks as indirect light) takes
+   * `sh.getIrradianceAt(normal) × intensity` along its world normal (the
+   * shading normal, normal maps included) per pixel as indirect diffuse
+   * light, as ambient light: through `BRDF_Lambert` of the diffuse color,
+   * ambient occlusion applied. The coefficients are linear light, any sign,
+   * within ±65,504 (others throw when the scene syncs). A scene's probes take two of its 16 extra light slots; a
+   * custom material that reads the frame's lights itself sees them as
+   * kinds 4 and 5. `LightProbeGenerator` is not offered. */
+  export class LightProbe extends Light {
+    constructor(sh?: SphericalHarmonics3, intensity?: number);
+    readonly isLightProbe: true;
+    sh: SphericalHarmonics3;
+    /** three.js's JSON of the probe (Object3D's fields without children,
+     * `color`, `intensity` and `sh`, the coefficients' 27 numbers); its
+     * `type` is `"Light"`, as three.js r185 writes it. */
+    toJSON(meta?: unknown): { metadata?: { version: number; type: string; generator: string }; object: Record<string, unknown> };
   }
 
   // -- Fog and the scene ----------------------------------------------------------
@@ -7592,16 +10363,67 @@ declare module "starhermit:scene" {
    *                                             coord the pixel's position
    *   fn scene_color(uv: vec2f) -> vec4f   the scene's linear light
    *   fn scene_depth(uv: vec2f) -> f32     view depth of the nearest
-   *                                        opaque surface (65504: none)
+   *                                        opaque surface (65504: none;
+   *                                        since API_MINOR 43 at full
+   *                                        precision, see `sceneDepth`)
    *   fn world_position(uv: vec2f, depth: f32) -> vec3f
    *   fn camera_position() -> vec3f, fn screen_size() -> vec2f
    *   fn srgb_to_linear, fn linear_to_srgb
+   *   fn scene_velocity(uv: vec2f) -> vec3f  (since API_MINOR 40, an
+   *                                        engine extension) the scene's
+   *                                        motion: xy the offset in uv
+   *                                        from this pixel to where its
+   *                                        surface was the frame before
+   *                                        (opaque and masked objects,
+   *                                        their skins included; zero
+   *                                        where nothing drew, the sky
+   *                                        moving with the camera alone in
+   *                                        the temporal resolve), z the
+   *                                        reactive mask (coverage of
+   *                                        transparent objects and
+   *                                        particles). A program calling it
+   *                                        brings the velocity pass along
+   *                                        (the opaque objects' vertices
+   *                                        again, plus 12 bytes a pixel of
+   *                                        the scene). Custom materials'
+   *                                        vertex hooks are not applied in
+   *                                        it: their objects move as
+   *                                        placed.
+   *   fn main_light_shadow(world: vec3f) -> f32  (since API_MINOR 43,
+   *                                        POST_ACCESS_MINOR; an engine
+   *                                        extension) the primary light's
+   *                                        (the scene's first directional
+   *                                        light) shadow at a world point:
+   *                                        1 lit, 0 in shadow, from its
+   *                                        last cascade's map (the one
+   *                                        reaching farthest), the four
+   *                                        texels around the point compared
+   *                                        and blended bilinearly (no PCF
+   *                                        disk, no normal offset; the
+   *                                        light's bias and intensity
+   *                                        apply). 1 outside the map, past
+   *                                        its far plane, and where the
+   *                                        light casts no shadow: fog god
+   *                                        rays march it along the view ray
+   *   fn post_texture(uv: vec2f) -> vec4f, fn post_texture_size() -> vec2f,
+   *   fn has_post_texture() -> bool  (since API_MINOR 43) `texture`
+   *                                        sampled linearly (on WebGL 2, before 1.44.0, with the texture's own filters: a DataTexture's nearest), its texels as
+   *                                        stored (an sRGB texture is not
+   *                                        decoded: srgb_to_linear), uv
+   *                                        0..1 from its first row; zero
+   *                                        without one
    *   uniforms (numbers, vectors, matrices and vec4/matrix arrays; no
-   *   textures), 64 floats in whole vec4 slots; defines as constants. */
+   *   textures), 64 floats in whole vec4 slots; defines as constants.
+   * Before API_MINOR 43 those names are the game's own. */
   export interface PostShader {
     pixel: string;
     uniforms?: Record<string, ShaderUniform>;
     defines?: Record<string, number | boolean>;
+    /** Since API_MINOR 43 (an engine extension): one game texture the
+     * program reads (`post_texture`), a 2D texture (a 3D one is a
+     * TypeError as the frame syncs), read each frame; a water mask, a
+     * fog density map. Ignored before API_MINOR 43. */
+    texture?: Texture | null;
   }
   /** Anti-aliasing: none, three.js's `FXAAShader` or `SMAAPass` (SMAA 1x)
    * after the output, or 4× multisampling resolved before the other
@@ -7613,8 +10435,31 @@ declare module "starhermit:scene" {
    * straight to the window before). A game that never sets it keeps
    * three.js's canvas look: drawn straight to the window, fog and blending
    * in encoded color. A device without half-float color draws an assigned
-   * "off" straight too (its 8-bit post buffers draw every mode that way). */
-  export type AntialiasMode = "off" | "fxaa" | "smaa" | "msaa";
+   * "off" straight too (its 8-bit post buffers draw every mode that way).
+   *
+   * "taa" (since API_MINOR 40; a TypeError before) is the engine's
+   * temporal anti-aliasing with upscaling: the scene drawn with its
+   * projection jittered by a sub-pixel Halton(2, 3) offset over eight
+   * frames, each object's and skin's motion drawn into a velocity image,
+   * and every frame resolved with the last one's result reprojected by the
+   * nearest of its 3×3 pixels' motion, clipped to the neighbourhood's
+   * colours, with less history under transparent objects and particles
+   * (the reactive mask), and (since API_MINOR 42) dropped where a pixel's
+   * own motion (what the camera's motion does not explain) differs from
+   * the one kept where it was: a disocclusion, so a moving object leaves no
+   * trail even over a busy background such as a checkered floor, whose
+   * colours the clip alone let the object's through (games below 42 keep
+   * the clip alone); resolved into the window's size: a scene at a render
+   * scale below 1
+   * (`setPixelRatio`, `setSize`, the player's render scale and adaptive
+   * resolution) is upscaled by it. It runs before bloom and the output.
+   * three.js's `TAARenderPass` is different: it accumulates a still
+   * camera's jittered frames and starts again whenever anything moves.
+   * The history is dropped on a cut: a new `camera`, or
+   * `renderer.resetHistory()`. It needs half-float color and a depth
+   * format the device samples: without them FXAA stands in, with a note in
+   * Options. */
+  export type AntialiasMode = "off" | "fxaa" | "smaa" | "msaa" | "taa";
 
   /** How the scene is drawn. The game decides the camera, lights, shadows
    * on or off, fog, tone mapping, materials and the post effects, in
@@ -7638,8 +10483,36 @@ declare module "starhermit:scene" {
      * It need not be in the scene graph. */
     camera: Camera | null;
     /** `type` (since API_MINOR 23): `PCFShadowMap` (the default) or
-     * `BasicShadowMap` (see `LightShadow`). */
-    readonly shadowMap: { enabled: boolean; type: number };
+     * `BasicShadowMap` (see `LightShadow`). `autoUpdate` and
+     * `needsUpdate` (since API_MINOR 40, three.js r185's; true and false):
+     * with `autoUpdate` false no map is drawn, every one kept, until
+     * `needsUpdate` is set true for a frame. */
+    readonly shadowMap: { enabled: boolean; type: number; autoUpdate?: boolean; needsUpdate?: boolean };
+    /** ENGINE EXTENSION, not three.js (since API_MINOR 40, after Solstice's
+     * deferred contact shadows; null, the default, for none): a short
+     * march from each pixel toward a directional light (`light`, or the
+     * first in the scene) through the scene's depth, `steps` (1–64,
+     * default 16) samples out to `length` world units (default 0.5): where
+     * a surface nearer the camera than a sample stands within `thickness`
+     * (default 0.1) past `bias` (default 0.01), the pixel's light is
+     * darkened by up to `intensity` (0–1, default 0.6), less the farther
+     * along. It draws as a pass over the scene's light, so it needs half-float
+     * color (otherwise it is left out with a note in Options), and darkens
+     * all of a pixel's light rather than the one light's: the small
+     * shadows where objects meet the ground that a shadow map's texels
+     * miss. Before API_MINOR 43 it is the post program and draws only
+     * while `renderer.post` is null; from API_MINOR 43 it runs just before
+     * `renderer.post` (which then reads the contact-shadowed light), so
+     * both draw. Other values are a RangeError as the frame syncs. */
+    contactShadows?: {
+      enabled?: boolean;
+      light?: DirectionalLight;
+      length?: number;
+      thickness?: number;
+      bias?: number;
+      intensity?: number;
+      steps?: number;
+    } | null;
     /** Null (the default) for none. */
     bloom: BloomSettings | null;
     /** Null (the default) for none. */
@@ -7757,10 +10630,25 @@ declare module "starhermit:scene" {
      * objects' depth (a prepass without shadows: their vertex work again,
      * plus 12 bytes a pixel of the window); objects that sample it are not
      * in it. Half floats keep about a two-thousandth of the distance.
-     * Render-target passes read the last frame's; where the device cannot
-     * render half floats it stays 65504. Nearest filtering by default (one
-     * object a game; disposing it does nothing). */
+     * Since API_MINOR 43 (`SCENE_DEPTH_PRECISION_MINOR`) green holds the
+     * rest: red is the depth rounded to the nearest half float and red
+     * plus green the depth at full precision (about a four-millionth of
+     * it: 0.00002 at 70 units, where red alone steps 0.0625), so a
+     * waterline fade reads `let t = textureSampleLevel(...); t.r + t.g`.
+     * Keep nearest filtering: some GPUs (NVIDIA's) filter half floats at
+     * half precision, so `LinearFilter` interpolates no better than red;
+     * for a smooth depth, mix the nearest texels' sums in the shader
+     * (`mix(a, b, w)` of two reads, then `.r + .g`). Before 43 green is
+     * zero (red alone, as before). Same size and cost either way. Since
+     * API_MINOR 43 (`DECALS_MINOR`) blue is 1 on the surfaces of
+     * materials with `receiveDecals` false, 0 elsewhere. Render-target passes read the last frame's; where the device
+     * cannot render half floats it stays 65504. Nearest filtering by
+     * default (one object a game; disposing it does nothing). */
     readonly sceneDepth: Texture;
+    /** Since API_MINOR 43 (`SCENE_DEPTH_PRECISION_MINOR`; undefined
+     * before, where `sceneDepth` holds red alone): `"full"`, `sceneDepth`'s
+     * red plus green being the view depth at full precision. Read-only. */
+    readonly sceneDepthPrecision?: "full";
     /** Since API_MINOR 34 (`SCENE_COLOR_MINOR`; undefined before): the
      * scene's color as a texture for transparent custom materials
      * (refraction, depth fog, shorelines; three.js's transmission pass):
@@ -7782,6 +10670,186 @@ declare module "starhermit:scene" {
      * render half floats it stays transparent black. Linear filtering by
      * default (one object a game; disposing it does nothing). */
     readonly sceneColor: Texture | undefined;
+    /** Since API_MINOR 40 (three.js's): the size the scene draws at is
+     * `setSize`'s width and height (logical pixels; the window's by
+     * default) times `setPixelRatio`'s ratio (the window's physical pixels
+     * per logical pixel by default), as a share of the window's width,
+     * within 0.25 to 2: a ratio of 1 on a 2× display draws the scene at
+     * half the window's size. The player's render scale and adaptive
+     * resolution (Options › Graphics) multiply it. The scene is then
+     * brought to the window's size: upscaled by `antialias: "taa"`,
+     * resampled linearly by the other modes (bringing the post effects'
+     * buffers along). Before API_MINOR 40 `setPixelRatio` and `setSize`
+     * do nothing, the scene draws at the window's size and the getters,
+     * `setDrawingBufferSize` and `resetHistory` are undefined. A
+     * RangeError for a value that is not a positive finite number. */
+    setPixelRatio(value: number): void;
+    getPixelRatio(): number;
+    setSize(width: number, height: number, updateStyle?: boolean): void;
+    getSize(target: Vector2): Vector2;
+    /** `setSize(width, height)` and `setPixelRatio(pixelRatio)` at once. */
+    setDrawingBufferSize(width: number, height: number, pixelRatio: number): void;
+    /** `getSize` times `getPixelRatio`, rounded down. */
+    getDrawingBufferSize(target: Vector2): Vector2;
+    /** Since API_MINOR 40 (an engine extension; undefined before): the
+     * scene's motion as a texture for custom materials, as `sceneDepth`
+     * and `sceneColor` are: red and green the offset in uv from each pixel
+     * to where its surface was the frame before (previous minus current,
+     * rows from the top; zero where nothing opaque moved but the camera,
+     * whose motion the sky does not record), blue the reactive mask
+     * (transparent and particle coverage), alpha 1 where motion was drawn;
+     * at the scene's size, half floats, nearest filtering. Asking for it
+     * turns the motion vectors on (the opaque objects' vertices again,
+     * plus 12 bytes a pixel of the scene); window frames write it after
+     * the scene, so materials read the last frame's (a post program reads
+     * this frame's with `scene_velocity`). Zero where the device cannot
+     * render half floats. */
+    readonly sceneVelocity: Texture;
+    /** Since API_MINOR 40, an engine extension: drops the temporal history
+     * at the next frame (a cut to another shot or a teleport, so nothing
+     * of the last view is blended in; a new `camera` does it too). */
+    resetHistory(): void;
+    /** Since API_MINOR 40 (`SCREEN_EFFECTS_MINOR`; undefined before):
+     * screen-space reflections, with three.js `SSRPass`'s settings, or
+     * null (the default). Each window frame traces, at half the scene's
+     * size, the view ray mirrored about each surface (its geometry normal,
+     * metalness and roughness factors, not its maps) through a min/max
+     * depth pyramid, takes the last frame's light where it hits (found
+     * through the motion vectors, which the effect turns on), accumulates
+     * it over frames and lays it over the scene before the post program,
+     * the temporal resolve and bloom. Misses (off screen, behind
+     * something, too far) keep the scene's own environment reflection.
+     * `opacity` (0..1, default 0.5), `maxDistance` (view units, default
+     * 180), `thickness` (how deep a surface is taken to be, view units,
+     * default 0.018), `distanceAttenuation` ((1 − distance / maxDistance)²,
+     * default true) and `fresnel` ((1 + cos) / 2 of the incident and
+     * reflected rays, default true) are three.js's; `maxRoughness` (the
+     * roughest surface that reflects, 0..1, default 0.5; reflections fade
+     * out toward it) and `steps` (1..128, default 48) the engine's.
+     * Objects with `aoEnabled` false take no part (they neither reflect nor
+     * are reflected). It needs half-float color: off otherwise, noted in
+     * Options, and over the effect budget it goes after `ssgi`. */
+    ssr: SSRSettings | null;
+    /** Since API_MINOR 40 (`SCREEN_EFFECTS_MINOR`; undefined before):
+     * screen-space global illumination, or null (the default). The
+     * engine's (three.js's `SSGINode` names its settings): a probe at the
+     * centre of each 16 × 16 pixel tile traces sixteen rays over its
+     * hemisphere through the depth pyramid into the last frame's light,
+     * projected to L1 spherical harmonics, blended with like neighbours,
+     * interpolated per pixel along its normal, weighted by the ambient
+     * occlusion and accumulated over frames; the light found is added by
+     * each pixel's own color (an albedo the post buffers keep none of) less
+     * metalness. Misses keep the scene's own ambient and environment
+     * light. `giIntensity` (0..16, default 1), `radius` (how far rays
+     * reach, view units, default 5), `thickness` (view units, default
+     * 0.5), `stepCount` (1..128, default 24), `aoIntensity` (the ambient
+     * occlusion's share, 0..1, default 1) and `useTemporalFiltering`
+     * (default true). It runs at the High and Ultra quality tiers' levels
+     * only, needs half-float color (off otherwise, noted in Options) and
+     * is the first effect left out over the effect budget. */
+    ssgi: SSGISettings | null;
+    /** Since API_MINOR 40 (`SCREEN_EFFECTS_MINOR`; undefined before):
+     * exposure settings. `auto` (null by default) meters each frame's log
+     * luminance (weighted toward the centre) and brings its average to
+     * middle grey before tone mapping (with `toneMappingExposure` on top),
+     * easing toward it at `speed` (per second toward brighter, default 2)
+     * and `speedDown` (toward darker, default 0.46 × speed) within
+     * `minEv..maxEv` (EV100 of the average, −17..15, defaults −4 and 15),
+     * times 2^`compensation` (EV, default 0). With `night` ({ minEv,
+     * maxEv }) the limits move toward the night's as `daylight` falls (a
+     * number 0..1, or an object with a `daylight`, such as
+     * starhermit:sky's `SkyAtmosphere`, read each frame), so night stays
+     * dark. `hold` (default false) keeps the exposure as it is and leaves
+     * the frame unmetered, for a lightning flash. Where half floats do not
+     * render it meters and scales the tone-mapped image (within 1/8..8;
+     * noted in Options). */
+    readonly exposure: { auto: AutoExposureSettings | null; hold: boolean };
+    /** Since API_MINOR 40 (`SCREEN_EFFECTS_MINOR`; undefined before):
+     * contrast-adaptive sharpening of the shown image (0..1, default 0:
+     * none), after the output and any anti-aliasing, clamped to each
+     * pixel's neighbours so it leaves no halo. */
+    sharpen: number;
+    /** Since API_MINOR 40 (`SCREEN_EFFECTS_MINOR`; undefined before):
+     * three.js `FilmPass`'s grain over the shown image (`intensity` 0..1,
+     * default 0.5; `grayscale` default false), or null (the default). */
+    film: { intensity?: number; grayscale?: boolean } | null;
+    /** Since API_MINOR 42 (`LOOK_ASSETS_MINOR`; an engine extension where
+     * three.js adds the pass to its `EffectComposer` after `OutputPass`):
+     * a `LUTPass` whose table colour-grades the shown image, or null (the
+     * default). It runs in the composite after the output (tone mapping,
+     * exposure, sRGB) and any display-space grade, before FXAA/SMAA and the
+     * finish, in window frames; it brings the post buffers along (8-bit
+     * ones too). The pass's `lut`, `intensity` and `enabled` are read each
+     * frame; its table is read again after `needsUpdate`. */
+    lut?: LUTPass | null;
+    /** Since API_MINOR 43 (`COLOR_LUT_MINOR`; undefined before; an engine
+     * extension, three.js r185 has none): a game's colour-grading table
+     * (`ColorLut`) that replaces `toneMapping`, or null (the default). In
+     * window frames' composite it takes the scene's linear HDR light after
+     * the linear-space grade (vignette, flash), automatic exposure and
+     * bloom, where tone mapping would run, and looks it up: the result is
+     * linear light, which the output encoding follows (sRGB, or linear
+     * with `LinearSRGBColorSpace`), then any display-space grade, `lut`
+     * (LUTPass), FXAA/SMAA, the game's post passes after the output,
+     * sharpening and grain. Game post passes before the output see the
+     * light before it. While it is set `toneMapping` is not applied. At
+     * API_MINOR 43 `toneMappingExposure` is not applied either (bake
+     * exposure into the table); since API_MINOR 44 (`LUT_EXPOSURE_MINOR`,
+     * as three.js r185's tone mapping multiplies it before a LUTPass after
+     * `OutputPass`) the light is multiplied by `toneMappingExposure` before
+     * the lookup unless `toneMapping` is `NoToneMapping` (r185 applies no
+     * exposure without tone mapping), so a fade needs no new table. It brings the post buffers along; a device without
+     * half-float color leaves it out and tone maps as `toneMapping` says
+     * (with a note). Its fields are read each frame. */
+    colorLut?: ColorLut | null;
+    /** Since API_MINOR 44 (`LENS_EFFECTS_MINOR`; undefined before; an
+     * engine extension with three.js r185 `BokehPass`'s settings): the
+     * depth of field (`BokehSettings`), or null (the default). Disc bokeh
+     * over the linear light before the output, in window frames: after the
+     * temporal resolve, the underwater light and the game's post passes
+     * before the output, before automatic exposure, bloom and the
+     * composite. It brings the post buffers and the scene-depth prepass
+     * along (opaque surfaces' depth: transparent ones, water among them,
+     * take the depth behind them); a device without half-float color
+     * leaves it out (with a note). Its fields are read each frame. */
+    bokeh?: BokehSettings | null;
+    /** Since API_MINOR 44 (`LENS_EFFECTS_MINOR`; undefined before; an
+     * engine extension): the lens after the output (`LensSettings`: barrel
+     * distortion and chromatic aberration), or null (the default). It runs
+     * on the shown image after any anti-aliasing and the game's post passes
+     * after the output, before `sharpen` and `film`. */
+    lens?: LensSettings | null;
+    /** Since API_MINOR 44 (`LENS_EFFECTS_MINOR`; undefined before; an
+     * engine extension): sensor noise over the shown image, as `film`'s
+     * grain is applied (after the output, in the lens's step): a number
+     * (the intensity) or `SensorNoiseSettings`, or null (the default). */
+    sensorNoise?: SensorNoiseSettings | number | null;
+    /** Since API_MINOR 44 (`UNDERWATER_MINOR`; undefined before; an engine
+     * extension): the scene seen from under a water surface
+     * (`UnderwaterSettings`), or null (the default). Each frame, where a
+     * view ray starts under the surface (at the near plane), the light
+     * behind it is dimmed per channel along its way under water (red
+     * first) up to where it leaves the water through the surface, meets
+     * an opaque surface or reaches `reach` (then all the way on), and the
+     * light the water scatters toward the eye is added: the sun's (light
+     * shafts, focused into caustics by the surface's waves), the sky's,
+     * and motes. A ray that starts above the surface is left to the water's
+     * own shading (starhermit:water draws its surfaces' underside through
+     * Snell's window). Linear light, at the scene's size before temporal
+     * anti-aliasing (which settles the march's jitter). It brings the post
+     * buffers and the scene-depth prepass along; a device without
+     * half-float color leaves it out (with a note). With `water` (or a
+     * level without a heightfield) the camera well above the surface sends
+     * nothing: off costs nothing. Its fields are read each frame. */
+    underwater?: UnderwaterSettings | null;
+    /** Since API_MINOR 40 (`SCREEN_EFFECTS_MINOR`; undefined before):
+     * specular anti-aliasing in the lit materials (default false, so their
+     * look stays three.js's): each pixel's squared roughness widened by the
+     * shading normal's variance across it (Toksvig, Kaplanyan et al.), so
+     * fine normal-mapped relief stops sparkling. `true`, or `{ variance,
+     * limit }` (the variance's scale 0..4, default 1; the most the squared
+     * roughness grows, 0..1, default 0.18). Reads back as a boolean. */
+    specularAntialiasing: boolean | { variance?: number; limit?: number };
     /** Since API_MINOR 9: the frame this call makes, as the PNG bytes of a
      * screenshot (a photo mode): the scene, and with `ui: true` the game's
      * 2D overlay (`starhermit:draw`, `starhermit:ui`) over it, as drawn,
@@ -8396,6 +11464,726 @@ declare module "starhermit:volume" {
   }
 }
 
+// -- The sky and the time of day (since API_MINOR 40, `SKY_MINOR`) -------------------
+// A physically based sky after Hillaire 2020 ("A Scalable and Production
+// Ready Sky and Atmosphere Rendering Technique"), the time of day and the
+// bodies beyond the air, ported from Solstice (MIT; licenses/LICENSE-solstice).
+// A game declaring an older minor that imports it gets a TypeError as the
+// module evaluates.
+//
+// `SkyAtmosphere` is a Mesh the game adds to the scene and updates once a
+// frame. Its transmittance and multiple-scattering tables are drawn once and
+// its sky-view table every frame, each by a fragment pass into a small render
+// target (the engine has no compute); the dome reads them. The sun (limb
+// darkened), the moon (its phase, seas, rayed craters, Lommel-Seeliger
+// reflectance with the opposition surge, and earthshine), three layers of
+// stars coloured by Planck's law that twinkle more near the horizon, and the
+// Milky Way at its galactic coordinates (baked once into a map of the
+// celestial sphere) shine through the air, which dims and reddens them low
+// down. Below the horizon the dome shows the horizon's light, so land and sea
+// far off meet the sky without a seam. Exposure stays tied to daylight: the
+// sky's light is the sun's times `intensity` by day, a moonlit or moonless
+// night is dark, and nothing brightens it.
+//
+// The sky drives, if asked: a DirectionalLight (the sun by day, the moon once
+// the sun is 10° down, its direction moved in steps of 0.05° so shadow maps are
+// not redrawn every frame, its colour the light through the air); the scene's
+// background (`background: true`: an equirectangular target drawn every frame
+// in the dome's place); and `scene.environment`, through `PMREMGenerator`
+// from a 64 × 32 equirectangular image of the clear sky read back
+// (`readRenderTargetPixelsAsync`) at most every `environmentInterval` seconds
+// or when the light has turned `environmentAngle` degrees (the game's own
+// environment is never replaced). Its aerial perspective is a fog hook:
+// `material.hooks = sky.aerialPerspective` (or `applyAerialPerspective(root)`)
+// fades distant surfaces into the air's light toward them, from a 64 × 16
+// table of the clear sky drawn as the scene's fog mixes it (display colour
+// when drawn straight, linear light under post effects).
+//
+// Tiers (`tier`), lowered to the device and never raised past the one asked
+// for (a note in Options → Graphics and a console warning say when it is
+// lowered): "full" (half-float
+// tables), "reduced" (where the device cannot render half floats: RGBA8 tables
+// holding c / (c + 0.05) a channel), "minimal" (Preetham's
+// analytic sky, three.js's `Sky`, with the sun, moon and stars but no Milky
+// Way and no tables) and "off" (nothing drawn; the time, the astronomy and the
+// light go on, and every call succeeds).
+//
+// The astronomy runs on the CPU and gives the same numbers on every runtime:
+// the sun from the day of the year, the hour (local solar time) and the
+// latitude; the moon trailing it by its age through the synodic month (its
+// real phase with a `year`); the stars by the sidereal time. Directions are
+// in the scene's space, +Y up, north along −Z and east along +X turned by
+// `north` about +Y.
+declare module "starhermit:sky" {
+  import type { Camera, Color, DirectionalLight, MaterialHooks, Mesh, Object3D, ShaderUniform, Vector3 } from "starhermit:scene";
+  export { Sky } from "starhermit:scene";
+
+  /** When: the day of the year (1 on January 1; fractions are fine), local
+   * solar time in hours (12 is noon), and optionally the year, which puts
+   * the moon at its real phase (without one its phases repeat every year,
+   * anchored to 2000's). */
+  export interface SkyTime {
+    day: number;
+    hours: number;
+    year?: number | null;
+  }
+  /** Where: degrees north of the equator (negative south), and the scene's
+   * turn of north about +Y in radians (0: north −Z, east +X). */
+  export interface SkyPlace {
+    latitude: number;
+    north?: number;
+  }
+  /** Unit directions toward the sun, the moon, the north celestial pole
+   * and the March equinox, and the moon's lit fraction and age (0 new,
+   * 0.5 full, of its month). */
+  export interface SkyPositions {
+    sun: Vector3;
+    moon: Vector3;
+    moonIllumination: number;
+    moonAge: number;
+    pole: Vector3;
+    equinox: Vector3;
+  }
+  /** The moon's age in days (0 to 29.53), as a fraction of its month, and
+   * its lit fraction. */
+  export interface MoonPhase {
+    age: number;
+    fraction: number;
+    illumination: number;
+  }
+  /** Where the sun, moon and stars are at `time` seen from `place` (into
+   * `target` when given). */
+  export function skyPositions(time: SkyTime, place: SkyPlace, target?: SkyPositions): SkyPositions;
+  export function sunDirection(time: SkyTime, place: SkyPlace, target?: Vector3): Vector3;
+  export function moonDirection(time: SkyTime, place: SkyPlace, target?: Vector3): Vector3;
+  export function moonPhase(time: SkyTime): MoonPhase;
+  /** The direction of a star at `rightAscension` and `declination`
+   * (radians) on the celestial sphere of `positions`. */
+  export function celestialDirection(positions: SkyPositions, rightAscension: number, declination: number, target?: Vector3): Vector3;
+  /** Moves `time` on by `hours`, into the next day and year (365 days, or
+   * the year's own with `year`). */
+  export function advanceSkyTime(time: SkyTime, hours: number): SkyTime;
+  /** `direction` at the nearest of the light's steps (0.05° of altitude
+   * and azimuth). */
+  export function steppedDirection(direction: Vector3, target?: Vector3): Vector3;
+
+  /** The air (Hillaire's Earth by default): kilometres, and coefficients
+   * per kilometre. Mie's anisotropy is within ±0.999. */
+  export interface SkyAtmosphereParameters {
+    /** 6360 */
+    groundRadius?: number;
+    /** 100 */
+    atmosphereHeight?: number;
+    /** (5.802e-3, 13.558e-3, 33.1e-3) */
+    rayleighScattering?: readonly [number, number, number];
+    /** 8 */
+    rayleighScaleHeight?: number;
+    /** 3.996e-3 */
+    mieScattering?: number;
+    /** 0.444e-3 */
+    mieAbsorption?: number;
+    /** 1.2 */
+    mieScaleHeight?: number;
+    /** 0.8 */
+    mieAnisotropy?: number;
+    /** (0.65e-3, 1.881e-3, 0.085e-3) */
+    ozoneAbsorption?: readonly [number, number, number];
+    /** 25 */
+    ozoneCenter?: number;
+    /** 15 */
+    ozoneWidth?: number;
+    /** 0.3 */
+    groundAlbedo?: number;
+  }
+  export type SkyTier = "full" | "reduced" | "minimal" | "off";
+  /** A stage of the sky's shading (clouds, weather): WGSL declaring
+   * `fn NAME(direction: vec3f, color: vec3f) -> vec3f`, run after the
+   * clear sky and its bodies in the dome, the background, the environment
+   * and the aerial table, with its own uniforms (names of its own; up to 6
+   * textures). The define `ATMO_DOME` is true in the dome alone (where
+   * `view_projection()` and `camera_position()` are the frame camera's). */
+  export interface SkyLayer {
+    name: string;
+    wgsl: string;
+    uniforms?: Record<string, ShaderUniform>;
+  }
+  /** The clear sky's shading for passes of one's own
+   * (`SkyAtmosphere.shading()`; starhermit:weather's clouds use it): WGSL
+   * giving `atmo_clear_sky(direction, false)` (the sky's radiance toward a
+   * direction, its intensity included), the transmittance table
+   * (`atmo_transmittance_texel(atmo_transmittance_uv(r, mu))`, r in km
+   * from the planet's centre), the sky-view mapping
+   * (`atmo_sky_view_uv`, `atmo_sky_view_direction`) and the light
+   * (`uniforms.light`: toward the sun or moon, its illuminance), with the
+   * uniforms (the sky's own objects, kept up to date by `update`; a tier
+   * change replaces them) and the defines it reads. */
+  export interface SkyShading {
+    wgsl: string;
+    uniforms: Record<string, ShaderUniform>;
+    defines: Record<string, boolean>;
+  }
+  export interface SkyAtmosphereOptions {
+    /** Degrees north (default 38). */
+    latitude?: number;
+    /** Radians (default 0). */
+    north?: number;
+    /** Day of the year (default 172). */
+    day?: number;
+    /** Local solar time (default 9). */
+    hours?: number;
+    /** Default null. */
+    year?: number | null;
+    /** Sky seconds per second of `update` (default 0). */
+    timeScale?: number;
+    atmosphere?: SkyAtmosphereParameters;
+    /** Multiplies the air's Mie haze, 0–100 (default 1). */
+    turbidity?: number;
+    /** The sky's light for a unit of sunlight (default 20). */
+    intensity?: number;
+    /** The driven light's intensity under a high sun (default 3). */
+    sunIntensity?: number;
+    /** Moonlight against sunlight (default 1/2500). */
+    moonlight?: number;
+    /** The stars and Milky Way (default 8) and the night's glow (default 1). */
+    starBrightness?: number;
+    nightBrightness?: number;
+    /** Default true each. */
+    sunDisc?: boolean;
+    moon?: boolean;
+    milkyWay?: boolean;
+    /** The light to drive (default null). */
+    light?: DirectionalLight | null;
+    /** How far from its target the driven light stands (default 100). */
+    lightDistance?: number;
+    /** Draw into `scene.background` instead of as the dome (default false;
+     * `backgroundSize` 1024, 64 to 2048). */
+    background?: boolean;
+    backgroundSize?: number;
+    /** Keep `scene.environment` up to date (default true), at most every
+     * `environmentInterval` seconds of `update` (2) or when the light has
+     * turned `environmentAngle` degrees (2). */
+    environment?: boolean;
+    environmentInterval?: number;
+    environmentAngle?: number;
+    /** The aerial perspective's extinction per world unit (default 0.0011)
+     * and its strength (0–1, default 1). */
+    haze?: number;
+    hazeStrength?: number;
+    /** The colour the aerial perspective's fog mixes in (default "auto":
+     * each pass's own, display colour where the scene is drawn straight,
+     * linear light where it draws through post buffers). */
+    fogSpace?: "auto" | "display" | "linear";
+    /** World units per metre for the viewer's height (default 1), and
+     * metres added to the camera's height (default 0). */
+    metersPerUnit?: number;
+    altitude?: number;
+    /** The tier asked for (default "full"). */
+    tier?: SkyTier;
+  }
+  /** The sky (a Mesh: add it to the scene, call `update` once a frame). */
+  export class SkyAtmosphere extends Mesh {
+    constructor(options?: SkyAtmosphereOptions);
+    readonly isSkyAtmosphere: true;
+    /** The time and place; change them freely (or with `setTime`). */
+    readonly time: SkyTime;
+    readonly place: SkyPlace;
+    timeScale: number;
+    intensity: number;
+    sunIntensity: number;
+    moonlight: number;
+    starBrightness: number;
+    nightBrightness: number;
+    sunDisc: boolean;
+    moon: boolean;
+    readonly milkyWay: boolean;
+    light: DirectionalLight | null;
+    lightDistance: number;
+    environment: boolean;
+    environmentInterval: number;
+    environmentAngle: number;
+    haze: number;
+    hazeStrength: number;
+    fogSpace: "auto" | "display" | "linear";
+    metersPerUnit: number;
+    altitude: number;
+    turbidity: number;
+    /** Where the sun, moon and stars were at the last `update`. */
+    readonly positions: SkyPositions;
+    /** The light the sky drives: its stepped direction, colour and
+     * intensity, and whether it is the moon. */
+    readonly lightDirection: Vector3;
+    readonly lightColor: Color;
+    readonly lightIntensity: number;
+    readonly lightIsMoon: boolean;
+    /** 1 by day to 0 by night (the sun's fade from 5° to 10° down). */
+    readonly daylight: number;
+    /** The tier drawing now, and the one asked for. */
+    readonly tier: SkyTier;
+    requestedTier: SkyTier;
+    readonly atmosphere: Readonly<Required<SkyAtmosphereParameters>>;
+    /** Changes the air (missing fields keep theirs); the tables are made again. */
+    setAtmosphere(parameters: SkyAtmosphereParameters): this;
+    setTime(day: number, hours: number, year?: number | null): this;
+    sunDirection(target?: Vector3): Vector3;
+    moonDirection(target?: Vector3): Vector3;
+    moonPhase(): MoonPhase;
+    addLayer(layer: SkyLayer): this;
+    removeLayer(name: string): this;
+    /** The layers added with `addLayer`, in order (a copy). `layers` is `Object3D`'s `Layers`, as on every object. */
+    readonly skyLayers: readonly SkyLayer[];
+    /** The clear sky's shading for one's own passes (see `SkyShading`). */
+    shading(): SkyShading;
+    /** The aerial perspective as material hooks (a fog hook), one object
+     * kept up to date by `update`. */
+    readonly aerialPerspective: MaterialHooks;
+    /** Puts it on every mesh material under `root` without hooks of its own
+     * (or with hooks but no fog hook, whose uniforms it joins), not on
+     * ShaderMaterials; returns how many changed. */
+    applyAerialPerspective(root: Object3D): number;
+    /** Moves the time on by `seconds × timeScale`, places the bodies, draws
+     * this frame's tables (once a frame, however often it is called) and
+     * drives the light, background and environment. */
+    update(seconds?: number, camera?: Camera | null): this;
+    /** Compiles every program the sky draws with at its tier, throwing the
+     * first refusal as a SyntaxError. */
+    compile(): void;
+    readonly shaderError: string | null;
+    dispose(): void;
+  }
+}
+
+// ===========================================================================
+/** The weather's effects on the scene (since API_MINOR 40, `WEATHER_MINOR`;
+ * older games cannot import it: a TypeError). An engine extension: three.js
+ * has no wind. For now the wind: a `WindField` whose mean veers (±12°) and
+ * swells (±15%) over tens of seconds, with gusts and lulls 32 m across and
+ * rolls 8 m across within them carried downwind at the mean wind's speed
+ * (Taylor's frozen turbulence), and its direction wandering from place to
+ * place. Its CPU twin, `velocityAt`, gives the same bits natively, in
+ * browsers and in `starhermit-weather-kernel` for the same settings and
+ * time, for gameplay and lockstep. `update(camera)` fills a 128² field
+ * texture (2 m a texel, 256 m across) around the camera with a fragment
+ * pass, this frame's wind and last frame's, which any material's hooks read
+ * (`WIND_HOOK_WGSL` with the field's `uniforms`), and `sway`/`swayMesh` bend
+ * grass and sway trees by it in a vertex hook, shadows and prepasses alike.
+ * Tiers: "full" a float field (RGBA32F, or RGBA16F written unclamped where
+ * 32-bit floats do not render), "reduced" an RGBA8 field where float targets
+ * do not render, "minimal" the mean wind alone without a field (a game's
+ * `maxTier`), "off" still foliage at the lowest graphics level (quantum).
+ * Swaying fades out with distance from the camera, nearer at lower levels
+ * (20 m at level 1 to 120 m at infinite; trees 1.5 times as far).
+ * `velocityAt` works in every tier. After Solstice (MIT). */
+declare module "starhermit:weather" {
+  import type { Box3, Camera, DirectionalLight, Group, WebGLRenderTarget, Material, MaterialHooks, Mesh, Object3D, ShaderUniform, Texture, Vector2, Vector3, Vector4 } from "starhermit:scene";
+
+  export type WindTier = "full" | "reduced" | "minimal" | "off";
+  export interface WindSettings {
+    /** The mean wind 10 m up, m/s, 0 to 100 (default 5). */
+    speed?: number;
+    /** The way it blows toward, radians from +x toward +z (default 0). */
+    direction?: number;
+    /** Gusts and lulls, 0..1 (default 0.5). */
+    gustiness?: number;
+    /** How far the direction wanders from place to place, 0..1 (default 0.3). */
+    turbulence?: number;
+    /** Which wind: a whole number below 2^24 (default 1). */
+    seed?: number;
+  }
+  export interface SwayOptions {
+    /** "grass" (default): bends from y = 0 in its mesh along an arc (keeping
+     * its length) by an angle growing with the drag (the wind's speed
+     * squared) until it lies over, shimmering, its normals tilted with it.
+     * "tree": the trunk leans with the drag and sways from its base at the
+     * mesh's origin, branches (beyond 0.5 m of the axis) swing behind it by
+     * the way they point, every part of the tree reading the wind at its
+     * trunk. */
+    kind?: "grass" | "tree";
+    /** Leaves flutter: true every vertex, "custom" by the geometry's
+     * `custom.z` weight with `custom.y` the branch's phase
+     * (starhermit-trees' vertex stream), false (default) none. */
+    flutter?: boolean | "custom";
+    /** How far the wind bends it (default 1). */
+    strength?: number;
+    /** How strongly leaves flutter (default 1). */
+    flutterStrength?: number;
+    /** "swayed" (default): shadow maps see the swayed pose; "rest": the pose
+     * at rest. */
+    shadows?: "swayed" | "rest";
+  }
+  export interface WindUniforms {
+    windField: { value: Texture | null };
+    windGrid: { value: Vector4 };
+    windTimes: { value: Vector4 };
+    windEye: { value: Vector4 };
+    windMean: { value: Vector4 };
+  }
+  /** WGSL for a material's hooks: `wind_sample(xz: vec2f) -> vec4f` (this
+   * frame's wind 10 m up in xy and last frame's in zw, m/s along x and z),
+   * `wind_at(xz)` and `wind_at_previous(xz)`; give the hooks a field's
+   * `uniforms`. Declare it once in a material's parts. */
+  export const WIND_HOOK_WGSL: string;
+  /** `wind_sway(v: Vertex) -> Vertex` for a vertex hook (after
+   * WIND_HOOK_WGSL); `sway` sets its uniform and defines. */
+  export const WIND_SWAY_WGSL: string;
+  /** `wind_velocity(a, b, c: vec4f, xz: vec2f) -> vec2f`, the GPU twin of
+   * `velocityAt`, from `snapshot`'s three vec4s. */
+  export const WIND_FIELD_WGSL: string;
+  export const WIND_FIELD_TEXELS: 128;
+  export const WIND_FIELD_TEXEL_METRES: 2;
+  export class WindField {
+    constructor(settings?: WindSettings);
+    /** The settings; changing one (or `set`) keeps the gusts already in the
+     * air where they are, carried on at the new mean from `time`. */
+    speed: number;
+    direction: number;
+    gustiness: number;
+    turbulence: number;
+    seed: number;
+    set(settings: WindSettings, time?: number): this;
+    /** The CPU twin's 8 numbers (starhermit-weather-kernel's `wind_params`). */
+    readonly params: Float64Array;
+    readonly uniforms: WindUniforms;
+    /** The best tier the game allows (default "full"). */
+    maxTier: WindTier;
+    /** The tier of the last `update`. When the device (no float targets)
+     * or the lowest graphics level lowers it below `maxTier`, Options →
+     * Graphics carries a note saying so. */
+    readonly tier: WindTier;
+    /** The best tier this device and graphics level allow, whatever
+     * `maxTier` says. `renderer.capabilities` stays three.js's device
+     * facts (`floatRenderable`, which this follows from); the tier is this
+     * module's policy, so it is reported here rather than there. */
+    static deviceTier(): WindTier;
+    /** The field (RGBA: this frame's wind in rg, last frame's in ba; RGBA8
+     * scaled by `uniforms.windEye.w`), or null without one. */
+    readonly texture: Texture | null;
+    /** Seconds of the wind's clock; `update` advances it. */
+    time: number;
+    /** The wind 10 m up at (x, z) at `time` (default `this.time`): m/s
+     * along x in `x` and along z in `y`. Deterministic on every runtime. */
+    velocityAt(x: number, z: number, time?: number, target?: Vector2): Vector2;
+    /** The wind at (x, z) pairs, two numbers a point. */
+    velocities(points: ArrayLike<number>, time?: number, out?: Float32Array): Float32Array;
+    /** The 12 numbers `WIND_FIELD_WGSL` takes for the wind at `time`. */
+    snapshot(time?: number, out?: Float32Array): Float32Array;
+    /** Advances the clock by `delta` (default the frame's), centres the
+     * field on `camera` and fills it. Once a frame, before rendering. */
+    update(camera?: Object3D | null, delta?: number): void;
+    readonly shaderError: string | null;
+    /** Adds the sway vertex hook to `material`'s hooks (after a vertex
+     * hook it has); set its own hooks first. */
+    sway<T extends Material>(material: T, options?: SwayOptions): T;
+    /** `sway` for the mesh's materials, and its geometry's bounding sphere
+     * grown by how far the wind can carry it (once a geometry). */
+    swayMesh<T extends Mesh>(mesh: T, options?: SwayOptions): T;
+    dispose(): void;
+  }
+
+  // -- The weather and its visuals (host API 1.40, WEATHER_EFFECTS_MINOR) --
+  // Solstice's weather model and its effects: volumetric clouds as a
+  // SkyAtmosphere layer, rain kept from under roofs, wet surfaces and
+  // puddles, lightning and thunder. The CPU parts (the model, its easing
+  // and cycle, the cloud noise, rain's accumulators, strikes) are
+  // starhermit-weather's: the same numbers natively and in browsers.
+  // Distances are metres (a world unit is a metre).
+
+  export type WeatherKind = "clear" | "cirrus" | "fair" | "broken" | "overcast" | "storm";
+  export interface WeatherSettings {
+    /** Share of the sky the main layer covers, 0..1 (default 0.3). */
+    coverage?: number;
+    /** 0 flat stratus, 0.5 stratocumulus, 1 heaped cumulus (0.9). */
+    cloudType?: number;
+    /** The cloud base above the ground, m (1200), and the layer's depth,
+     * m (1600). */
+    base?: number;
+    thickness?: number;
+    /** How thick the cloud is inside: 1 ordinary, more rain-bearing (1). */
+    density?: number;
+    /** Share of the sky high cirrus covers, 0..1 (0.15). */
+    cirrus?: number;
+    /** The wind at cloud height, m/s (7), and the compass bearing it blows
+     * from, degrees (250; 270 a westerly, toward +X; north is −Z). */
+    windSpeed?: number;
+    windFrom?: number;
+    /** How gusty the wind near the ground is and how much its direction
+     * wanders, 0..1 (0.4 each). */
+    gusts?: number;
+    turbulence?: number;
+    /** How fast clouds grow and fade (1). */
+    evolution?: number;
+    /** How heavily it rains, 0..1 (0; 1 a 40 mm/h downpour). */
+    rain?: number;
+    /** Lightning strikes a minute (0). */
+    thunder?: number;
+  }
+  /** What the sky is doing, in Solstice's `.weather` text: a setting a
+   * line (`coverage 0.3`, `type 0.9`, `base 1200`, `thickness 1600`,
+   * `density 1`, `cirrus 0.15`, `wind speed=7 from=250 gusts=0.45
+   * turbulence=0.45`, `evolution 1`, `rain 0`, `thunder 0`), `#` starting
+   * a comment; every setting has a default. Fields are kept as binary32
+   * (`toArray`). */
+  export class Weather implements Required<WeatherSettings> {
+    constructor(settings?: WeatherSettings);
+    coverage: number;
+    cloudType: number;
+    base: number;
+    thickness: number;
+    density: number;
+    cirrus: number;
+    windSpeed: number;
+    windFrom: number;
+    gusts: number;
+    turbulence: number;
+    evolution: number;
+    rain: number;
+    thunder: number;
+    /** The built-in kinds: clear, fair, broken, overcast, storm, cirrus. */
+    static readonly names: readonly WeatherKind[];
+    /** Reads the text; a SyntaxError names the line at fault. */
+    static parse(text: string): Weather;
+    /** A built-in kind, or null. */
+    static byName(name: string): Weather | null;
+    static fromArray(a: ArrayLike<number>, target?: Weather): Weather;
+    /** The 13 numbers in the text's order. */
+    toArray(out?: Float64Array): Float64Array;
+    /** The text `parse` reads (it reads back to the same weather). */
+    toText(): string;
+    /** Part way to `to` (0..1); the wind turns the short way round. */
+    lerp(to: Weather, t: number, target?: Weather): Weather;
+    /** The wind at cloud height, m/s along +X and +Z. */
+    windVelocity(target?: Vector2): Vector2;
+    clone(): Weather;
+    copy(other: Weather): this;
+    equals(other: Weather): boolean;
+  }
+  /** The weather as it goes on: where it is, where it eases to, how far the
+   * wind has carried the clouds and how far they have boiled, and a
+   * WeatherCycle if the sky changes by itself; the same numbers on every
+   * runtime for the same calls. */
+  export class WeatherState {
+    constructor(weather?: Weather | WeatherSettings | WeatherKind);
+    /** Its 34 numbers (save them to resume a weather). */
+    readonly array: Float64Array;
+    readonly current: Weather;
+    readonly target: Weather;
+    /** Eases toward `weather` over about `seconds` (at once for 0, the
+     * default), stopping any cycle. */
+    set(weather: Weather | WeatherSettings | WeatherKind, seconds?: number): this;
+    /** The sky changes by itself from the named kind. */
+    cycle(start?: WeatherKind, seed?: number): this;
+    readonly cycling: boolean;
+    readonly kind: WeatherKind | null;
+    /** Moves on (a second at a time); the kind the cycle moved to, if. */
+    advance(seconds: number): WeatherKind | null;
+    /** How far the wind has carried the clouds, m (wrapping at 252 km). */
+    readonly windOffset: Vector2;
+    readonly evolution: number;
+  }
+  /** A sky that changes by itself: two to five minutes in a kind, then one
+   * that could follow it (clear to fair or cirrus, fair to broken or
+   * clear, broken to overcast or fair, overcast to storm or broken, storm
+   * to broken or overcast, cirrus to fair or broken), each change easing
+   * in over 90 s. Deterministic for its seed. */
+  export class WeatherCycle {
+    constructor(start?: WeatherKind, seed?: number);
+    static readonly DWELL: readonly [number, number];
+    static readonly TRANSITION: number;
+    readonly state: WeatherState;
+    readonly current: WeatherKind;
+    advance(seconds: number): WeatherKind | null;
+  }
+  /** "full": half resolution with temporal reprojection (last frame's
+   * view-projection), skipping texels geometry covers (it reads
+   * `renderer.sceneDepth`, so the frame draws the depth prepass);
+   * "quarter": a quarter resolution without history, RGBA8 (radiance as
+   * c / (c + 1)) where half-float targets do not render; "dome": a 2D
+   * cloud dome from the weather map; "off": clear sky. */
+  export type CloudTier = "full" | "quarter" | "dome" | "off";
+  /** "full": a 512² cover map over 128 m, three rings of four layers of
+   * drops, splashes and drips; "reduced": a 256² map, two layers, no
+   * drips; "minimal": no cover map (the game's shelter boxes alone), two
+   * rings of two layers; "off": no drops (surfaces still wet). */
+  export type RainTier = "full" | "reduced" | "minimal" | "off";
+  /** Volumetric clouds (Schneider 2015, Hillaire 2016): the sky layer
+   * `weather_clouds`, marched through Perlin-Worley (128³) and Worley (32³)
+   * noise the CPU bakes a few rows a frame (`noiseRows`; the "dome" tier
+   * until then) over a weather map whose coverage is ranked through its own
+   * CDF; a two-lobe phase, multiple-scattering octaves, diffusion through
+   * deep cloud, skylight and the ground's bounce; their shadow on the
+   * ground (WeatherEffects' light hook) and a panorama the sky's
+   * environment and aerial passes read (overcast dims the skylight), as
+   * does, from host API 1.42 (`REFLECTED_CLOUDS_MINOR`), its dome seen
+   * through a camera other than the one the weather follows (a planar
+   * reflection's mirror camera, a cube camera): the on-screen clouds are
+   * that camera's alone (before 1.42 every pass's dome reads them at its
+   * own pixels). Its tier is lowered to the device and graphics level with a note in
+   * Options → Graphics. */
+  export class VolumetricClouds {
+    private constructor();
+    requestedTier: CloudTier;
+    readonly tier: CloudTier;
+    /** Shape-noise rows baked a frame (default 32, at most 128; the "dome"
+     * tier until baked). */
+    noiseRows: number;
+    /** Whether the noise volumes are baked. */
+    readonly ready: boolean;
+    /** The weather map's coverage CDF, 256 entries. */
+    readonly coverageCdf: Float32Array;
+    /** The light hook's uniforms (`wxcShadowMap`, `wxcShadowArea`). */
+    readonly hookUniforms: { wxcShadowMap: { value: Texture | null }; wxcShadowArea: { value: Vector4 } };
+    static deviceTier(): CloudTier;
+    readonly shaderError: string | null;
+    compile(): void;
+    dispose(): void;
+  }
+  /** Rain (Solstice's): drops placed by a hash and the clock, nothing
+   * simulated, carried by the mean wind and falling at Gunn and Kinzer's
+   * speeds in Marshall and Palmer's numbers, each a streak over 1/45 s;
+   * splashes and drips from eaves; none under what stands over them (a
+   * cover map drawn from above, or `setShelters`). */
+  export class Rain {
+    private constructor();
+    requestedTier: RainTier;
+    readonly tier: RainTier;
+    readonly mesh: Mesh;
+    /** Seconds of this rain, mm/h, wetness 0..1, puddles 0..1. */
+    readonly state: Float64Array;
+    readonly rate: number;
+    readonly wetness: number;
+    readonly puddles: number;
+    /** The surface hook's uniforms. */
+    readonly uniforms: Record<string, ShaderUniform>;
+    /** For water's hooks with RAIN_RINGS_WGSL: `rainRings` (seconds, the
+     * rings' density 0..1). */
+    readonly ringUniforms: { rainRings: { value: Vector4 } };
+    /** Set when what stands in the rain moved (it is redrawn anyway when
+     * the camera moves 16 m). */
+    coverNeedsUpdate: boolean;
+    /** What casts the cover map (default the scene). */
+    coverRoot: Object3D | null;
+    /** Where drops splash where nothing was drawn (sea level; default
+     * -Infinity: none). */
+    ground: number;
+    /** The cover map (heights under its top, 16 bits in red and green)
+     * and the rain map made from it (height, hollow depth in blue, eave in
+     * alpha), for inspection; null without one. */
+    readonly coverTarget: WebGLRenderTarget | null;
+    readonly mapTarget: WebGLRenderTarget | null;
+    /** Up to 8 boxes that keep rain out (and surfaces dry) where there is
+     * no cover map. */
+    setShelters(boxes: readonly Box3[]): this;
+    static deviceTier(): RainTier;
+    readonly shaderError: string | null;
+    compile(): void;
+    dispose(): void;
+  }
+  export interface Strike {
+    /** Metres away, and toward it from the camera. */
+    distance: number;
+    direction: Vector3;
+    toGround: boolean;
+    /** Seconds since the flash; brightness 0..1 and illuminance (in the
+     * sun's units) now. */
+    age: number;
+    brightness: number;
+    illuminance: number;
+  }
+  /** Lightning (Rakov and Uman, after Solstice): strikes as a Poisson
+   * process at the weather's `thunder` rate, 0.6–9 km off, a third to the
+   * ground with one to five return strokes 30–90 ms apart and a branching
+   * bolt drawn as additive ribbons; the flash lights the sky and clouds
+   * and the scene (its DirectionalLight `light`, by the square of the
+   * distance); thunder (filtered noise rendered offline by the engine's
+   * audio) heard after the flash by the distance at 343 m/s. */
+  export class Lightning {
+    private constructor();
+    readonly state: Float64Array;
+    readonly light: DirectionalLight;
+    readonly bolt: Mesh;
+    /** The flash light's intensity for a flash 2 km off at its peak
+     * (default 4; it shines from the cloud deck above the flash); its glow in the sky (default 2); thunder's loudness
+     * (default 1, 0 silent). */
+    flashIntensity: number;
+    skyGlow: number;
+    thunderVolume: number;
+    onStrike: ((strike: Strike, thunderDelay: number) => void) | null;
+    /** A strike at the next update, 1.5–4 km ahead. */
+    strikeSoon(): this;
+    readonly strike: Strike | null;
+    readonly strikes: number;
+    /** A flash, until just after its last stroke: exposure holds. The
+     * lightning sets `renderer.exposure.hold` for it (and clears it after;
+     * never a hold the game set itself), so automatic exposure
+     * (`renderer.exposure.auto`) neither darkens for the flash nor
+     * brightens after it. */
+    readonly holdsExposure: boolean;
+    readonly shaderError: string | null;
+    compile(): void;
+    dispose(): void;
+  }
+  export interface WeatherEffectsOptions {
+    /** The starting weather (default "fair"). */
+    weather?: Weather | WeatherSettings | WeatherKind;
+    /** The sky changes by itself from the starting kind (default false). */
+    cycle?: boolean | { seed?: number };
+    /** The SkyAtmosphere the clouds join (none: no clouds). */
+    sky?: import("starhermit:sky").SkyAtmosphere | null;
+    /** A WindField the weather drives: half the cloud-height wind, its
+     * gusts and turbulence. */
+    wind?: WindField | null;
+    /** Tiers asked for (default "full"), each lowered to the device. */
+    clouds?: CloudTier;
+    rain?: RainTier;
+    /** Lightning and thunder (default true each); the lightning's seed. */
+    lightning?: boolean;
+    thunder?: boolean;
+    seed?: number;
+    /** Adapt the exposure to the weather (default false). Where automatic
+     * exposure runs (`renderer.capabilities.screenEffects` is set) this
+     * defers to it: it turns `renderer.exposure.auto` on (with a sky
+     * `{ night: { minEv: 1, maxEv: 15 }, daylight: sky }`, so night stays
+     * dark; a game's own settings are kept) and off again, and the
+     * lightning holds it through flashes. Elsewhere (the fallback) it eases
+     * `renderer.toneMappingExposure` with the clouds' dimming, held through
+     * flashes. */
+    autoExposure?: boolean;
+  }
+  /** The weather and its effects, an Object3D the game adds to the scene
+   * (it holds the rain, the bolt and the flash's light); `update` once a
+   * frame after moving the camera, before rendering. Lit materials take its
+   * `hooks` (or `apply(root)`): the clouds' shadow on the sun and wet
+   * surfaces (Lagarde: porous surfaces darken as their pores fill, then a
+   * film turns them glossy; puddles in the hollows of level ground, filled
+   * while it rains and drained after, faster in wind, ringed by drops;
+   * streaks down walls; nothing under a roof). */
+  export class WeatherEffects extends Group {
+    constructor(options?: WeatherEffectsOptions);
+    readonly isWeatherEffects: true;
+    readonly state: WeatherState;
+    readonly clouds: VolumetricClouds | null;
+    readonly rain: Rain | null;
+    readonly lightning: Lightning | null;
+    /** The exposure autoExposure's fallback adapts from. */
+    exposure: number;
+    autoExposure: boolean;
+    readonly weather: Weather;
+    setWeather(weather: Weather | WeatherSettings | WeatherKind, seconds?: number): this;
+    cycle(start?: WeatherKind, seed?: number): this;
+    /** A light hook and a surface hook for lit materials, one object. */
+    readonly hooks: MaterialHooks;
+    /** The hooks on every lit mesh material under `root` (after their own
+     * surface and light hooks); how many it changed. */
+    apply(root: Object3D): number;
+    update(seconds?: number, camera?: Camera | null): this;
+    dispose(): void;
+  }
+  /** WGSL for water's own hooks: `rain_rings(xz, time, density, footprint)
+   * -> vec3f`, the slope rain's rings give the water (x, z) and the mean
+   * square slope it adds to its roughness (z), seen by a pixel `footprint`
+   * metres across; with `Rain.ringUniforms`' (seconds, density). */
+  export const RAIN_RINGS_WGSL: string;
+}
+
 // ===========================================================================
 declare module "starhermit:canvas" {
   import type { DOMExceptionName } from "starhermit:engine";
@@ -8496,7 +12284,9 @@ declare module "starhermit:canvas" {
     close(): void;
   }
   /** Decodes a package image or image bytes, PNG or WebP (an animated
-   * WebP's first frame; rejects with an Error named `EncodingError` for
+   * WebP's first frame), and JPEG since API_MINOR 43 (`JPEG_IMAGES_MINOR`;
+   * its Exif orientation applied, so `drawImage` draws it as a browser
+   * does; rejects with an Error named `EncodingError` for
    * data it cannot decode, a RangeError past 4,096 pixels on a side). Images
    * decode off the game's thread, two at a time, and settle as a frame
    * begins; at most 128 wait at once, an image's bytes are at most 16 MiB
@@ -9081,6 +12871,21 @@ declare module "starhermit:draw" {
    * frame it is drawn; see `Budgets` for when it goes and what a full
    * budget does. */
   export function image(source: Texture | OffscreenCanvas | ImageBitmap, x: number, y: number, width?: number, height?: number, options?: ImageOptions): void;
+  /** `ui.retain` for the overlay (since API_MINOR 41, `RETAIN_MINOR`): the
+   * `starhermit:draw` calls `paint` makes recorded, and made again
+   * natively without calling `paint` while `version` (a number or a
+   * string) is the same, and the fonts the game added and the UI's scale,
+   * text size, contrast and styles (`box`'s) are as they were. No input
+   * reaches drawing, so nothing else builds it. The items draw in call
+   * order among the frame's others, each counting toward the frame's
+   * budgets, with canvases and textures as they are now (a canvas
+   * redrawn shows its new pixels). `paint` builds and measures no widgets
+   * (a `starhermit:ui` call in it is a TypeError: put widgets in
+   * `ui.retain`); a `draw.retain` inside `ui.retain` replays with it.
+   * Draw keys are apart from UI keys. Records, lifetime, limits and fuel
+   * are `ui.retain`'s. True on a frame `paint` ran. Undefined for games
+   * declaring an older `engine.minor`. */
+  export const retain: ((key: string, version: number | string, paint: () => void) => boolean) | undefined;
 }
 
 // ===========================================================================
@@ -10572,7 +14377,16 @@ declare module "starhermit:ui" {
     /** Screen readers announce it as it shows (default true). */
     announce?: boolean;
     /** The game's look for its box and text instead of the engine's, as
-     * `ui.style(…)` takes it. */
+     * `ui.style(…)` takes it. Since API_MINOR 41 (`TOAST_STYLE_MINOR`)
+     * its text sets as a label's (`font`, `weight`, `align` for each
+     * wrapped line, spacing, transform, shadows), `maxWidth` replaces the
+     * 28-em cap (a percentage is of the safe area's width) and
+     * `minWidth`/`minHeight` widen the box; before, the text drew in the
+     * UI's first font, regular, from the box's start, at most 28 ems wide.
+     * Since API_MINOR 41 toasts also stack in the window less its safe
+     * area whatever `setViewport` moved the UI to that frame (before, in
+     * the last viewport set, so opening a screen in a panel's rectangle
+     * moved them). */
     style?: string | Style | readonly (string | Style)[];
   }
   export interface Toast {
@@ -10758,6 +14572,119 @@ declare module "starhermit:ui" {
    * default faces (`system-ui`, see `starhermit:draw`). A family never
    * added throws a TypeError. */
   export function setFont(font: { family?: string; weight?: FontWeight } | null): void;
+
+  // -- Retained subtrees (since API_MINOR 41, `RETAIN_MINOR`) ---------------
+  //
+  // A part of the UI that changes only now and then (a HUD page, a
+  // selection card, a sidebar of `starhermit:draw` items) need not run its
+  // script every frame. `retain(key, version, build)` runs `build` and
+  // records every `starhermit:ui` and `starhermit:draw` call it makes (the
+  // arguments as read, what each returned, the calls inside each
+  // container); on later frames it makes the same calls again natively,
+  // without calling `build`, while:
+  // - `version` (a number or a string the game changes whenever what
+  //   `build` shows changes) is the same;
+  // - the subtree is laid out where it was: the same container state (its
+  //   cursor, sizes and children before it), clip, scroll offset, viewport,
+  //   window size, UI scale and text size, theme, language, styles, tokens
+  //   and animations (`setStyles`, `setTokens`, `setAnimations`, `setTheme`
+  //   and `setFont` make it build again), fonts, contrast, and the `id`,
+  //   `style` or text tooltip chained onto its first widget;
+  // - the reads it made answer the same (`focused`, `capturingKeys`,
+  //   `pointerOver`, `pointerCaptured`, `preferences`, `viewport`,
+  //   `submitted`, and `back` with no Back waiting);
+  // - and no input this frame could make one of its calls return
+  //   otherwise (Input, below).
+  // A record replays once two builds in a row recorded the same calls, so
+  // a subtree builds on its first two frames, twice after each change, and
+  // every frame while it changes by itself (a scroll area gliding).
+  //
+  // The UI gets the same calls in the same order either way, so widget
+  // ids, layout, hover and press looks, focus rings, transitions and
+  // animations, tooltips, scrolling, the accessibility tree, play scripts'
+  // targets and the frame's call and item budgets are what issuing them
+  // gives. Retained and issued calls interleave freely: siblings before and
+  // after it, containers around it, retains inside retains (an inner key
+  // replays inside its outer's build, so a page key holding panel keys
+  // builds only the panel that changed), a retain inside a scroll area and
+  // scroll areas inside a retain. `retain` adds no container and no id
+  // scope: its calls are placed and named as if issued where it is.
+  //
+  // Input: `build` runs, and its widgets answer there as they always do
+  // (`if (ui.button("Buy")) buy()`), on every frame where an input could
+  // change what one of its calls returns: a press, release or secondary
+  // press on one of its rectangles (one between them, over none, replays), a drag that began on one, the wheel
+  // over one, keys, text or navigation while one of its widgets has focus
+  // or captures keys, an assistive technology's activation of one,
+  // NextTab or PreviousTab while it holds tabs, focus moving while it
+  // holds a scroll area, a scroll area of it still gliding, flung or
+  // dragged; any input at all while it holds a dialog, an open select or a
+  // custom `widget`, and for a custom widget also the pointer moving, a
+  // button or the focus changing. On the other frames nothing in it could
+  // return anything new, so it replays: no click, key or result is ever
+  // lost or delayed.
+  //
+  // Rectangles: a replay hands nothing back to the game, but each replayed
+  // call returns what it returned when recorded (else the subtree builds):
+  // rectangles, scroll offsets and results the build kept (`const r =
+  // ui.label(…)`, kept for a tooltip or a minimap) stay right, and
+  // `lastRect()` after the retain is its last widget's, as issued.
+  //
+  // The contract: what `build` shows follows from `version` and from what
+  // the UI returns it. Only `starhermit:ui` and `starhermit:draw` calls are
+  // recorded; anything else `build` does (changing game state, drawing
+  // into a canvas, playing a sound, reading input or the clock) happens
+  // only on the frames it runs. A tooltip builder (`tooltip: () => …`) and
+  // a custom widget's `draw` are the recorded build's functions, run live
+  // as the calls that took them run them. A replayed call that returns
+  // other than it did makes the next frame build.
+  //
+  // Lifetime and limits: a key not issued in a frame is let go of, with its
+  // record and the functions it holds. At most 4,096 keys are kept at
+  // once, and all records together hold at most 32 MiB (their calls,
+  // arguments, results and nested keys' records, counted in every key
+  // holding them); past them a key builds every frame, unkept (the console
+  // says so once), and so does a key holding a nested key not kept. A call
+  // given a string longer than 1,048,576 UTF-16 units (more than any
+  // recordable native reads) is made unkept, and a key that built more
+  // than 4,096 widgets builds every frame. `retainStats()` tells how
+  // many keys are kept and how often they built and replayed.
+  // A key issued twice in a frame, a key that is not a string, a version
+  // neither a number nor a string, and a tooltip builder chained onto
+  // `retain` or left last in `build` for no widget are TypeErrors.
+  //
+  // Fuel: a replay costs 4 instructions plus 1 for each call it makes again
+  // (nested ones included), the same every frame, where issuing spends 40
+  // to 80 on each call's options in script besides `build`'s own work;
+  // natives that charge for their work (an uncached text layout, a path
+  // not kept) charge as when issued. A frame that builds costs what
+  // issuing does, and recording it a little native time (a key whose
+  // version changes every frame records only every fourth build past its
+  // second, and replays from the third frame after it settles). The browser's
+  // engine records and replays the same way, with the same frames.
+  /** Records `build`'s calls and makes them again natively, without
+   * calling `build`, while `version`, the place it is laid out in and the
+   * input reaching it stay the same (see above). True on a frame `build`
+   * ran. Undefined for games declaring an older `engine.minor`. */
+  export const retain: ((key: string, version: number | string, build: () => void) => boolean) | undefined;
+  /** What `retain` keeps (both modules' keys, `ui.retain`'s and
+   * `draw.retain`'s): `keys` kept and of them `confirmed` (replaying when
+   * nothing reaches them), the `calls` and `bytes` their records hold
+   * (at most 32 MiB), and the `builds`, `replays` and `mismatches`
+   * (replays where a call returned other than recorded, so the next frame
+   * built) since the game started. Undefined for games declaring an older
+   * `engine.minor`. */
+  export const retainStats:
+    | (() => {
+        keys: number;
+        confirmed: number;
+        calls: number;
+        bytes: number;
+        builds: number;
+        replays: number;
+        mismatches: number;
+      })
+    | undefined;
 }
 
 // ===========================================================================
@@ -11385,6 +15312,22 @@ declare module "starhermit:audio" {
     /** Equal lengths, else `InvalidAccessError`. */
     getFrequencyResponse(frequencyHz: Float32Array, magResponse: Float32Array, phaseResponse: Float32Array): void;
   }
+  /** Since API_MINOR 41 (`IIR_FILTER_MINOR`; `createIIRFilter` throws a
+   * TypeError before): Web Audio's IIRFilterNode, a filter of fixed
+   * coefficients (`createIIRFilter(feedforward, feedback)`), each output
+   * Σ feedforward[k]·x[n−k] − Σ feedback[k]·y[n−k] (k ≥ 1) over
+   * feedback[0], worked in binary64 per channel: the same bits natively,
+   * in browsers and offline. A one-pole low-pass smoothing by `p` (0..1) is
+   * `createIIRFilter([1 - p], [1, -p])`, a DC blocker
+   * `createIIRFilter([1, -1], [1, -0.995])`. 1 to 20 coefficients each
+   * (`NotSupportedError`), finite (TypeError), not every feedforward one 0
+   * and feedback[0] not 0 (`InvalidStateError`). Like a biquad it rings on
+   * after its input stops (at most 30 s) and is charged a 20-tap filter's
+   * rendering cost whatever its length. */
+  export abstract class IIRFilterNode extends AudioNode {
+    /** Equal lengths, else `InvalidAccessError`; NaN outside 0..Nyquist. */
+    getFrequencyResponse(frequencyHz: Float32Array, magResponse: Float32Array, phaseResponse: Float32Array): void;
+  }
   export abstract class StereoPannerNode extends AudioNode {
     /** −1..1, default 0. */
     readonly pan: AudioParam;
@@ -11522,6 +15465,8 @@ declare module "starhermit:audio" {
     createGain(): GainNode;
     createOscillator(): OscillatorNode;
     createBiquadFilter(): BiquadFilterNode;
+    /** Since API_MINOR 41 (see `IIRFilterNode`). */
+    createIIRFilter(feedforward: Iterable<number>, feedback: Iterable<number>): IIRFilterNode;
     createStereoPanner(): StereoPannerNode;
     /** Since API_MINOR 37 (`SPATIAL_AUDIO_MINOR`; a TypeError before). */
     createPanner(): PannerNode;
@@ -11583,8 +15528,13 @@ declare module "starhermit:audio" {
    * at once that have not finished rendering (RangeError); a context gives
    * up its place as its render completes, so one context per stem rendered
    * in turn never reaches it. Finished contexts not yet collected: at most
-   * 256, holding no more than 16 graphs' budgets in all (RangeError). Each
-   * renders at most 8,388,608 samples (channels × length; RangeError). */
+   * 256, holding no more than 16 graphs' budgets in all (RangeError). The
+   * memory bound often comes first: a finished context keeps its graph's
+   * noise buffers, periodic waves, delay lines and automation until the
+   * script drops it and it is collected, so a game baking many stems can be
+   * refused well before 256 (one was at 244). Keep the rendered
+   * AudioBuffer or clip, not the context. Each renders at most 8,388,608
+   * samples (channels × length; RangeError). */
   export class OfflineAudioContext {
     #private;
     /** 1 or 2 channels, a length of at least one frame, 3–768 kHz (rounded
@@ -11611,6 +15561,8 @@ declare module "starhermit:audio" {
     createGain(): GainNode;
     createOscillator(): OscillatorNode;
     createBiquadFilter(): BiquadFilterNode;
+    /** Since API_MINOR 41 (see `IIRFilterNode`). */
+    createIIRFilter(feedforward: Iterable<number>, feedback: Iterable<number>): IIRFilterNode;
     createStereoPanner(): StereoPannerNode;
     /** Since API_MINOR 37 (`SPATIAL_AUDIO_MINOR`). */
     createPanner(): PannerNode;
@@ -12888,6 +16840,419 @@ declare module "starhermit:world" {
 }
 
 // ===========================================================================
+declare module "starhermit:physics" {
+  // The engine's 3D rigid-body world (since API_MINOR 40; older games cannot
+  // import it; spec/physics-and-particles.html). It runs natively in the
+  // engine (starhermit-physics-3d), and the same code, compiled to
+  // WebAssembly, runs it in browsers: with only IEEE 754 basic operations
+  // and the engine's own math functions, the same calls give bit-identical
+  // worlds on every platform, so lockstep multiplayer games can step it.
+  // An engine extension: three.js has no physics.
+  //
+  // Units are metres, kilograms and seconds; +Y is up by convention only
+  // (gravity and the character controller's `up` say which way). Every
+  // position and translation must be within 1,000,000 m of the origin on
+  // each axis, speeds, forces and impulses within 1e9: anything else, and
+  // any NaN, throws a RangeError before the world changes. Native work is
+  // charged to the call's fuel in proportion to what it did.
+  //
+  // Step the world from onFixedUpdate and place objects from onRender:
+  //
+  //   const world = new PhysicsWorld();
+  //   world.createCollider({ shape: { type: "trimesh", geometry: level.geometry } });
+  //   const crate = world.createBody({ position: [0, 5, 0], object: crateMesh });
+  //   world.createCollider({ shape: { type: "box", halfExtents: [0.5, 0.5, 0.5] } }, crate);
+  //   onFixedUpdate((dt) => world.step(dt));
+  //   onRender((alpha) => world.sync(alpha));
+
+  /** A vector: anything with x, y and z (a Vector3) or [x, y, z]. */
+  export type VectorLike = { x: number; y: number; z: number } | ArrayLike<number>;
+  /** A rotation: anything with x, y, z and w (a Quaternion) or [x, y, z, w]. */
+  export type QuaternionLike = { x: number; y: number; z: number; w: number } | ArrayLike<number>;
+  export interface Vec3 {
+    x: number;
+    y: number;
+    z: number;
+  }
+  export interface Quat {
+    x: number;
+    y: number;
+    z: number;
+    w: number;
+  }
+  /** What a mesh or hull reads its vertices from: a BufferGeometry (its
+   * position attribute, and its index when it has one). */
+  export interface GeometryLike {
+    getAttribute?(name: string): any;
+    attributes?: { position?: any };
+    index?: { array: ArrayLike<number>; count?: number } | null;
+  }
+  /** What `PhysicsWorld.sync` moves: an Object3D (position and quaternion
+   * in its parent's space, which should be the world's). */
+  export interface ObjectLike {
+    position: { set(x: number, y: number, z: number): unknown };
+    quaternion: { set(x: number, y: number, z: number, w: number): unknown };
+  }
+
+  /** A shape's description. Convex shapes (sphere, box, capsule, cylinder,
+   * cone, convexHull, triangle) go on any body and in casts and overlaps;
+   * trimesh, heightfield and plane only on static or kinematic bodies, and
+   * they collide with convex shapes (not with each other).
+   * - `capsule`: a segment of `halfHeight` each way along local Y, rounded
+   *   by `radius`.
+   * - `cylinder`, `cone`: hulls of `segments` (3 to 128, default 24) points
+   *   round local Y, `halfHeight` each way (a cone's apex at +halfHeight).
+   * - `convexHull`: the hull of `points` (x, y, z triples) or of a
+   *   geometry's vertices, optionally `scale`d; at most 512 points feed it,
+   *   those furthest out along 256 directions first (up to 1,048,576 in).
+   * - `trimesh`: two-sided triangles from `vertices` and `indices` (none:
+   *   each three vertices a triangle) or a geometry; equal positions are
+   *   welded, triangles without area dropped, and edges between nearly
+   *   coplanar triangles are smoothed so things slide across seams. Up to
+   *   1,048,576 vertices and triangles.
+   * - `heightfield`: `rows` x `columns` heights (row by row, rows along Z),
+   *   spanning `size` centred on the collider (2 to 16,384 a side, at most
+   *   4,194,304 heights); each cell split from its (column, row) corner to
+   *   (column + 1, row + 1); solid below its surface.
+   * - `plane`: the half-space below the collider's local XZ plane.
+   * - `triangle`: one two-sided triangle. */
+  export type ShapeDesc =
+    | { type: "sphere"; radius: number }
+    | { type: "box"; halfExtents: VectorLike }
+    | { type: "capsule"; halfHeight: number; radius: number }
+    | { type: "cylinder" | "cone"; halfHeight: number; radius: number; segments?: number }
+    | { type: "convexHull"; points?: ArrayLike<number>; geometry?: GeometryLike; scale?: VectorLike }
+    | {
+        type: "trimesh";
+        vertices?: ArrayLike<number>;
+        indices?: ArrayLike<number> | null;
+        geometry?: GeometryLike;
+        scale?: VectorLike;
+      }
+    | { type: "heightfield"; rows: number; columns: number; heights: ArrayLike<number>; size: { x: number; z: number } }
+    | { type: "plane" }
+    | { type: "triangle"; a: VectorLike; b: VectorLike; c: VectorLike };
+
+  /** A built shape: build a mesh once and share it among colliders (and
+   * worlds). Released when no longer referenced (and no collider uses it). */
+  export class Shape {
+    constructor(desc: ShapeDesc);
+    readonly type: ShapeDesc["type"];
+    /** What was built: a mesh's triangles and welded vertices, a hull's
+     * faces and points, a heightfield's rows and columns; native bytes. */
+    readonly info: { count: number; vertices: number; bytes: number };
+  }
+  export function createShape(desc: ShapeDesc): Shape;
+
+  export type BodyType = "dynamic" | "static" | "kinematic";
+  export interface BodyDesc {
+    /** Default "dynamic". Kinematic bodies move where they are told
+     * (`setNextKinematicPose`) and push dynamic ones. */
+    type?: BodyType;
+    position?: VectorLike;
+    quaternion?: QuaternionLike;
+    linearVelocity?: VectorLike;
+    angularVelocity?: VectorLike;
+    /** Default 1. */
+    gravityScale?: number;
+    linearDamping?: number;
+    angularDamping?: number;
+    /** Default true: still bodies (and their touching neighbours) sleep. */
+    canSleep?: boolean;
+    /** Continuous collision: swept against static and kinematic colliders
+     * so it cannot pass through thin walls. */
+    ccd?: boolean;
+    userData?: unknown;
+    /** Placed by `PhysicsWorld.sync`. */
+    object?: ObjectLike | null;
+  }
+  export interface ColliderDesc {
+    shape: Shape | ShapeDesc;
+    /** On the body, in its frame. */
+    position?: VectorLike;
+    quaternion?: QuaternionLike;
+    /** kg/m³, default 1 (dynamic bodies' mass and inertia). */
+    density?: number;
+    /** Default 0.5; a contact uses the geometric mean of both. */
+    friction?: number;
+    /** 0 to 1, default 0; a contact uses the larger. */
+    restitution?: number;
+    /** Reports touches (events) without pushing. */
+    sensor?: boolean;
+    /** Two colliders collide when each one's category shares a bit with
+     * the other's mask (defaults: category 1, mask 0xffffffff). */
+    collisionGroups?: { category?: number; mask?: number };
+    userData?: unknown;
+  }
+  export interface QueryFilter {
+    /** Only colliders whose category shares a bit with this (default all). */
+    groups?: number;
+    /** Default false. */
+    includeSensors?: boolean;
+    exclude?: RigidBody | null;
+  }
+
+  export class RigidBody {
+    private constructor();
+    readonly world: PhysicsWorld;
+    readonly id: number;
+    readonly type: BodyType;
+    userData: unknown;
+    /** Placed at this body's interpolated pose by `world.sync`. */
+    object: ObjectLike | null;
+    readonly position: Vec3;
+    readonly quaternion: Quat;
+    readonly linearVelocity: Vec3;
+    readonly angularVelocity: Vec3;
+    readonly isSleeping: boolean;
+    /** From its colliders' densities (dynamic bodies; 0 otherwise). */
+    readonly mass: number;
+    /** In the body's frame. */
+    readonly centerOfMass: Vec3;
+    readonly colliders: readonly Collider[];
+    /** Removed from its world (or the world disposed): its members throw. */
+    readonly removed: boolean;
+    /** Teleports (nothing is swept, and sync does not interpolate from the
+     * old place). */
+    setPosition(position: VectorLike, quaternion?: QuaternionLike): void;
+    setQuaternion(quaternion: QuaternionLike): void;
+    setLinearVelocity(velocity: VectorLike): void;
+    setAngularVelocity(velocity: VectorLike): void;
+    /** Kinematic bodies: arrive exactly at this pose by the end of the next
+     * step, pushing what is in the way, then stay. */
+    setNextKinematicPose(position: VectorLike, quaternion?: QuaternionLike): void;
+    /** Dynamic bodies: an impulse (N·s) at a world point (else the centre
+     * of mass). */
+    applyImpulse(impulse: VectorLike, point?: VectorLike): void;
+    /** Dynamic bodies: a force (N) through the next step. */
+    applyForce(force: VectorLike, point?: VectorLike): void;
+    wakeUp(): void;
+  }
+  export class Collider {
+    private constructor();
+    readonly world: PhysicsWorld;
+    readonly id: number;
+    readonly body: RigidBody;
+    readonly shape: Shape;
+    readonly sensor: boolean;
+    userData: unknown;
+  }
+
+  /** - fixed: the bodies keep their relative pose.
+   * - ball: the anchors meet; rotation is free.
+   * - hinge: rotation only about `axis` (in A's frame; default Z), with
+   *   optional `limits` (radians within ±π) and `motor`.
+   * - slider: B's anchor moves along `axis` (default X) only, rotation
+   *   locked; `limits` in metres, `motor`.
+   * - distance: the anchors stay `length` apart.
+   * - rope: between `minLength` (default 0) and `maxLength`.
+   * - spring: soft toward `length`, `frequency` Hz (default 2),
+   *   `dampingRatio` (default 0.5).
+   * - coneTwist: a ball whose `axis` (default Y) stays within `swing`
+   *   radians and twists within `twist` (default ±π). */
+  export type JointType = "fixed" | "ball" | "hinge" | "slider" | "distance" | "rope" | "spring" | "coneTwist";
+  export interface JointDesc {
+    type: JointType;
+    bodyA: RigidBody;
+    bodyB: RigidBody;
+    /** In each body's frame (default their origins). */
+    anchorA?: VectorLike;
+    anchorB?: VectorLike;
+    axis?: VectorLike;
+    limits?: [number, number] | null;
+    motor?: { speed: number; maxForce: number } | null;
+    length?: number;
+    minLength?: number;
+    maxLength?: number;
+    frequency?: number;
+    dampingRatio?: number;
+    swing?: number;
+    twist?: [number, number];
+    /** Default false: jointed bodies do not collide with each other. */
+    collideConnected?: boolean;
+    /** Breaks (and is removed) after a step whose reaction exceeds these
+     * (default Infinity). */
+    breakForce?: number;
+    breakTorque?: number;
+    userData?: unknown;
+  }
+  export class Joint {
+    private constructor();
+    readonly world: PhysicsWorld;
+    readonly id: number;
+    readonly type: JointType;
+    readonly bodyA: RigidBody;
+    readonly bodyB: RigidBody;
+    userData: unknown;
+    /** Hinges and sliders; null turns the motor off. */
+    setMotor(motor: { speed: number; maxForce: number } | null): void;
+    /** The force and torque it applied in the last step. */
+    readonly reaction: { force: Vec3; torque: Vec3 };
+  }
+
+  /** A touch between two colliders that began or ended in the last step
+   * (contacts within the solver's slop count as touching). */
+  export interface CollisionEvent {
+    type: "begin" | "end";
+    sensor: boolean;
+    colliderA: Collider;
+    colliderB: Collider;
+    bodyA: RigidBody;
+    bodyB: RigidBody;
+  }
+  export interface JointBreak {
+    joint: Joint;
+    force: number;
+    torque: number;
+  }
+  export interface RayHit {
+    collider: Collider;
+    body: RigidBody;
+    /** Of the segment, 0 to 1 (0 when it starts inside a solid). */
+    fraction: number;
+    distance: number;
+    point: Vec3;
+    /** Facing the ray (meshes are two-sided). */
+    normal: Vec3;
+  }
+  export interface ShapeHit {
+    collider: Collider;
+    body: RigidBody;
+    /** Of the translation, before contact. */
+    fraction: number;
+    /** From the cast shape toward the collider hit. */
+    normal: Vec3;
+  }
+
+  export interface WorldOptions {
+    /** Default (0, -9.81, 0). */
+    gravity?: VectorLike;
+    /** Defaults 1024, 2048 and 1024; at most 8192, 16384 and 8192. */
+    maxBodies?: number;
+    maxColliders?: number;
+    maxJoints?: number;
+    /** Defaults 10 (1 to 64) and 4 (0 to 64). */
+    velocityIterations?: number;
+    positionIterations?: number;
+    /** Default true. */
+    sleeping?: boolean;
+    /** `step()`'s seconds when given none: default 1/60, at most 0.1. */
+    timestep?: number;
+  }
+
+  /** A world (a game holds at most 16 at once; dispose of one, or drop
+   * every reference, to make room). */
+  export class PhysicsWorld {
+    constructor(options?: WorldOptions);
+    timestep: number;
+    gravity: VectorLike;
+    readonly bodies: readonly RigidBody[];
+    readonly colliders: readonly Collider[];
+    readonly joints: readonly Joint[];
+    /** Contacts the last step solved. */
+    readonly contactCount: number;
+    createBody(desc?: BodyDesc): RigidBody;
+    /** With its colliders and joints. */
+    removeBody(body: RigidBody): void;
+    /** On `body`, or on the world's own static body when none is given. */
+    createCollider(desc: ColliderDesc, body?: RigidBody): Collider;
+    removeCollider(collider: Collider): void;
+    createJoint(desc: JointDesc): Joint;
+    removeJoint(joint: Joint): void;
+    /** One fixed step of `seconds` (default `timestep`; more than 0, at
+     * most 0.1). Call it from onFixedUpdate. */
+    step(seconds?: number): void;
+    /** The last step's touches that began and ended. */
+    readonly events: readonly CollisionEvent[];
+    /** Joints the last step broke (and removed). */
+    readonly jointBreaks: readonly JointBreak[];
+    castRay(from: VectorLike, to: VectorLike, filter?: QueryFilter): RayHit | null;
+    /** A convex shape moved by `translation` from a pose. */
+    castShape(
+      shape: Shape | ShapeDesc,
+      position: VectorLike,
+      quaternion: QuaternionLike | null | undefined,
+      translation: VectorLike,
+      filter?: QueryFilter,
+    ): ShapeHit | null;
+    /** The colliders a convex shape at a pose overlaps, in creation order. */
+    intersectShape(
+      shape: Shape | ShapeDesc,
+      position: VectorLike,
+      quaternion?: QuaternionLike | null,
+      filter?: QueryFilter,
+    ): Collider[];
+    createCharacterController(options?: CharacterOptions): CharacterController;
+    /** Places every body's `object` at its pose `alpha` (0 to 1, default
+     * 1) of the way through the last step: pass onRender's interpolation
+     * for motion that is smooth at any frame rate. */
+    sync(alpha?: number): void;
+    /** Releases it now: every member of it throws afterwards. */
+    dispose(): void;
+  }
+
+  export interface CharacterOptions {
+    /** Default (0, 1, 0). */
+    up?: VectorLike;
+    /** The gap kept from everything (default 0.02 m, at most 1). */
+    offset?: number;
+    /** Slide along what it hits (default true). */
+    slide?: boolean;
+    /** Radians: the steepest slope walked up (default π/4). */
+    maxSlopeClimbAngle?: number;
+    /** Radians: slopes gentler than this hold it still (default 50°). */
+    minSlopeSlideAngle?: number;
+    /** Steps up ledges up to `maxHeight` (default 0.35 m) with at least
+     * `minWidth` (default 0.1 m) on top; null turns it off. */
+    autostep?: { maxHeight?: number; minWidth?: number; includeDynamicBodies?: boolean } | null;
+    /** Down to the ground it walked off, this far (default 0.2 m); null
+     * turns it off. */
+    snapToGround?: number | null;
+    /** Kilograms: pushes dynamic bodies it walks into (default null: they
+     * only block it). */
+    pushMass?: number | null;
+    /** Hits one move slides off at most (1 to 32, default 8). */
+    maxIterations?: number;
+  }
+  export interface CharacterMove {
+    /** What the collider can move this step. */
+    translation: Vec3;
+    /** It ends on walkable ground. */
+    grounded: boolean;
+    /** It slid down a slope too steep to stand on. */
+    slidingDownSlope: boolean;
+    /** What it ran into (each once, at most 16); normals face it. */
+    collisions: { collider: Collider; normal: Vec3 }[];
+  }
+  /** A kinematic character controller (as Rapier's, which Solstice uses):
+   * moves a convex collider through the world, keeping `offset` from
+   * everything, sliding along walls, climbing slopes and steps, snapping
+   * to the ground, optionally pushing dynamic bodies. The game keeps its
+   * own vertical speed (gravity, jumps) and passes the step's motion. */
+  export class CharacterController {
+    private constructor();
+    readonly world: PhysicsWorld;
+    up: Vec3;
+    offset: number;
+    slide: boolean;
+    maxSlopeClimbAngle: number;
+    minSlopeSlideAngle: number;
+    autostep: { maxHeight: number; minWidth: number; includeDynamicBodies: boolean } | null;
+    snapToGround: number | null;
+    pushMass: number | null;
+    maxIterations: number;
+    /** The move `desired` (metres this step) allows; a kinematic body's
+     * next pose follows it unless `apply` is false. `seconds` (default the
+     * world's timestep) sets pushes' speeds. */
+    move(
+      collider: Collider,
+      desired: VectorLike,
+      options?: { filter?: QueryFilter; seconds?: number; apply?: boolean },
+    ): CharacterMove;
+  }
+}
+
+// ===========================================================================
 declare module "starhermit:script" {
   import type { JsonValue, Unsubscribe } from "starhermit:engine";
   import type { RoomSocketState } from "starhermit:platform";
@@ -13334,4 +17699,2138 @@ declare module "starhermit:script" {
    * refuses `createSession` fails the authority (an
    * `error`, then `stopped` with `"failed"`). */
   export function authority(path: string, options: AuthorityOptions): Authority;
+}
+
+// ===========================================================================
+/** Since API_MINOR 40 (`GPU_PARTICLES_MINOR`; importing it in an older game
+ * throws a TypeError): ENGINE EXTENSION (three.js has no particle system).
+ * GPU-state particle emitters for effects that only show, and Solstice's
+ * `.particles` effect text. */
+declare module "starhermit:particles" {
+  import type { Object3D, Group, PointsMaterial, Vector3, ParticleEmitterOptions, ParticleVector, ParticleBurstOptions, Texture } from "starhermit:scene";
+  /** The most particles one GPU emitter holds (a 1024 × 1024 state). */
+  export const MAX_GPU_CAPACITY: 1048576;
+  /** The most a game's GPU emitters hold together, before the graphics
+   * level's budget (`levelSettings().particles` × 16) lowers it. */
+  export const MAX_GPU_PARTICLES: 4194304;
+  /** A GPU emitter's particles on the CPU fallback by default (at most). */
+  export const CPU_FALLBACK_CAPACITY: 4096;
+  /** Where a GPU emitter's particles live: "float" (RGBA32F targets),
+   * "half" (RGBA16F where the device renders no 32-bit floats: positions
+   * to about a thousandth of their distance from the origin, ages dithered
+   * so they keep advancing), "cpu" (no float targets: the fallback below;
+   * also with `STARHERMIT_CPU_PARTICLES` natively and a development page's
+   * `?cpu-particles`, a check of it) or "pending" (until the runtime knows
+   * the device, the first frame or two; settings and bursts wait). */
+  export type GPUParticleTier = "float" | "half" | "cpu" | "pending";
+  /** Collision with the scene's depth: the last frame's
+   * `renderer.sceneDepth` seen from that frame's camera (perspective
+   * cameras; GPU tiers only, the CPU fallback has no depth). A particle
+   * that moved up to `thickness` (default 0.5) behind the surface meets it
+   * there, its normal from the depth's slope; the depth is looked up at
+   * four points along each step's path, so a fast particle or a slow
+   * frame's long step does not pass through a surface. The scene's depth is drawn
+   * for frames whose objects sample it (here the emitter's draw, once its
+   * program is ready, a frame or more after it is made): until then a
+   * frame reads whatever depth was drawn last. */
+  export interface ParticleDepthCollision {
+    /** "bounce" (default), "clamp", "stick" or "kill". */
+    response?: "bounce" | "clamp" | "stick" | "kill";
+    /** Default 0.3. */
+    restitution?: number;
+    /** Default 0.2. */
+    friction?: number;
+    thickness?: number;
+  }
+  export interface GPUParticleEmitterOptions extends ParticleEmitterOptions {
+    /** 1 to 1,048,576 (default 4,096), lowered to the level's budget left
+     * (`heldCapacity`). */
+    capacity?: number;
+    /** Its `color`, `map`, `size` (world units across), `opacity`,
+     * `transparent`, `blending`, depth and fog are the particles'. */
+    material?: PointsMaterial;
+    collision?: "depth" | ParticleDepthCollision | null;
+    /** Particles on the CPU fallback (1 to 16,384; default the smaller of
+     * `capacity` and 4,096). */
+    cpuCapacity?: number;
+    /** A black body's glow (GPU tiers only; the CPU fallback draws none):
+     * each particle's temperature at birth in kelvin, or a [min, max] range
+     * (0 to 100,000; default 0: none; below 500 K nothing shows). Its light
+     * (Planck's law through Wyman, Sloan and Shirley's fit of the CIE
+     * matching functions, as Solstice's) times `glow` is added to the
+     * sprite's color (a lit sprite's emission), scaled so that full
+     * daylight (100,000 lux) is a light of intensity 1: 3,000 K gives about
+     * 1,700 in red, so a `glow` of 0.001 to 0.01 suits a scene lit at 1 to
+     * 3. ENGINE EXTENSION. */
+    temperature?: number | readonly [number, number];
+    /** How fast the temperature falls towards the air's 300 K: that share
+     * of the difference a second, exponentially (0 to 1,000; default 0). */
+    cooling?: number;
+    /** The glow's emissivity (default 1). */
+    glow?: number;
+    /** Since API_MINOR 43 (`PARTICLE_FLIPBOOK_MINOR`; ignored before): the
+     * material's `map` is a sprite sheet, each particle showing one frame
+     * at a time (null: the whole map). GPU tiers only (the CPU fallback
+     * draws the whole map). */
+    flipbook?: ParticleFlipbook | null;
+    /** Since API_MINOR 43: velocity-stretched billboards (sparks, rain,
+     * tracers in flight): each quad turned along its velocity on the screen
+     * and lengthened by its speed. A number is `{ speed }`; null or 0 none.
+     * GPU tiers only. */
+    stretch?: number | ParticleStretch | null;
+    /** Since API_MINOR 43: two-point particles (beams, laser and tracer
+     * streaks, lightning): each a quad facing the camera from where it
+     * spawned to its far end (true is `{}`; null none). GPU tiers only. */
+    beam?: boolean | ParticleBeam | null;
+    /** Since API_MINOR 43 (`DISTORTION_MINOR`): the particles draw the
+     * scene behind them bent rather than their colour (heat haze over
+     * fire, shock rings): as `DistortionMaterial`, the push from `map`'s
+     * red and green (or a round bulge across each quad) times `strength`,
+     * their colour a tint and their opacity ramp and material map's alpha
+     * the coverage; unlit, transparent, not depth writing, no blended
+     * flipbook frames. GPU tiers only (the CPU fallback draws them as
+     * sprites). */
+    distortion?: ParticleDistortion | null;
+  }
+  /** Since API_MINOR 43: distorting particles' settings. */
+  export interface ParticleDistortion {
+    /** −10 to 10 (default 0.05). */
+    strength?: number;
+    map?: Texture | null;
+  }
+  /** Since API_MINOR 43: a sprite sheet's frames, as Unity's texture sheet
+   * animation plays them. */
+  export interface ParticleFlipbook {
+    /** Columns and rows (1 to 64 each); frames are numbered row by row from
+     * the image's top left. */
+    tiles: readonly [number, number];
+    /** The first and last frame played (default every tile). */
+    frames?: readonly [number, number];
+    /** Each particle's first frame, counted from `frames[0]`, or "random"
+     * (default 0). */
+    startFrame?: number | "random";
+    /** Frames a second (0.001 to 1,000). Without it the frames play
+     * `cycles` times over each particle's life. */
+    fps?: number;
+    /** Times the frames play over a life (0 to 1,000; default 1). */
+    cycles?: number;
+    /** Past the last frame: "loop" (default) starts again, "clamp" holds
+     * the last. */
+    loop?: "loop" | "clamp";
+    /** Cross-fades each frame into the next (default false): the sheet is
+     * sampled twice, sRGB-decoded as the map would be. Tiles are sampled
+     * with the map's filters, so a mipmapped sheet bleeds a little across
+     * tile edges far away (leave a margin in each tile). */
+    blend?: boolean;
+  }
+  /** Since API_MINOR 43: a stretched billboard's length in world units:
+   * the quad's height (`size` × `scale.y`) times `length` (default 1)
+   * plus the particle's speed times `speed` (default 0), at most `max`
+   * (default 1e6); its width is `size` × `scale.x`. Rotation and spin do
+   * not apply; the map's top points along the motion. */
+  export interface ParticleStretch {
+    speed?: number;
+    length?: number;
+    max?: number;
+  }
+  /** Since API_MINOR 43: a beam's far end is its burst's `to`, or for
+   * other spawns its spawn point plus its first velocity (velocity,
+   * speed, direction, spread) times one second; it is `size` × `scale.x`
+   * wide (the size ramp and twinkle apply over its life) and does not
+   * move (forces, colliders and depth collision are not applied). The
+   * map's u runs across it and its v from the start (the image's bottom)
+   * to the end once, or `uvPerUnit` times a world unit of its length for
+   * a repeating map (with `RepeatWrapping`). */
+  export interface ParticleBeam {
+    uvPerUnit?: number;
+  }
+  /** A GPU emitter's burst options: ParticleEmitter's, and since
+   * API_MINOR 43 a beam's far end. */
+  export interface GPUParticleBurstOptions extends ParticleBurstOptions {
+    /** A beam's far end in the emitter's space (see `beam`). */
+    to?: ParticleVector;
+  }
+  /** Since API_MINOR 40: an emitter whose particles live on the GPU: their
+   * state in two float render targets of two textures each (position and
+   * age, velocity and life; four of the game's render targets), stepped once a frame by a fragment pass reading the last state
+   * and writing the next, before the scene's sync. New particles take the
+   * next slots of a ring; they draw as camera-facing quads (`lit`, `soft`
+   * as ParticleEmitter's), 64 an instance, as many instances as the ring's
+   * live span needs. It takes ParticleEmitter's options (rate, life, space,
+   * shape, extent, velocity, velocitySpread, speed, direction, spread,
+   * gravity, drag, size, color, colors, opacity, 1.38's twinkle, scale and
+   * scaleSpread (a quad's width and height: x and y) and burst options
+   * (`color`, `aged`), and 1.40's wind, curl, buoyancy, vortex, attract,
+   * floor, plane and heightfield colliders, sway, velocityMode,
+   * sizeSpread, lit, soft, phase, rotation, rotationSpread, spin and
+   * spinSpread: quads turn in the view as point sprites do, and
+   * `rotationAxis`, an instance's, is not used), `collision` and a glow
+   * (`temperature`), and 1.43's `flipbook`, `stretch` and `beam`. At most
+   * 16 colored bursts show their tint at once: past that the oldest's
+   * particles take the emitter's colors.
+   *
+   * NOT DETERMINISTIC and NOT READABLE: the GPU's arithmetic and random
+   * numbers are its own, and nothing comes back to script (`count` is what
+   * the CPU spawned within the longest life). Gameplay must not depend on
+   * them; use ParticleEmitter for particles that matter.
+   *
+   * Where the device renders no float targets it is a ParticleEmitter
+   * child of `cpuCapacity` particles with the same settings (depth
+   * collision and the glow left out), and the game keeps working. One pass
+   * a frame each (a frame has 256), up to 64 for a prewarm. Its programs
+   * are checked on the game's thread as they are first used; the game's
+   * GPU emitters check at most one a frame between them, an emitter
+   * waiting for its own stepping and drawing nothing (its bursts kept). */
+  export class GPUParticleEmitter extends Object3D {
+    constructor(options?: GPUParticleEmitterOptions);
+    readonly isGPUParticleEmitter: true;
+    readonly capacity: number;
+    material: PointsMaterial;
+    /** Where its particles live. Since API_MINOR 44 "cpu" too where its
+     * four render targets do not fit beside the game's and the engine
+     * modules' reservations (`Usage.renderTargets`), or after it let them
+     * go for an engine module made later (one console warning a game). */
+    readonly tier: GPUParticleTier;
+    /** The particles it holds here: its capacity lowered to the level's
+     * budget, or the CPU fallback's. */
+    readonly heldCapacity: number;
+    /** Particles that may be alive (see above). */
+    readonly count: number;
+    readonly options: GPUParticleEmitterOptions;
+    /** The air's velocity added to its `wind` option (an effect sets it). */
+    readonly wind: Vector3;
+    /** How much of the connected wind (`setParticleWind`) carries it
+     * (default 1; an effect's emitters take their `wind` module). */
+    windFactor: number;
+    paused: boolean;
+    set(options: GPUParticleEmitterOptions): this;
+    /** At the next step, at `at` in its space; a RangeError past 256
+     * waiting (8 go out a step). Since API_MINOR 43
+     * (`PARTICLE_FLIPBOOK_MINOR`) up to its `capacity` bursts wait (a
+     * RangeError past it) and a step sends up to 65,536 of them, the rest
+     * the next: each burst is three texels of a float texture the
+     * simulation searches (about 50 bytes uploaded and a few script
+     * instructions a burst, a binary search for each new particle), so a
+     * battle's thousands of shots a second cost what they spawn; particles
+     * past the capacity in a step are left out, as before. */
+    burst(count?: number, at?: ParticleVector, options?: GPUParticleBurstOptions): this;
+    /** Runs `seconds` (0 to 600) ahead at the next step: up to 64 passes
+     * that frame (the CPU fallback's prewarm otherwise). */
+    prewarm(seconds: number): this;
+    clear(): this;
+    dispose(): void;
+  }
+  /** The air's velocity at a point. */
+  export type ParticleWindSampler = (x: number, y: number, z: number, out: Vector3) => Vector3;
+  /** starhermit:weather's WindField, or anything with its `velocityAt`. */
+  export interface ParticleWindField {
+    velocityAt(x: number, z: number, time?: number, target?: import("starhermit:scene").Vector2): import("starhermit:scene").Vector2;
+  }
+  /** Connects the wind: starhermit:weather's `WindField` (its CPU twin
+   * `velocityAt`, sampled at each GPU emitter's position once a frame) or
+   * a function of a point; GPU emitters add it times their `windFactor`
+   * to their wind, effects' emitters times their `wind` module (null
+   * disconnects). ParticleEmitter's own `wind` is the game's to set. */
+  export function setParticleWind(source: ParticleWindSampler | ParticleWindField | null): void;
+  /** A value of a parsed effect: [number, parameter index or −1]. */
+  export type ParticleEffectValue = [number, number];
+  /** A parsed effect (its emitters' modules as read; see
+   * `parseParticleEffect`). */
+  export interface ParticleEffectData {
+    params: [string, number][];
+    emitters: Record<string, unknown>[];
+  }
+  /** Reads Solstice's `.particles` text (its docs/particles.md): `param
+   * NAME DEFAULT` lines, then `emitter NAME` and its modules, one a line
+   * (`budget`, `follow`, `spawn rate= burst= every= event= count=`,
+   * `shape point|sphere R [surface]|box X Y Z`, `offset`, `lifetime`,
+   * `velocity X Y Z cone= spread=`, `size`, `size life`, `color`, `color
+   * life`, `brightness`, `temperature`, `cooling`, `glow`, `gravity`,
+   * `wind`, `curl S scale= change=`, `buoyancy`, `attract`, `vortex`,
+   * `collide depth|field|water bounce|stick|kill restitution= friction=
+   * event=`, `drag`, `render sprite [solid] [sort] blend= soft= opacity=
+   * shading= phase=`, `lod`), `#` comments; a value may be a number, a
+   * parameter or a number times one (`14000*rain`); two values a range;
+   * curves `T=values` keys from 0 to 1. A SyntaxError names the line. */
+  export function parseParticleEffect(text: string): ParticleEffectData;
+  /** One of Solstice's effects as GPU emitters (CPU fallbacks where float
+   * targets are missing), one child each, named as in the file and placed
+   * at its `offset`, driven by its parameters. `budget` is the capacity;
+   * sizes (radii in metres) the material's size and `sizeSpread`; `size
+   * life` and `color life` eight-value ramps; velocity's cone and spread a
+   * direction, speed range and spread; `buoyancy` times 9.81, fading over
+   * life; `temperature`, `cooling` and `glow` the emitter's black body's
+   * glow (GPU tiers only); `wind` times the effect's `wind` plus the wind
+   * hook's; `collide depth` depth collision; `render` the look; `follow
+   * camera` the emitter's place each frame; `burst=` spawns at the first
+   * frame and every `every=` seconds. Read but not used: field and water
+   * collisions, solid, sort and lod, and events (`collide … event=`,
+   * `spawn event= count=`): a collision's spawns need the GPU's particles
+   * read back, so no emitter spawns on an event, on either tier. */
+  export class ParticleEffect extends Group {
+    constructor(source: string | ParticleEffectData, params?: Record<string, number>);
+    readonly isParticleEffect: true;
+    readonly data: ParticleEffectData;
+    readonly emitters: Readonly<Record<string, GPUParticleEmitter>>;
+    readonly wind: Vector3;
+    getParam(name: string): number;
+    /** Its emitters take what the parameter drives from the next step (a
+     * RangeError for a name it has not). */
+    setParam(name: string, value: number): this;
+    dispose(): void;
+  }
+  /** A `.particles` file of the game's package as a ParticleEffect. */
+  export function loadParticleEffect(path: string, params?: Record<string, number>): ParticleEffect;
+}
+
+declare module "starhermit:vehicle" {
+  // Vehicle dynamics for racing and driving games (since API_MINOR 40,
+  // `VEHICLE_MINOR`; for a game declaring an older `engine.minor` the
+  // import throws a TypeError as the module evaluates). An engine
+  // extension: three.js has no vehicle model. Each car is stepped natively
+  // on the fixed step (`onFixedUpdate(step) => car.step(step)`), against
+  // flat ground or a `Heightfield`, a `Track` naming the surface under each
+  // tyre: Pacejka tyres with combined slip, load sensitivity and relaxation
+  // length; ten suspension substeps a step with spring, damper, anti-roll
+  // bar and bump stop; a rigid body with the gyroscopic term; engine,
+  // clutch, sequential gearbox, clutch-pack differential and brakes solved
+  // implicitly; drag and downforce; ABS, traction and stability control;
+  // and a driver easing keys and sticks into the wheel and pedals (with an
+  // automatic gearbox). A run repeats exactly, bit for bit, natively and in
+  // browsers. Ported from Solstice (MIT, licenses/LICENSE-solstice).
+  //
+  // Fuel: a step costs about 1,800 instructions on flat ground, 5,000 on a
+  // heightfield and about 6,500 on a heightfield with a track (a search of
+  // a long track's whole lap, off the road, costs more); an autopilot's
+  // look ahead about 650. At most 64 vehicles, 16 heightfields (4,194,304
+  // samples in all), 16 tracks and 64 lap timers at once (a RangeError
+  // past them; `dispose()` lets one go). A spec's text is at most 64 KiB,
+  // a track's 8 MiB.
+
+  export type Surface = "asphalt" | "kerb" | "grass" | "gravel" | "concrete";
+  /** The surfaces in the order a heightfield's `surfaces` numbers them. */
+  export const SURFACES: readonly Surface[];
+  type Vec3 = [number, number, number];
+  type Vec3Like = ArrayLike<number> | { x: number; y: number; z: number };
+
+  /** A car's numbers: what a `.vehicle` file holds. Lengths are in metres,
+   * forces in newtons, torques in newton metres, angles in degrees. The
+   * car's origin is on the ground under its middle at rest; it looks along
+   * -Z with +X to its right (as a three.js object does). Every field may
+   * be left out: the GT racing car's stands (`defaultVehicleSpec()`). A
+   * `.vehicle` text has one line a group:
+   * `mass 1320`, `inertia PITCH YAW ROLL`, `centre X Y Z`,
+   * `body SX SY SZ at X Y Z`, `front KEY=VALUE…`, `rear …`, `tyre …`,
+   * `engine …`, `torque RPM NM` (a line a point), `gears R1 R2…`,
+   * `final R`, `reverse R`, `gearbox …`, `diff …`, `aero …`,
+   * `steering …`, `geometry …`, `assists …` (`#` comments). */
+  export interface VehicleSpecObject {
+    mass?: number;
+    /** About its pitch (X), yaw (Y) and roll (Z) axes, kg m². */
+    inertia?: Vec3;
+    /** The centre of mass from the origin: right, up, back. */
+    centre?: Vec3;
+    body?: { size?: Vec3; at?: Vec3 };
+    front?: AxleSpec;
+    rear?: AxleSpec;
+    tyre?: {
+      /** Peak friction along and across the tyre. */
+      grip?: [number, number];
+      /** The slip ratio and slip angle (degrees) where they peak. */
+      peak?: [number, number];
+      /** The Magic Formula's C (1–2) and E (below 1), along and across. */
+      along?: [number, number];
+      across?: [number, number];
+      load?: number;
+      sensitivity?: number;
+      relaxation?: number;
+    };
+    engine?: {
+      idle?: number;
+      limit?: number;
+      inertia?: number;
+      friction?: [number, number];
+      /** Full-throttle torque by rpm, rising in rpm: 2 to 64 points. */
+      torque?: [number, number][];
+    };
+    /** Forward gears, first first, each taller (smaller): 1 to 10. */
+    gears?: number[];
+    final?: number;
+    reverse?: number;
+    gearbox?: { shift?: number; efficiency?: number; clutch?: number };
+    diff?: { preload?: number; power?: number; coast?: number };
+    aero?: { drag?: number; downforce?: number; balance?: number };
+    steering?: { lock?: number; ackermann?: number };
+    geometry?: { antiDive?: number; antiSquat?: number };
+    assists?: { abs?: boolean; traction?: boolean; stability?: boolean };
+  }
+  export interface AxleSpec {
+    at?: number;
+    track?: number;
+    radius?: number;
+    inertia?: number;
+    spring?: number;
+    bump?: number;
+    rebound?: number;
+    bar?: number;
+    /** How far the wheel rises to its bump stop, and falls. */
+    travel?: [number, number];
+    rollCentre?: number;
+    brake?: number;
+    grip?: number;
+    /** One axle is driven (four-wheel drive is refused). */
+    driven?: boolean;
+  }
+  /** A `.vehicle` text's numbers, all of them. A mistake is a SyntaxError
+   * naming its line (`line 2: unknown line \`wings\``); numbers no road
+   * vehicle has (a feather's mass, a kilometre-long body) are mistakes. */
+  export function parseVehicleSpec(text: string): Required<VehicleSpecObject>;
+  /** A spec, text or object, as the `.vehicle` text that reads back as it. */
+  export function vehicleSpecText(spec: string | VehicleSpecObject): string;
+  /** The GT racing car's numbers, which every spec starts from. */
+  export function defaultVehicleSpec(): Required<VehicleSpecObject>;
+
+  /** A grid of heights to drive on without a physics world: `columns`
+   * samples along +X and `rows` along +Z, `spacing` metres apart, the
+   * first at `origin`, row by row (`heights[row * columns + column]`).
+   * Each square is two triangles split from its corner nearest the origin
+   * to the far one; a mesh drawn with that split is the ground the wheels
+   * find. Off the grid there is no ground. `surfaces`, one a sample (an
+   * index into `SURFACES`), else `surface` (grass) everywhere. A
+   * RangeError for 2 to 4097 samples a side broken, a spacing outside
+   * 0.01–1000, heights that are not finite or not one a sample. */
+  export class Heightfield {
+    constructor(options: {
+      columns: number;
+      rows: number;
+      spacing: number;
+      origin?: Vec3Like;
+      heights: ArrayLike<number>;
+      surfaces?: Uint8Array | ArrayLike<number> | null;
+      surface?: Surface;
+    });
+    readonly columns: number;
+    readonly rows: number;
+    readonly spacing: number;
+    readonly origin: Vec3;
+    heightAt(x: number, z: number): number | null;
+    sample(x: number, z: number): { height: number; normal: Vec3; surface: Surface } | null;
+    dispose(): void;
+  }
+
+  /** Where a point is on a track. */
+  export interface TrackPlace {
+    /** The sample the nearest stretch of the centre line starts at. */
+    sample: number;
+    /** Metres round the lap from the start line. */
+    along: number;
+    /** Metres to the left of the centre line (below zero: right). */
+    offset: number;
+    /** Metres above the track's surface there. */
+    above: number;
+    surface: Surface;
+  }
+  /** A circuit from its `.track` text: `name NAME`, `sector POINT` (each
+   * further sector's first point), and one `p X Y Z LX LY LZ LEFT RIGHT
+   * [l=SURFACE:WIDTH,…] [r=…]` a point of the centre line in order round
+   * the lap (LX LY LZ the unit way across to the driver's left; LEFT and
+   * RIGHT how far the asphalt reaches; `l=`/`r=` the strips beyond it,
+   * outwards; grass past the last). 3 to 65,536 points; a mistake is a
+   * SyntaxError naming its line. */
+  export class Track {
+    constructor(text: string);
+    readonly name: string;
+    /** The lap's length along the centre line, in metres. */
+    readonly length: number;
+    /** How far round the lap each sector starts, the first at 0. */
+    readonly sectorStarts: readonly number[];
+    readonly points: number;
+    /** `hint` is a `sample` the point was near (a search of the whole
+     * lap without one). */
+    locate(x: number, y: number, z: number, hint?: number): TrackPlace;
+    /** The centre line `along` metres round the lap (wrapping), the way it
+     * runs and the way to its left, and the turn of a car standing there
+     * facing round the lap. */
+    pointAt(along: number): {
+      position: Vec3;
+      forward: Vec3;
+      left: Vec3;
+      quaternion: [number, number, number, number];
+    };
+    toText(): string;
+    dispose(): void;
+  }
+
+  /** What the player asks, 0 to 1 (`steer` -1, left, to 1, right);
+   * `shiftUp`/`shiftDown` once a press. */
+  export interface DriverInput {
+    throttle?: number;
+    brake?: number;
+    steer?: number;
+    handbrake?: number;
+    shiftUp?: boolean;
+    shiftDown?: boolean;
+  }
+  export interface Telemetry {
+    /** Along the car, m/s (below zero backwards). */
+    speed: number;
+    rpm: number;
+    /** -1 reverse, 0 neutral. */
+    gear: number;
+    /** What the engine is asked for after the limiter and traction control. */
+    throttle: number;
+    /** The acceleration felt over the last step, in g: forward, right, up. */
+    g: Vec3;
+    abs: boolean;
+    traction: boolean;
+    stability: boolean;
+    limiter: boolean;
+    shifting: boolean;
+    /** The wheel and pedals as the last step had them. */
+    steer: number;
+    throttlePedal: number;
+    brakePedal: number;
+  }
+  export interface WheelState {
+    /** The hub's place and turn (steered and rolled) from the car's origin:
+     * a wheel mesh, a child of the car's, takes these as its own. */
+    position: Vec3;
+    quaternion: [number, number, number, number];
+    /** Radians a second (above zero rolling forward), and its angle. */
+    speed: number;
+    angle: number;
+    /** Metres risen from rest (below zero hanging). */
+    travel: number;
+    steer: number;
+    load: number;
+    slipRatio: number;
+    /** The tangent of the slip angle. */
+    slide: number;
+    /** The ground's force on the tyre: along it and to its right. */
+    force: [number, number];
+    onGround: boolean;
+    surface: Surface;
+    /** The share of its brake ABS lets through. */
+    brakeShare: number;
+  }
+  interface Settable {
+    set(...values: number[]): unknown;
+  }
+  /** What `applyTo` sets: a three.js Object3D, or anything with them. */
+  interface Placeable {
+    position: Settable;
+    quaternion: Settable;
+  }
+  export interface VehicleOptions {
+    /** m/s², 0.1 to 100 (9.81). */
+    gravity?: number;
+    /** Whether the gearbox changes gear by itself (true). */
+    automatic?: boolean;
+    position?: Vec3Like;
+    /** Radians about +Y; 0 looks along -Z. */
+    yaw?: number;
+    /** Flat ground (`{ height: 0, surface: "asphalt" }`) or a heightfield. */
+    ground?: Heightfield | { height?: number; surface?: Surface };
+    /** A track whose strips name the surface under each tyre. */
+    track?: Track | null;
+  }
+  /** A car (the GT racing car without a spec), standing still with its
+   * engine idling in neutral. A spec with a mistake is a SyntaxError
+   * naming its line; an object with a key no spec has, or a value not a
+   * finite number (a boolean for `driven` and `assists`), a TypeError. */
+  export class Vehicle {
+    constructor(spec?: string | VehicleSpecObject, options?: VehicleOptions);
+    readonly spec: Required<VehicleSpecObject>;
+    setGround(ground: Heightfield | { height?: number; surface?: Surface }, track?: Track | null): void;
+    /** What the player asks for the steps from now, eased by the driver:
+     * steering eases and gives less lock the faster the car goes, follows
+     * a slide, pedals ease, and the automatic gearbox changes gear (and
+     * finds reverse when the car is held still on the brake). */
+    input(input: DriverInput): void;
+    /** The wheel and pedals as they are, past the driver (a NaN is 0). */
+    controls(controls: DriverInput): void;
+    /** One fixed step of `seconds` (above 0, at most 0.1; a RangeError
+     * otherwise): ten substeps of suspension, tyres, drivetrain, air and
+     * body. */
+    step(seconds: number): void;
+    automatic: boolean;
+    readonly position: Vec3;
+    readonly quaternion: [number, number, number, number];
+    /** Of the centre of mass, m/s; and the spin, rad/s about the world's axes. */
+    readonly velocity: Vec3;
+    readonly spin: Vec3;
+    readonly speed: number;
+    readonly rpm: number;
+    /** Setting it puts the car in that gear at once (-1 to the top gear). */
+    gear: number;
+    readonly telemetry: Telemetry;
+    /** 0 front left, 1 front right, 2 rear left, 3 rear right. */
+    wheel(index: number): WheelState;
+    /** All four tyres last touched grass or gravel. */
+    readonly offTrack: boolean;
+    /** Sets `body`'s position and quaternion to the car's, `alpha` (0–1,
+     * onRender's) of the way from the step before to the last, and each
+     * of `wheels` (its children) to its hub's. */
+    applyTo(body: Placeable | null, wheels?: readonly (Placeable | null | undefined)[], alpha?: number): void;
+    /** Puts the car there (within a thousand kilometres), turned and
+     * moving so (at most 10 km/s), its wheels rolling with it. */
+    place(
+      position: Vec3Like,
+      quaternion?: ArrayLike<number> | { x: number; y: number; z: number; w: number },
+      velocity?: Vec3Like,
+      spin?: Vec3Like,
+    ): void;
+    /** At rest on a track's centre line `along` metres round the lap,
+     * `lift` (0.05) metres up, facing round the lap, settled. */
+    placeOnTrack(track: Track, along: number, lift?: number): void;
+    /** Stops every wheel and idles the engine in neutral, at rest. */
+    settle(): void;
+    dispose(): void;
+  }
+
+  export type LapEvent =
+    | { type: "started" }
+    | { type: "sector"; sector: number; seconds: number; best: number | null }
+    | { type: "lap"; lap: number; seconds: number; valid: boolean; best: number | null };
+  /** Times laps and sectors of one car round a track. A lap counts only
+   * if every sector's line was crossed in order and at least half the
+   * lap's length was driven forwards; a lap on which all four wheels left
+   * the track is timed and not valid. A jump of more than 40 m between
+   * steps is not driving. */
+  export class LapTimer {
+    constructor(track: Track);
+    readonly track: Track;
+    /** Follows the car (or a point) through one step; `offTrack` is the
+     * vehicle's own `offTrack` when a vehicle is given (else false). */
+    step(at: Vehicle | Vec3Like, seconds: number, offTrack?: boolean): LapEvent[];
+    /** The car was put back: the lap being driven no longer counts. */
+    interrupt(): void;
+    readonly count: number;
+    readonly current: number | null;
+    readonly last: number | null;
+    readonly best: number | null;
+    readonly valid: boolean;
+    readonly lastValid: boolean;
+    readonly sector: number;
+    readonly splits: readonly number[];
+    readonly bestSplits: readonly (number | null)[];
+    readonly along: number;
+    dispose(): void;
+  }
+  /** `1:23.456`. */
+  export function formatLapTime(seconds: number): string;
+
+  /** A self-driving car, for AI drivers: it steers for the centre line a
+   * way ahead (`lookAhead` + `lookAheadPerSpeed` × speed metres) and goes
+   * no faster than lets it slow, at `braking` m/s², for each bend coming,
+   * taken at `cornering` m/s² (curvature from three points of the line,
+   * every 8 m over the next 260 m), and at most `topSpeed` m/s. */
+  export class Autopilot {
+    constructor(
+      track: Track,
+      options?: { cornering?: number; braking?: number; topSpeed?: number; lookAhead?: number; lookAheadPerSpeed?: number },
+    );
+    readonly track: Track;
+    cornering: number;
+    braking: number;
+    topSpeed: number;
+    lookAhead: number;
+    lookAheadPerSpeed: number;
+    /** Sets the car's input for its next step; what it asked. */
+    drive(vehicle: Vehicle): { throttle: number; brake: number; steer: number };
+  }
+}
+
+// ===========================================================================
+declare module "starhermit:water" {
+  // Oceans, ponds and water shading (since API_MINOR 40, `WATER_MINOR`; for
+  // a game declaring an older `engine.minor` the import throws a TypeError
+  // as the module evaluates). An ENGINE EXTENSION: three.js's Water and
+  // Water2 addons are planar mirrors; this follows Solstice's ocean (MIT,
+  // licenses/LICENSE-solstice).
+  //
+  // The sea is drawn from a measured spectrum on four cascades of 256²
+  // (600, 85, 12 and 2.1 m tiles): an Elfouhaily wind sea with Donelan and
+  // Banner's spreading plus a JONSWAP swell of its own height, period and
+  // direction (default), or starhermit-water's JONSWAP pair. The waves are
+  // simulated on one of three tiers, lowered to the device and never capped
+  // (`Ocean.tier` says which draws, `tierNote` why it was lowered):
+  //   - "gpu": the initial spectrum evolved and inverse-FFT'd on the GPU in
+  //     fragment passes into FloatType targets (needs
+  //     `renderer.capabilities.floatRenderable`; 18 passes a frame);
+  //   - "cpu": the same fields by a CPU FFT (64² a cascade by default)
+  //     uploaded every frame;
+  //   - "gerstner": the field's strongest waves (32 by default) summed in
+  //     the vertex shader (the lowest two graphics levels' choice);
+  //   - "off": nothing drawn; every call still works.
+  // Gameplay never reads the GPU: `heightAt`, `sampleAt` and `buoyancy` sum
+  // the deterministic CPU wave field (the strongest 512 waves by default),
+  // the same bits natively and in browsers, whatever the tier.
+  //
+  // The surface is a CDLOD quadtree of world-fixed patches chosen on the
+  // CPU and drawn instanced (no cracks, no swimming); its shading:
+  // Fresnel reflection of an equirect `environment` or an analytic sky
+  // (with a planar or screen-space reflection hook), Bruneton's
+  // slope-variance roughness from the spectrum, a GGX sun with glitter,
+  // refraction through `renderer.sceneColor` with Beer–Lambert absorption
+  // and scattering by depth (`renderer.sceneDepth`), shoaling over a seabed
+  // map (waves squeezed within 0.4 of the depth), Jacobian whitecaps, shore
+  // foam and the swash's run-up, light through crests, and the scene's fog.
+  // Cat's paws follow starhermit:weather's WindField (`setWindField`).
+  // Within WebGL2's texture units (at most 10 of a material's 12).
+  //
+  // From below (since API_MINOR 44, `UNDERWATER_MINOR`; games at 41 to 43
+  // read host API 1.43's module unchanged): the ocean's, a pond's and a
+  // WaterMaterial's surface seen from under the water shows its underside
+  // through Snell's window. The eye's ray refracts out into the air (n
+  // 1.33): inside the window the sky or environment along the refracted
+  // ray (the scene straight behind where something opaque lies above the
+  // surface) and the sun through it; toward the window's edge the
+  // water-to-air Fresnel mixes in the water's own deep colour, and beyond
+  // the critical angle (about 48.6° from straight up) the ray is totally
+  // reflected and only that colour shows. A WaterMaterial takes its
+  // geometry's normals as the surface's up side (either winding). An
+  // Ocean, a Pond or a WaterMaterial may be given to
+  // `renderer.underwater = { water }` (starhermit:scene): the renderer then
+  // reads the water's level, absorption and scattering, sun, sky light and
+  // ripples each frame (a pond is wet only over its rectangle; an ocean
+  // gives a heightfield of its real surface around the camera, which it
+  // keeps up to date in `update`, as the waterline map is).
+  import type { Camera, ColorInput, DirectionalLight, Group, Matrix4, Mesh, Object3D, RenderTarget, ShaderMaterial, ShaderUniform, Texture, Vector3 } from "starhermit:scene";
+
+  export type WaterTier = "gpu" | "cpu" | "gerstner" | "off";
+  export type WaterTierChoice = WaterTier | "auto";
+  /** starhermit-water's JONSWAP pair (directions in degrees: the angle
+   * atan2(z, x) waves travel towards; fetches in km). */
+  export interface JonswapSpectrum {
+    model: "jonswap";
+    windSpeed?: number; windDirection?: number; fetch?: number; spreadBlend?: number; windSwell?: number;
+    gamma?: number; shortWavesFade?: number; capillaryFade?: number; waveScale?: number; swellScale?: number;
+    swellWindSpeed?: number; swellDirection?: number; swellFetch?: number; swellSwell?: number;
+    choppiness?: number; foamRecovery?: number; timeScale?: number;
+  }
+  /** The Elfouhaily wind sea (wind 10 m up, m/s, default 9; fetch km,
+   * default 120) and a JONSWAP swell (height m, default 0.8; period s,
+   * default 11). */
+  export interface ElfouhailySpectrum {
+    model?: "elfouhaily";
+    windSpeed?: number; windDirection?: number; fetch?: number;
+    swellHeight?: number; swellPeriod?: number; swellDirection?: number;
+    waveScale?: number; choppiness?: number;
+  }
+  export type OceanSpectrum = JonswapSpectrum | ElfouhailySpectrum;
+  /** A seabed height texture (red: the bed's height in metres) over a
+   * world rectangle; `heightAt` gives it on the CPU for heightAt's
+   * shoaling. Since API_MINOR 41 (`WATER_SEABED_MINOR`) without one a
+   * float `DataTexture`'s own data does: sampled as the surface's shader
+   * samples it (red, clamped to its edges, linear or nearest by its
+   * `magFilter`, rows from `bounds`' minZ; 62 m below the sea outside
+   * `bounds`), read as it stands. Other textures (and `renderSeabed`'s
+   * depth map, which lives on the GPU) give the CPU no heights: gameplay
+   * then sums the waves unshoaled unless `heightAt` is given. */
+  export interface SeabedOptions {
+    texture: Texture;
+    bounds: readonly [minX: number, minZ: number, maxX: number, maxZ: number];
+    heightAt?: (x: number, z: number) => number;
+  }
+  export interface WaterOpticsOptions {
+    /** Per metre (default 0.45, 0.07, 0.04: red absorbed fastest). */
+    absorption?: readonly [number, number, number];
+    /** Per metre (default 0.002, 0.006, 0.007). */
+    scattering?: readonly [number, number, number];
+    sunDirection?: Vector3;
+    sunColor?: ColorInput;
+    skyZenith?: ColorInput;
+    skyHorizon?: ColorInput;
+    /** An equirectangular environment the water reflects (mipmapped
+     * blurs by roughness); else the analytic sky. */
+    environment?: Texture | null;
+    environmentIntensity?: number;
+    foamColor?: ColorInput;
+  }
+  export interface OceanOptions extends WaterOpticsOptions {
+    spectrum?: OceanSpectrum;
+    seed?: number;
+    /** Default "auto": "gpu" where float targets render, else "cpu"; the
+     * lowest two graphics levels "gerstner". A "gpu" the device cannot run
+     * draws "cpu" (`tierNote` says so). */
+    tier?: WaterTierChoice;
+    seaLevel?: number;
+    /** Waves heightAt sums, 1 to 8192 (default 512). */
+    components?: number;
+    /** The CPU tier's texels a cascade side, 16 to 128 (default 64). */
+    cpuResolution?: number;
+    /** The gerstner tier's waves, 1 to 64 (default 32). */
+    gerstnerWaves?: number;
+    /** Cells across a patch: 8, 16 (default) or 32. */
+    patchCells?: number;
+    /** Levels of patches from 4 m, 2 to 14 (default 12: some 23 km out). */
+    levels?: number;
+    foamThreshold?: number;
+    foamStrength?: number;
+    /** Water shallower than this (m) over the seabed foams (default 0.6). */
+    shoreFoamDepth?: number;
+    /** The swash's run-up (m, default 0.35) and period (s, default 9). */
+    runUp?: number;
+    runUpPeriod?: number;
+    /** Track the wet line (`waterline`, `wetnessHooks`). */
+    waterline?: boolean;
+    /** The built-in planar reflection: a mirror camera draws the scene
+     * (the ocean hidden) into half the window each update. */
+    planarReflection?: boolean;
+  }
+  export interface BuoyancyOptions {
+    /** Each point's sphere radius (m, default 0.5). */
+    radius?: number;
+    /** Each point's displaced volume when submerged (default the sphere's). */
+    volume?: number;
+    density?: number;
+    gravity?: number;
+    time?: number;
+    /** Where torques are taken about (default the points' mean). */
+    centre?: Vector3;
+  }
+  export interface BuoyancyResult {
+    force: Vector3;
+    torque: Vector3;
+    /** Share of the points' volume under water, 0 to 1. */
+    submerged: number;
+    /** Each point's depth under the surface (negative above). */
+    depths: Float32Array;
+  }
+  export interface WaterSample {
+    height: number;
+    displacement: Vector3;
+    normal: Vector3;
+  }
+  /** A camera-centred CDLOD patch: its corner, size (m), level and whether
+   * it is a quarter drawn at its parent's spacing. */
+  export interface OceanPatch { x: number; z: number; size: number; level: number; half: boolean }
+  /** The patches round a camera at (x, y, z): the 3 × 3 coarsest nodes,
+   * tiled without gaps or overlaps. */
+  export function selectOceanPatches(x: number, y: number, z: number, seaLevel: number, levels?: number): OceanPatch[];
+  /** The water shading WGSL `Ocean`, `Pond` and `WaterMaterial` share
+   * (`oc_shade`), for custom water materials. */
+  export const WATER_SHADING_WGSL: string;
+
+  /** An FFT ocean (at most 8 at once: a RangeError past them). Add it to
+   * the scene and call `update(camera, dt)` once a frame before rendering;
+   * it is placed in the world by its shader (its own transform is reset). */
+  export class Ocean extends Group {
+    constructor(options?: OceanOptions);
+    readonly isOcean: true;
+    readonly requestedTier: WaterTierChoice;
+    /** The tier drawing. */
+    readonly tier: WaterTier;
+    /** Why `tier` is below what was asked ("" when it is not). */
+    readonly tierNote: string;
+    seaLevel: number;
+    /** The waves' clock in seconds (`update` advances it). */
+    time: number;
+    readonly material: ShaderMaterial;
+    /** The sun the water shows; null follows the scene's first visible
+     * DirectionalLight. */
+    sun: DirectionalLight | null;
+    /** The wet line's map (red: the highest the water stood lately, green:
+     * now, as world heights; 256² texels of 0.5 m round the camera) with
+     * `waterline: true`, else null. */
+    readonly waterline: RenderTarget | null;
+    /** Patches the last update drew (full, quarter). */
+    readonly patchCounts: [number, number];
+    setTier(tier: WaterTierChoice): void;
+    /** The water's height over (x, z) at `time` (default `this.time`): the
+     * CPU wave field, deterministic, plus the sea level (squeezed as drawn
+     * where the seabed's CPU height is known: a `heightAt` callback, or
+     * since API_MINOR 41 a `setSeabed` float DataTexture's data; never a
+     * `renderSeabed` map's, which only the GPU holds). */
+    heightAt(x: number, z: number, time?: number): number;
+    sampleAt(x: number, z: number, time?: number, target?: WaterSample): WaterSample;
+    /** Archimedes over world points on a hull, each a sphere. */
+    buoyancy(points: readonly Vector3[], options?: BuoyancyOptions): BuoyancyResult;
+    setSeabed(seabed: SeabedOptions | null): void;
+    /** Draws `scene` straight down (the ocean hidden) from 2 m above the
+     * sea down `range` (default 64 m) over `size` (default 512 m) round
+     * `centre` at `resolution`² (default 512) as the seabed. */
+    renderSeabed(scene: Object3D, options?: { centre?: Vector3; size?: number; resolution?: number; range?: number; heightAt?: (x: number, z: number) => number }): void;
+    /** The reflection hook: a premultiplied planar image with its texture
+     * matrix (three.js Reflector's), or with `screen` a screen-space one
+     * (an SSR pass's) at the window's uv; null for none. */
+    setReflection(texture: Texture | null, textureMatrix?: Matrix4, options?: { screen?: boolean; strength?: number }): void;
+    /** The wind cat's paws follow (the spectrum keeps its own). */
+    setWind(speed: number, directionDegrees: number, gusts?: number): void;
+    /** starhermit:weather's wind: cat's paws follow its gusts and lulls
+     * where they cross (its uniforms are shared: update the field each
+     * frame), or null for `setWind`'s. */
+    setWindField(wind: import("starhermit:weather").WindField | null): void;
+    /** A gust field (red: the wind's speed over its mean) over a repeating
+     * world rectangle: starhermit:weather's or the game's; null for the
+     * built-in drifting gusts. */
+    setGustField(texture: Texture | null, bounds?: readonly [number, number, number, number]): void;
+    setSun(direction: Vector3, color?: ColorInput, intensity?: number): void;
+    update(camera: Camera, dt?: number): void;
+    /** `MaterialHooks` (uniforms and a surface hook) darkening and
+     * glossing what the waves wetted lately; needs `waterline: true`. */
+    wetnessHooks(): { uniforms: Record<string, ShaderUniform>; surface: string };
+    dispose(): void;
+  }
+
+  export interface WaterMaterialOptions extends WaterOpticsOptions {
+    /** Wind ripples (default true). */
+    ripples?: boolean;
+    windSpeed?: number;
+    windDirection?: number;
+    /** Smoothest GGX alpha (default 0.02). */
+    roughness?: number;
+    /** Foam from the vertex colors' red (a simulation's), default false. */
+    vertexFoam?: boolean;
+  }
+  /** The ocean's water shading for a mesh whose geometry (with normals) is
+   * the water's surface: a flowing-water heightfield, a pool. */
+  export class WaterMaterial extends ShaderMaterial {
+    constructor(options?: WaterMaterialOptions);
+    readonly isWaterMaterial: true;
+    /** Advances the ripples' clock. */
+    update(dt: number): void;
+    setWind(speed: number, directionDegrees: number): void;
+    setSun(direction: Vector3, color?: ColorInput, intensity?: number): void;
+  }
+  export const MAX_PONDS: 8;
+  export interface PondOptions extends WaterMaterialOptions {
+    bounds: readonly [minX: number, minZ: number, maxX: number, maxZ: number];
+    level: number;
+  }
+  /** Still water: a level sheet over a rectangle, wind-rippled; at most
+   * `MAX_PONDS` at once (a RangeError past them). */
+  export class Pond extends Mesh {
+    constructor(options: PondOptions);
+    readonly isPond: true;
+    update(dt: number): void;
+    dispose(): void;
+  }
+}
+
+// ===========================================================================
+declare module "starhermit:surfaces" {
+  // Procedural surfaces and grass (since API_MINOR 40, `SURFACES_MINOR`;
+  // for a game declaring an older `engine.minor` the import throws a
+  // TypeError as the module evaluates). An engine extension: three.js has
+  // no generators. Ported from Solstice's procgen (MIT,
+  // licenses/LICENSE-solstice): tiling PBR maps of a library of surfaces
+  // by name and seed, built from their real shape in metres (stones,
+  // blades, cracks grown as drying mud cracks); meadows of folded,
+  // tapering, arching grass blades with rosette and clover weeds and
+  // flowers, from `.grass` text; and Solstice's three-kind ground blend
+  // and hide-tiling as material hooks. Generated natively (the same Rust
+  // in browsers, wasm32): a name, seed and size give the same bytes on
+  // every runtime. The work is charged to the call's fuel by what it takes
+  // (a 256 map takes from under a second to several natively, by surface,
+  // and each doubling of the size four times that): make surfaces while
+  // loading or inside `engine.setBusy`.
+  import type { BufferGeometry, Color, DataTexture, MaterialHooks, MeshStandardMaterial, Vector2 } from "starhermit:scene";
+
+  /** sand, wet_sand, dirt, dried_mud, gravel, asphalt, grass, moss,
+   * forest_floor, rock, granite, snow, sandstone, marble, basalt,
+   * oak_bark, birch_bark, fir_bark, pine_bark, beech_bark. */
+  export const SURFACE_NAMES: readonly string[];
+  /** meadow, lawn, dry, tall, verge. */
+  export const GRASS_NAMES: readonly string[];
+
+  /** A surface's maps, RGBA bytes rows from the top, repeating. */
+  export class SurfaceMaps {
+    protected constructor();
+    readonly name: string;
+    readonly seed: number;
+    readonly size: number;
+    /** sRGB colour (SRGBColorSpace), cavity in alpha. */
+    readonly map: DataTexture;
+    /** Tangent-space normals as three.js reads them (x along u, y along
+     * v), the height in alpha (0 to 255 over `heightRange`). */
+    readonly normalMap: DataTexture;
+    /** Ambient occlusion, roughness and metalness in red, green and blue
+     * (`aoMap`, `roughnessMap` and `metalnessMap` at once). */
+    readonly materialMap: DataTexture;
+    readonly albedoData: Uint8Array;
+    readonly normalData: Uint8Array;
+    readonly materialData: Uint8Array;
+    /** Normal x and y, roughness and height. */
+    readonly detailData: Uint8Array;
+    /** Metres one repeat covers (4 for ground, 1 for barks). */
+    readonly tileMetres: number;
+    /** The heights the normal map's alpha spans, in metres. */
+    readonly heightRange: readonly [number, number];
+    /** The mean linear colour. */
+    readonly meanColor: Color;
+    dispose(): void;
+  }
+  export interface SurfaceOptions {
+    /** Which variation (default 0, the reference look); 0 to 2^32 - 1. */
+    seed?: number;
+    /** Texels a side: a power of two from 4 to 2048 (default 256;
+     * RangeError otherwise). */
+    size?: number;
+  }
+  /** A surface of the library (RangeError for an unknown name). */
+  export function generateSurface(name: string, options?: SurfaceOptions): SurfaceMaps;
+  export interface SurfaceMaterialOptions extends SurfaceOptions {
+    /** Hides the tiling: a turned, rescaled copy mixed in and two far
+     * larger copies varying the brightness, centred on the mean (Solstice's
+     * `hide_tiling`). 0 (default) to 1; above 0 the material has hooks and
+     * no `map`. */
+    hideTiling?: number;
+    normalScale?: number;
+  }
+  /** A MeshStandardMaterial of a surface: `map`, `normalMap`, and the
+   * material map as `aoMap`, `roughnessMap` and `metalnessMap`.
+   * `userData.tileMetres` is the metres a repeat should cover. */
+  export function createSurfaceMaterial(surface: string | SurfaceMaps, options?: SurfaceMaterialOptions): MeshStandardMaterial;
+  /** The hooks `createSurfaceMaterial` uses for `hideTiling` (for a
+   * material without a `map`; `repeat` is read every frame). */
+  export function hideTilingHooks(maps: SurfaceMaps, strength: number, repeat?: Vector2): MaterialHooks;
+
+  // A `.grass` breed: one setting a line, `#` comments, every setting
+  // defaulting to an unmown meadow's:
+  //   size 2                          the patch's edge in metres (to 64)
+  //   tufts per_m2=50 blades=8..20 height=0.22..0.55 width=0.005..0.009 lean=0.12..0.82
+  //   undergrowth per_m2=450 height=0.05..0.16
+  //   fold 0.18                       the V of each blade, against its width
+  //   normals_up 0.3                  normals leaned up, lit as a field
+  //   variants 0.45,0.3,0.25,0        weights of the atlas's colour variants
+  //   dry 0.08                        share of dead blades
+  //   colors r,g,b r,g,b r,g,b r,g,b  linear albedo of each variant (last dry)
+  //   weed kind=rosette|clover per_m2= leaves=a..b length=a..b width= stalk=a..b
+  //        flowers= flower_height=a..b flower_size= leaf=r,g,b flower=r,g,b centre=r,g,b
+  // (at most 16 weed lines; densities not negative).
+  /** A breed (a built-in name or `.grass` text) in canonical form:
+   * every setting, no comments; parsing it again gives the same text.
+   * SyntaxError naming the line at fault. */
+  export function parseGrass(breed: string): string;
+  /** A built-in breed's file, or null. */
+  export function grassText(name: string): string | null;
+  export interface GrassOptions {
+    /** Which patch (default 0). */
+    seed?: number;
+    /** The atlas's texels a side (default 256). */
+    atlasSize?: number;
+  }
+  /** A patch of grass that lays edge to edge with copies of itself. */
+  export interface Grass {
+    /** The ground at y 0, spanning 0..size in x and z. Its `custom`
+     * attribute holds, for a wind hook, each vertex's plant pivot (x, y, z)
+     * and how far up the plant it is (w: 0 at the pivot, 1 at the top).
+     * Blades rise from y 0, so `starhermit:weather`'s grass sway (kind
+     * "grass") bends them as it is. */
+    readonly geometry: BufferGeometry;
+    /** Two-sided, with the atlas as `map`, `roughnessMap` and `aoMap`. */
+    readonly material: MeshStandardMaterial;
+    readonly atlas: SurfaceMaps;
+    readonly size: number;
+    readonly text: string;
+  }
+  /** Grows a patch: lay it as an InstancedMesh every `size` metres and
+   * give it levels with `generateLods(mesh, { thin: true })`, which thins
+   * the blades with distance while keeping the area they cover. At most
+   * 4,000,000 vertices (RangeError). */
+  export function createGrass(breed: string, options?: GrassOptions): Grass;
+
+  export type TerrainLayer = string | SurfaceMaps;
+  export interface TerrainMaterialOptions {
+    layers: readonly [TerrainLayer, TerrainLayer, TerrainLayer];
+    seed?: number;
+    /** Texels a side of named layers (default 256, at most 1024). */
+    size?: number;
+    /** Repeats a metre of each (default 1 / tileMetres). */
+    scales?: readonly [number, number, number];
+    /** 0 to 1 (default 0.6). */
+    hideTiling?: number;
+    /** How much each kind's relief counts against its share (0.5). */
+    relief?: number;
+    /** Over how much of the leading score the others show (0.25). */
+    depth?: number;
+    /** How far noise breaks borders up (0.6). */
+    breakup?: number;
+    /** "full" (default), "reduced" (no hide-tiling taps) or "minimal"
+     * (each kind's mean colour, no textures). */
+    quality?: "full" | "reduced" | "minimal";
+  }
+  /** ENGINE EXTENSION: ground of three kinds blended (Solstice's
+   * `MATERIAL_BLENDS`): a MeshStandardMaterial with hooks reading each
+   * vertex's shares of the kinds from the geometry's `custom` attribute
+   * (x, y, z, normalized; zeros mean the first). Every kind is laid by the
+   * world's x and z; where kinds meet noise breaks the border into tongues
+   * and islands a metre or two across, and what stands proud (by its
+   * cavity) shows first. Two array textures (the layers stacked), within
+   * WebGL2's limits on every backend. `userData.surfacesTier` is the
+   * quality drawn: when the image budget refuses the textures it is
+   * "minimal". */
+  export function createTerrainMaterial(options: TerrainMaterialOptions): MeshStandardMaterial;
+}
+
+// ===========================================================================
+declare module "starhermit:controls" {
+  // Player controllers and camera rigs (since API_MINOR 42,
+  // `CONTROLS_MINOR`; for a game declaring an older `engine.minor` the
+  // import throws a TypeError as the module evaluates). Script throughout:
+  // the same numbers natively and in browsers, and deterministic under
+  // fixed steps (smoothing is arithmetic; nothing reads a clock).
+  //
+  // three.js r185's camera controls (examples/jsm/controls, ported from
+  // three.js, MIT): OrbitControls, MapControls, PointerLockControls,
+  // FirstPersonControls and TrackballControls with three's names, defaults,
+  // methods and events ("change", "start", "end", "lock", "unlock"). There
+  // is no DOM: they listen to starhermit:input. The mouse is pointer -1, a
+  // finger its touch id; fingers on the `setTouchControls` controls, presses
+  // the game's UI took (`ui.pointerCaptured`) and the pointer's emulation of
+  // a finger (while one is down and 0.6 s after) are skipped, as the
+  // engine's gestures skip them. A wheel notch is 100 pixels (a DOM wheel's
+  // deltaY). Where three takes `domElement`, an omitted one connects to the
+  // window (`windowElement`, sized by `frame()`); `null` constructs them
+  // disconnected until `connect()`; an object with `clientWidth`,
+  // `clientHeight` and `getBoundingClientRect()` takes presses only inside
+  // its rectangle. Engine additions: a gamepad (`gamepadSlot`, default 0;
+  // null turns it off), read in `update(delta)`; PointerLockControls also
+  // look with a dragged finger (`touchLook`), as touch screens have no
+  // pointer lock.
+  import type { Camera, EventDispatcher, Object3D, Quaternion, Vector3 } from "starhermit:scene";
+  import type { PhysicsWorld, RigidBody, Collider, CharacterController } from "starhermit:physics";
+
+  export const MOUSE: { readonly LEFT: 0; readonly MIDDLE: 1; readonly RIGHT: 2; readonly ROTATE: 0; readonly DOLLY: 1; readonly PAN: 2 };
+  export const TOUCH: { readonly ROTATE: 0; readonly PAN: 1; readonly DOLLY_PAN: 2; readonly DOLLY_ROTATE: 3 };
+  /** The window as the controls' element. */
+  export const windowElement: {
+    readonly clientWidth: number;
+    readonly clientHeight: number;
+    getBoundingClientRect(): { left: number; top: number; width: number; height: number; right: number; bottom: number };
+  };
+  /** three's `Controls` (src/extras/Controls.js). */
+  export class Controls extends EventDispatcher {
+    constructor(object: Camera, domElement?: unknown);
+    object: Camera;
+    domElement: unknown;
+    enabled: boolean;
+    state: number;
+    keys: any;
+    mouseButtons: { LEFT: number | null; MIDDLE: number | null; RIGHT: number | null };
+    touches: { ONE: number | null; TWO: number | null };
+    /** The player slot whose gamepad drives it (default 0; null: none). */
+    gamepadSlot: number | null;
+    /** Stick travel ignored about the centre (default 0.15). */
+    gamepadDeadZone: number;
+    /** Whether it listens to the engine's input now. */
+    readonly connected: boolean;
+    /** Listens to the engine's input (the window by default). */
+    connect(element?: unknown): void;
+    disconnect(): void;
+    dispose(): void;
+    update(delta?: number | null): unknown;
+  }
+  export class OrbitControls extends Controls {
+    constructor(object: Camera, domElement?: unknown);
+    target: Vector3;
+    cursor: Vector3;
+    minDistance: number;
+    maxDistance: number;
+    minZoom: number;
+    maxZoom: number;
+    minTargetRadius: number;
+    maxTargetRadius: number;
+    minPolarAngle: number;
+    maxPolarAngle: number;
+    minAzimuthAngle: number;
+    maxAzimuthAngle: number;
+    enableDamping: boolean;
+    dampingFactor: number;
+    enableZoom: boolean;
+    zoomSpeed: number;
+    enableRotate: boolean;
+    rotateSpeed: number;
+    keyRotateSpeed: number;
+    enablePan: boolean;
+    panSpeed: number;
+    screenSpacePanning: boolean;
+    keyPanSpeed: number;
+    zoomToCursor: boolean;
+    autoRotate: boolean;
+    autoRotateSpeed: number;
+    keys: { LEFT: string; UP: string; RIGHT: string; BOTTOM: string };
+    /** Engine additions: radians a second a full right stick turns
+     * (default π), pixels a second the left stick pans (400), wheel pixels
+     * a second the triggers dolly (300). */
+    gamepadRotateSpeed: number;
+    gamepadPanSpeed: number;
+    gamepadZoomSpeed: number;
+    target0: Vector3;
+    position0: Vector3;
+    zoom0: number;
+    /** "grab" shows the grab cursors over the window while connected. */
+    cursorStyle: string;
+    getPolarAngle(): number;
+    getAzimuthalAngle(): number;
+    getDistance(): number;
+    /** The arrow keys pan (with Ctrl, Meta or Shift, rotate). */
+    listenToKeyEvents(domElement?: unknown): void;
+    stopListenToKeyEvents(): void;
+    saveState(): void;
+    reset(): void;
+    pan(deltaX: number, deltaY: number): void;
+    dollyIn(dollyScale: number): void;
+    dollyOut(dollyScale: number): void;
+    rotateLeft(angle: number): void;
+    rotateUp(angle: number): void;
+    /** The gamepad's part for `deltaTime` seconds (1/60 when null), then
+     * three's update; true when the camera changed. */
+    update(deltaTime?: number | null): boolean;
+  }
+  /** OrbitControls for maps: the primary button pans over the ground
+   * plane, the secondary rotates; one finger pans, two dolly and rotate. */
+  export class MapControls extends OrbitControls {}
+  export class PointerLockControls extends Controls {
+    constructor(camera: Camera, domElement?: unknown);
+    isLocked: boolean;
+    minPolarAngle: number;
+    maxPolarAngle: number;
+    pointerSpeed: number;
+    /** A finger's drag looks (default true; engine addition). */
+    touchLook: boolean;
+    /** Radians a second a full right stick turns (default 2.5). */
+    gamepadLookSpeed: number;
+    getDirection(v: Vector3): Vector3;
+    moveForward(distance: number): void;
+    moveRight(distance: number): void;
+    /** `input.requestPointerLock()`: only while handling the player's
+     * press, as browsers require (else a `NotAllowedError`). */
+    lock(unadjustedMovement?: boolean): void;
+    unlock(): void;
+    /** Looks with the right stick for `delta` seconds (engine addition). */
+    update(delta?: number | null): void;
+  }
+  export class FirstPersonControls extends Controls {
+    constructor(object: Camera, domElement?: unknown);
+    movementSpeed: number;
+    lookSpeed: number;
+    dampingFactor: number;
+    lookVertical: boolean;
+    autoForward: boolean;
+    heightSpeed: boolean;
+    heightCoef: number;
+    heightMin: number;
+    heightMax: number;
+    constrainVertical: boolean;
+    verticalMin: number;
+    verticalMax: number;
+    mouseDragOn: boolean;
+    /** Degrees a second a full right stick turns (default 120); the left
+     * stick moves as the keys do (engine addition). */
+    gamepadLookSpeed: number;
+    lookAt(x: Vector3 | number, y?: number, z?: number): this;
+    update(delta: number): void;
+    handleResize(): void;
+  }
+  export class TrackballControls extends Controls {
+    constructor(object: Camera, domElement?: unknown);
+    screen: { left: number; top: number; width: number; height: number };
+    rotateSpeed: number;
+    zoomSpeed: number;
+    panSpeed: number;
+    noRotate: boolean;
+    noZoom: boolean;
+    noPan: boolean;
+    staticMoving: boolean;
+    dynamicDampingFactor: number;
+    minDistance: number;
+    maxDistance: number;
+    minZoom: number;
+    maxZoom: number;
+    keys: [string, string, string];
+    target: Vector3;
+    keyState: number;
+    /** Measures the window again (call it when its size changes). */
+    handleResize(): void;
+    reset(): void;
+    update(delta?: number | null): void;
+  }
+
+  // -- Camera rigs (engine API) -------------------------------------------------
+  // Each rig's `update(delta)` (in onFixedUpdate, after the subject moved)
+  // places a pose, `position` and `quaternion`, from its subject and the
+  // player's look input; `applyTo(camera, alpha)` (onRender) sets a camera
+  // between the last two poses. Yaw 0 looks along -Z, positive turns left;
+  // positive pitch raises a third-person camera (it looks down) and tilts a
+  // first-person one up. A rig with a `collision` is pulled in at once when
+  // geometry comes between its pivot (`target`) and the eye, and backs out
+  // over `collisionRecoverTime`. `connect()` takes look input: pointer-lock
+  // motion, a drag with `dragButton`, a finger's drag (two fingers pinch
+  // to zoom), the wheel, and the right stick (read in `update`).
+
+  /** What a rig follows: an Object3D, a PlayerController, or anything with
+   * a `position` (and `quaternion`, `yaw`, `velocity` when it has them). */
+  export interface RigSubject {
+    readonly position: { x: number; y: number; z: number };
+    readonly quaternion?: { x: number; y: number; z: number; w: number };
+    readonly yaw?: number;
+    readonly velocity?: { x: number; y: number; z: number };
+  }
+  export interface CameraCollisionOptions {
+    /** A starhermit:physics PhysicsWorld: a sphere of `radius` is cast. */
+    world?: PhysicsWorld | null;
+    /** Or scene objects (and their children) a ray is cast against. */
+    objects?: readonly Object3D[];
+    /** The camera's clearance (default 0.2 m, at most 10). */
+    radius?: number;
+    /** The physics filter (exclude the player's body). */
+    filter?: unknown;
+  }
+  export class CameraCollision {
+    constructor(options?: CameraCollisionOptions);
+    world: PhysicsWorld | null;
+    objects: Object3D[];
+    radius: number;
+    filter: unknown;
+    /** How far from `from` toward `to` the camera is free (0 to their
+     * distance). */
+    cast(from: { x: number; y: number; z: number }, to: { x: number; y: number; z: number }): number;
+  }
+  export interface CameraRigOptions {
+    subject?: RigSubject | null;
+    /** Seconds the pivot lags the subject (default 0.1; 0 rigid). */
+    smoothTime?: number;
+    collision?: CameraCollision | null;
+    /** Seconds to back out once nothing blocks (default 0.25). */
+    collisionRecoverTime?: number;
+    yaw?: number;
+    pitch?: number;
+    /** `connect()` at once. */
+    connect?: boolean;
+  }
+  export class CameraRig extends EventDispatcher {
+    constructor(options?: CameraRigOptions);
+    readonly isCameraRig: true;
+    subject: RigSubject | null;
+    enabled: boolean;
+    readonly position: Vector3;
+    readonly quaternion: Quaternion;
+    readonly previousPosition: Vector3;
+    readonly previousQuaternion: Quaternion;
+    /** The point looked at, and the collision's pivot. */
+    readonly target: Vector3;
+    /** Degrees to set the camera's fov to, or null (default). */
+    fov: number | null;
+    yaw: number;
+    pitch: number;
+    minPitch: number;
+    maxPitch: number;
+    enableLook: boolean;
+    /** Radians a pixel of pointer or finger motion turns (0.005). */
+    lookSpeed: number;
+    /** Radians a second a full right stick turns (2.5). */
+    gamepadLookSpeed: number;
+    invertY: boolean;
+    /** The mouse button that drags the view (2 by default; OrbitRig 0;
+     * null: only pointer-lock motion). */
+    dragButton: number | null;
+    touchLook: boolean;
+    gamepadSlot: number | null;
+    gamepadDeadZone: number;
+    smoothTime: number;
+    collision: CameraCollision | null;
+    collisionRecoverTime: number;
+    /** The eye's distance the collision allowed last update (Infinity
+     * without a collision). */
+    readonly collisionDistance: number;
+    readonly connected: boolean;
+    connect(element?: unknown): void;
+    disconnect(): void;
+    dispose(): void;
+    /** Turns the view by pixels of motion, as the input would. */
+    look(dx: number, dy: number): void;
+    /** Zooms by wheel pixels (100 a notch; positive moves out). */
+    zoom(delta: number): void;
+    /** One fixed step of `delta` seconds. */
+    update(delta: number): void;
+    /** Places the pose wanted now without smoothing. */
+    reset(): void;
+    /** Sets the camera `alpha` (0 to 1, default 1) of the way from the
+     * previous pose to the last, and its fov when `fov` is set. */
+    applyTo(camera: Camera, alpha?: number): void;
+  }
+  /** Third person behind the subject, turned by the player; zooms between
+   * `minDistance` and `maxDistance`; `autoAlign` seconds without input
+   * swing it behind the subject's heading (default null: never). */
+  export class FollowRig extends CameraRig {
+    constructor(options?: CameraRigOptions & { distance?: number; minDistance?: number; maxDistance?: number; height?: number; autoAlign?: number | null });
+    distance: number;
+    minDistance: number;
+    maxDistance: number;
+    /** The pivot above the subject (default 1.5). */
+    height: number;
+    zoomSpeed: number;
+    autoAlign: number | null;
+    alignTime: number;
+  }
+  /** Behind the subject's heading with lag: the heading follows over
+   * `rotationLag` seconds, the place on a spring of `positionLag`; look
+   * input swings it aside and it eases back. */
+  export class ChaseRig extends CameraRig {
+    constructor(options?: CameraRigOptions & { distance?: number; height?: number; lookHeight?: number; rotationLag?: number; positionLag?: number; lookAhead?: number });
+    distance: number;
+    height: number;
+    lookHeight: number;
+    rotationLag: number;
+    positionLag: number;
+    /** Seconds of the subject's velocity the look point leads by. */
+    lookAhead: number;
+    lookYaw: number;
+  }
+  /** Orbits the subject (or `center` without one); `autoRotate` radians a
+   * second. */
+  export class OrbitRig extends CameraRig {
+    constructor(options?: CameraRigOptions & { distance?: number; minDistance?: number; maxDistance?: number; height?: number; center?: { x: number; y: number; z: number } });
+    distance: number;
+    minDistance: number;
+    maxDistance: number;
+    height: number;
+    readonly center: Vector3;
+    zoomSpeed: number;
+    autoRotate: number;
+  }
+  /** The subject's eyes, `eyeHeight` (1.6) above it. */
+  export class FirstPersonRig extends CameraRig {
+    constructor(options?: CameraRigOptions & { eyeHeight?: number });
+    eyeHeight: number;
+  }
+  /** High above at a steep pitch (default 1.1) and fixed yaw; zooms; look
+   * input off unless `enableLook`. */
+  export class TopDownRig extends CameraRig {
+    constructor(options?: CameraRigOptions & { distance?: number; minDistance?: number; maxDistance?: number; height?: number });
+    distance: number;
+    minDistance: number;
+    maxDistance: number;
+    /** The pivot above the subject (default 1). */
+    height: number;
+    zoomSpeed: number;
+  }
+  /** A side view along -Z from `distance` on +Z: follows x and y past a
+   * dead zone, leads along the subject's horizontal motion. */
+  export class SideScrollerRig extends CameraRig {
+    constructor(options?: CameraRigOptions & { distance?: number; height?: number; lookAhead?: number; lookAheadSpeed?: number; deadZoneX?: number; deadZoneY?: number });
+    distance: number;
+    height: number;
+    lookAhead: number;
+    lookAheadSpeed: number;
+    deadZoneX: number;
+    deadZoneY: number;
+  }
+  /** Drives a camera from one rig, blending to another on `setRig` (both
+   * update while blending). Events: "rigchange" { rig, previous },
+   * "blendend" { rig }. */
+  export class CameraDirector extends EventDispatcher {
+    constructor(camera: Camera, rig?: CameraRig | null);
+    readonly camera: Camera;
+    readonly rig: CameraRig | null;
+    readonly blending: boolean;
+    readonly blend: number;
+    /** Seconds a switch blends over (0.6). */
+    blendTime: number;
+    blendEasing: (t: number) => number;
+    readonly position: Vector3;
+    readonly quaternion: Quaternion;
+    /** Resets `rig` and blends to it over `seconds` (0 cuts); `keepYaw`
+     * (default true) starts it at the old rig's yaw. */
+    setRig(rig: CameraRig, seconds?: number, keepYaw?: boolean): void;
+    update(delta: number): void;
+    apply(alpha?: number): void;
+  }
+  /** A critically damped spring toward `target` (about `smoothTime`
+   * seconds); `velocity.value` is kept between calls. */
+  export function smoothDamp(current: number, target: number, velocity: { value: number }, smoothTime: number, delta: number): number;
+  export function smoothDampVector(current: Vector3, target: Vector3, velocity: Vector3, smoothTime: number, delta: number): Vector3;
+  export function smoothDampAngle(current: number, target: number, velocity: { value: number }, smoothTime: number, delta: number): number;
+  export function smoothstep(t: number): number;
+
+  // -- PlayerController ---------------------------------------------------------
+  export interface PlayerControllerOptions {
+    /** Its feet (default the origin). */
+    position?: { x: number; y: number; z: number } | ArrayLike<number>;
+    yaw?: number;
+    /** Capsule radius (0.35) and full height (1.8). */
+    radius?: number;
+    height?: number;
+    /** m/s, defaults 4 and 7 (at most 100). */
+    walkSpeed?: number;
+    runSpeed?: number;
+    /** Metres a jump rises (1.2). */
+    jumpHeight?: number;
+    /** m/s² down (default the world's gravity). */
+    gravity?: number;
+    /** m/s² toward the wanted speed (40), and its share in the air (0.3). */
+    acceleration?: number;
+    airControl?: number;
+    maxFallSpeed?: number;
+    /** Radians (π/4 and 50°), as the CharacterController's. */
+    maxSlopeClimbAngle?: number;
+    minSlopeSlideAngle?: number;
+    /** The tallest step climbed (0.35 m) and the snap down to the ground
+     * (0.3 m); 0 turns either off. */
+    stepHeight?: number;
+    snapToGround?: number;
+    /** Seconds a jump still works after walking off a ledge (0.12), and a
+     * press before landing is kept (0.12). */
+    coyoteTime?: number;
+    jumpBufferTime?: number;
+    /** Radians a second it turns toward its motion (12; 0 keeps its yaw). */
+    turnSpeed?: number;
+    /** Placed by `sync`. */
+    object?: Object3D | null;
+    /** Kilograms with which it pushes dynamic bodies (default null). */
+    pushMass?: number | null;
+    /** The physics query filter its moves use. */
+    filter?: unknown;
+  }
+  /** A walking, running, jumping character on a starhermit:physics world:
+   * a kinematic capsule (`body`, `collider`) moved by the world's
+   * CharacterController (`controller`: slopes, steps, ground snapping,
+   * sliding along walls), with its own acceleration, air control, gravity,
+   * coyote time and jump buffer. Each fixed step: set `input` (or
+   * `readActions`), `update(dt)`, then `world.step(dt)`; `sync(alpha)` in
+   * onRender. Events: "jump", "land". */
+  export class PlayerController extends EventDispatcher {
+    constructor(world: PhysicsWorld, options?: PlayerControllerOptions);
+    readonly world: PhysicsWorld;
+    readonly body: RigidBody;
+    readonly collider: Collider;
+    readonly controller: CharacterController;
+    readonly radius: number;
+    readonly height: number;
+    readonly position: Vector3;
+    readonly previousPosition: Vector3;
+    readonly velocity: Vector3;
+    yaw: number;
+    readonly quaternion: Quaternion;
+    grounded: boolean;
+    jumping: boolean;
+    running: boolean;
+    /** Moves are relative to this heading (a rig's `yaw`), else the
+     * world's axes (forward -Z). */
+    viewYaw: number | null;
+    /** x right and y forward (-1..1, held to the unit circle); a press of
+     * `jump` jumps; `run` runs. */
+    readonly input: { x: number; y: number; jump: boolean; run: boolean };
+    walkSpeed: number;
+    runSpeed: number;
+    jumpHeight: number;
+    gravity: number;
+    acceleration: number;
+    airControl: number;
+    maxFallSpeed: number;
+    coyoteTime: number;
+    jumpBufferTime: number;
+    turnSpeed: number;
+    stepHeight: number;
+    snapToGround: number;
+    object: Object3D | null;
+    filter: unknown;
+    /** Reads `input` from the manifest's actions (each optional). */
+    readActions(actions: { forward?: string; backward?: string; left?: string; right?: string; jump?: string; run?: string }, slot?: number): void;
+    /** Asks for a jump (kept for `jumpBufferTime`). */
+    jump(): void;
+    update(delta: number): void;
+    positionAt(alpha: number, target?: Vector3): Vector3;
+    sync(alpha?: number): void;
+    teleport(position: { x: number; y: number; z: number } | ArrayLike<number>, yaw?: number): void;
+    /** Removes its body from the world. */
+    dispose(): void;
+  }
+}
+
+declare module "starhermit:nav" {
+  // Navigation for game agents (since API_MINOR 42, `NAV_MINOR`; for a game
+  // declaring an older `engine.minor` the import throws a TypeError as the
+  // module evaluates). An engine extension: three.js has no navigation.
+  // Run natively (starhermit-nav), so a mesh, a path and a crowd come to the
+  // same bits natively and in browsers. Y is up.
+  //
+  // A NavMesh is built from triangles: they are voxelised (cellSize across,
+  // cellHeight up), the floors an agent of agentHeight can stand on (no
+  // steeper than agentMaxSlope, steps of at most agentMaxClimb to their
+  // neighbours) are kept, those nearer an edge (a wall, a drop) than
+  // agentRadius are dropped, and the rest are covered by planar convex
+  // polygons. Bake one with toBytes and ship it; NavMesh.fromBytes reads it
+  // back (checked). Queries: A* over the polygons with string pulling,
+  // area costs and areas left out (NavQueryFilter), off-mesh links (jumps,
+  // drops, ladders), the nearest point, a ray cast along the mesh, random
+  // points. NavGrid is A* over a 2D grid for tile games; Crowd steers
+  // agents along paths (arrival, separation, collision, links).
+  //
+  // Bounds: a build takes at most 1,048,576 triangles and a voxel grid of
+  // 4,194,304 columns; at most 16 meshes (1,048,576 polygons in all), 16
+  // grids (8,388,608 cells in all, 4096 a side), 8 crowds (256 agents
+  // each) and 64 filters at once (a RangeError past them; dispose() lets
+  // one go). A path opens at most maxNodes polygons (4096 by default, at
+  // most 65,536); a crowd plans at most 8 paths an update.
+  //
+  // Fuel: a build about 20 instructions a triangle, 10 a voxel interval
+  // and 100 a polygon (a 20 m room at 0.3 m cells about 60,000); a path
+  // about 30 a polygon opened; a crowd's update about 150 an agent plus
+  // its searches.
+
+  type Vec3Like = ArrayLike<number> | { x: number; y: number; z: number };
+  export interface NavPoint { x: number; y: number; z: number }
+  /** The area walkable triangles and links get unless given another (63). */
+  export const NAV_WALKABLE_AREA: 63;
+
+  export interface NavMeshBuildOptions {
+    /** Voxel width and depth (default 0.3) and height (0.2), world units. */
+    cellSize?: number;
+    cellHeight?: number;
+    /** The agent: height (2), radius (0.6), highest step (0.9), steepest
+     * slope in degrees (45). */
+    agentHeight?: number;
+    agentRadius?: number;
+    agentMaxClimb?: number;
+    agentMaxSlope?: number;
+    /** Islands of fewer than this many cells squared are dropped (8). */
+    regionMinSize?: number;
+    /** The most cells a polygon spans in x or z (64; 1 to 256). */
+    maxPolySize?: number;
+    /** How far a floor may be from its polygon's plane (0.4). */
+    heightError?: number;
+    /** The region built (default: the triangles' bounds). */
+    bounds?: { min: Vec3Like; max: Vec3Like };
+    /** Boxes whose walkable floors take an area id (1 to 63; 0 cuts them out). */
+    areaBoxes?: { min: Vec3Like; max: Vec3Like; area: number }[];
+    /** An area id a triangle (0 unwalkable; default 63, NAV_WALKABLE_AREA). */
+    areas?: ArrayLike<number>;
+  }
+  export interface NavMeshBuildStats { width: number; depth: number; spans: number; floors: number; walkable: number; polygons: number }
+  /** What a path point is: an off-mesh link's ends are points of their own. */
+  export type NavPathPointType = "start" | "corner" | "offMeshStart" | "offMeshEnd" | "end";
+  export interface NavPathPoint extends NavPoint {
+    type: NavPathPointType;
+    /** The off-mesh link's index (offMeshStart, offMeshEnd), else -1. */
+    link: number;
+  }
+  export interface NavPath {
+    points: NavPathPoint[];
+    /** No way to the goal (or maxNodes spent): the path ends at the
+     * reachable point nearest it. */
+    partial: boolean;
+  }
+  export interface NavRaycastHit {
+    /** Whether a wall stopped it; `t` is how far along (Infinity if not). */
+    hit: boolean;
+    t: number;
+    point: NavPoint;
+    /** The wall's normal, facing back at the ray. */
+    normal: NavPoint;
+  }
+  export interface NavQueryOptions {
+    filter?: NavQueryFilter;
+    /** Half sizes of the box an end is looked for in (default from the
+     * agent: twice its radius across, its height up and down). */
+    extents?: Vec3Like;
+    maxNodes?: number;
+    /** The most points a path has (256, at most 1024). */
+    maxPoints?: number;
+  }
+
+  /** Area costs (each unit of distance in an area costs so much; 1 by
+   * default) and the areas a query walks (all but 0 by default). */
+  export class NavQueryFilter {
+    constructor();
+    setAreaCost(areaId: number, cost: number): this;
+    getAreaCost(areaId: number): number;
+    setAreaIncluded(areaId: number, included: boolean): this;
+    isAreaIncluded(areaId: number): boolean;
+    dispose(): void;
+  }
+
+  export class NavMesh {
+    private constructor();
+    /** Builds from triangles: three numbers a vertex, three indices a
+     * triangle (or none: the vertices in threes). Triangles facing up
+     * (counter-clockwise seen from above, three.js's front faces) are
+     * walkable. A TypeError for bad input, a RangeError when too big. */
+    static fromTriangles(positions: ArrayLike<number>, indices?: ArrayLike<number> | null, options?: NavMeshBuildOptions): NavMesh;
+    /** Builds from the Meshes and InstancedMeshes under `object` (and it),
+     * in world space; `filter` chooses which meshes count. */
+    static fromObject(object: import("starhermit:scene").Object3D, options?: NavMeshBuildOptions & { filter?: (mesh: import("starhermit:scene").Mesh) => boolean }): NavMesh;
+    /** A mesh baked by `toBytes` (a TypeError when the bytes are not one). */
+    static fromBytes(bytes: ArrayBuffer | ArrayBufferView): NavMesh;
+    /** The mesh and its off-mesh links as bytes. */
+    toBytes(): Uint8Array;
+    /** What the build came to (null for a mesh read from bytes). */
+    readonly buildStats: NavMeshBuildStats | null;
+    readonly polygonCount: number;
+    readonly vertexCount: number;
+    readonly offMeshLinkCount: number;
+    readonly bounds: { min: NavPoint; max: NavPoint };
+    readonly agent: { cellSize: number; radius: number; height: number; maxClimb: number };
+    /** An off-mesh link from `start` to `end`, each end joining the mesh
+     * within `radius` (1); both ways unless `bidirectional` is false; its
+     * cost is its length times its area's (63 by default). `joined` is
+     * false when an end found no polygon: the link is never taken. */
+    addOffMeshLink(start: Vec3Like, end: Vec3Like, options?: { radius?: number; bidirectional?: boolean; area?: number; userId?: number }): { index: number; joined: boolean };
+    /** The cheapest path's corners from `start` to `end`; null when an end
+     * is off the mesh. */
+    findPath(start: Vec3Like, end: Vec3Like, options?: NavQueryOptions): NavPath | null;
+    findNearestPoint(point: Vec3Like, options?: NavQueryOptions): NavPoint | null;
+    /** A ray along the mesh from `start` (snapped to it) towards `end`. */
+    raycast(start: Vec3Like, end: Vec3Like, options?: { filter?: NavQueryFilter }): NavRaycastHit | null;
+    /** A point on the mesh, uniform by area, from three draws of `random`
+     * (Math.random by default; pass a seeded one to repeat). */
+    randomPoint(random?: () => number, options?: { filter?: NavQueryFilter }): NavPoint | null;
+    /** For a debug view: edges between polygons, walls and links (six
+     * floats a segment), the polygons as triangles (nine floats each) and
+     * each triangle's area. */
+    debugGeometry(): { edges: Float32Array; walls: Float32Array; links: Float32Array; triangles: Float32Array; areas: Uint8Array };
+    dispose(): void;
+  }
+
+  /** A debug view of a mesh as a Group of the scene module passed (`import
+   * * as SCENE from "starhermit:scene"`; starhermit:nav does not import it,
+   * so a 2D game using only NavGrid gets no 3D scene): the polygons
+   * coloured by area, `fillOpacity` (0.35) see-through, their edges, the
+   * walls and the links, `lift` (0.05) above the mesh. */
+  export function createNavMeshHelper(navMesh: NavMesh, SCENE: typeof import("starhermit:scene"), options?: { lift?: number; fillOpacity?: number }): import("starhermit:scene").Group;
+
+  export interface NavGridPathOptions {
+    /** Eight ways (true, the default; never cutting a blocked corner) or four. */
+    diagonal?: boolean;
+    /** Drop corners a straight line of open cells joins (false). A path
+     * whose smoothing walks over 67,108,864 cells of line-of-sight checks
+     * in all is refused (a RangeError): smooth shorter paths. */
+    smooth?: boolean;
+    /** The most cells opened (65,536; at most 1,048,576). */
+    maxNodes?: number;
+  }
+  export interface NavGridPath { cells: [number, number][]; cost: number; partial: boolean }
+  /** A 2D grid for tile games: each cell a cost, 0 blocked, 1 to 255 what
+   * a step into it costs (√2 times that diagonally). All 1 at first. */
+  export class NavGrid {
+    constructor(width: number, height: number);
+    readonly width: number;
+    readonly height: number;
+    setCost(x: number, y: number, cost: number): this;
+    getCost(x: number, y: number): number;
+    setBlocked(x: number, y: number, blocked?: boolean): this;
+    fill(x: number, y: number, width: number, height: number, cost: number): this;
+    /** Every cell's cost, row by row. */
+    setCosts(costs: ArrayLike<number>): this;
+    getCosts(): Uint8Array;
+    /** The cheapest path's cells by A* (octile distance); partial when the
+     * goal cannot be reached, null when the start is blocked. */
+    findPath(startX: number, startY: number, goalX: number, goalY: number, options?: NavGridPathOptions): NavGridPath | null;
+    dispose(): void;
+  }
+
+  export type CrowdAgentState = "idle" | "walking" | "offMesh" | "arrived";
+  export interface CrowdAgentParams {
+    radius?: number;
+    /** Metres a second (3.5) and a second squared (8). */
+    maxSpeed?: number;
+    maxAcceleration?: number;
+    /** How hard it keeps from others (2; 0 not at all). */
+    separation?: number;
+    /** It slows within this of its target (1.5). */
+    slowingDistance?: number;
+  }
+  export interface CrowdAgent {
+    id: number;
+    position: NavPoint;
+    velocity: NavPoint;
+    state: CrowdAgentState;
+    /** The off-mesh link it is on, else -1. */
+    link: number;
+  }
+  /** Agents walking a NavMesh: each steers for its path's next corner,
+   * slows to a stop at its target, keeps apart from others (to the right
+   * of one coming at it), is pushed out of others it overlaps, slides along
+   * walls and is carried along off-mesh links at its top speed. */
+  export class Crowd {
+    constructor(navMesh: NavMesh, options?: { filter?: NavQueryFilter });
+    /** An agent at the mesh's point nearest `position`; its id, or -1. */
+    addAgent(position: Vec3Like, params?: CrowdAgentParams): number;
+    removeAgent(id: number): void;
+    /** Sends it to `target` (null stops it). */
+    setTarget(id: number, target: Vec3Like | null): void;
+    /** Moves every agent on (from onFixedUpdate, say; at most a second). */
+    update(seconds: number): void;
+    getAgent(id: number): CrowdAgent | null;
+    readonly agentIds: number[];
+    dispose(): void;
+  }
+}
+
+declare module "starhermit:voxel" {
+  // Destructible voxel levels (since API_MINOR 42, `VOXEL_MINOR`; for a
+  // game declaring an older `engine.minor` the import throws a TypeError as
+  // the module evaluates). An engine extension: three.js has no voxels.
+  // The voxels live natively (starhermit-voxel), in chunks of 16³ voxels,
+  // a byte each: 0 empty, 1 to 255 an entry of the world's palette (its
+  // colour, hardness, density and anchoring). Edits are integer and IEEE
+  // basic arithmetic, so the same edits give the same voxels, meshes and
+  // islands natively and in browsers (lockstep games can send edits, not
+  // voxels). After ThreeRT's voxel engine design (docs/VOXEL.md, MIT).
+  //
+  //   const physics = new PhysicsWorld();
+  //   const level = new VoxelWorld({ size: [128, 64, 128], voxelSize: 0.25, physics,
+  //     palette: { 1: { color: 0x7a7a7a, hardness: 0.3 }, 2: { color: 0xb05a3c } },
+  //     effects: { dust: dustEmitter, volumes: volumeEffects } });
+  //   level.fillBox([-8, 0, -8], [8, 0.5, 8], 1);
+  //   level.rebuild();
+  //   scene.add(level);
+  //   onFixedUpdate((dt) => { level.update(dt); physics.step(dt); });
+  //   onRender((alpha) => physics.sync(alpha));
+  //   level.explode(hit.point, 1.5);
+  //
+  // Each chunk is drawn as a Mesh of its greedy rectangles (one palette
+  // entry each, the colour as vertex colours), meshed again only when an
+  // edit touched it or a neighbour's face, at most `maxChunkMeshes` an
+  // update; with `physics` the same triangles are the chunk's static
+  // trimesh collider, which bodies and CharacterControllers stand on.
+  // After edits, `update` searches from what was taken out for voxels no
+  // chain of face-sharing voxels joins to an anchor (the floor layer, y =
+  // 0, with `anchorFloor`, or an `anchor` material): each such island
+  // leaves the grid as a dynamic body (a compound of boxes merged from its
+  // voxels, or their hull past `islands.maxBoxes`) with its own mesh, or
+  // as dust when smaller than `islands.minBodyVoxels`. Every search stops
+  // at `islands.maxVoxels` (a larger part stays put) and an update takes
+  // out at most `islands.maxPerUpdate` islands (the rest wait). Debris
+  // bodies last `debris.lifetime` seconds; past `debris.maxBodies` the
+  // oldest goes. Keep the VoxelWorld (a Group) at the scene's origin,
+  // unturned and unscaled: `origin` and `voxelSize` place the voxels.
+  import type { ColorInput, Group, Material, Mesh, ParticleEmitter } from "starhermit:scene";
+  import type { PhysicsWorld, RigidBody } from "starhermit:physics";
+
+  /** A vector: anything with x, y and z, or [x, y, z]. */
+  export type VectorLike = { x: number; y: number; z: number } | ArrayLike<number>;
+  /** "set" (default): every voxel becomes the material (0 clears); "add":
+   * only empty voxels; "paint": only solid ones change material. */
+  export type VoxelFill = "set" | "add" | "paint";
+
+  /** A palette entry. */
+  export interface VoxelMaterial {
+    /** Default 0xcccccc. */
+    color?: ColorInput;
+    /** 0 to 1000 (default 0): what an explosion's damage must reach. */
+    hardness?: number;
+    /** kg/m³ (default 2000), 0 to 100,000: debris bodies' mass. */
+    density?: number;
+    /** Holds up what it touches, wherever it is (bedrock, a wall's
+     * fixing). Default false. */
+    anchor?: boolean;
+    /** No explosion or cut takes it (boxes and spheres still do). */
+    indestructible?: boolean;
+  }
+
+  /** What `explode` fires: the game's own emitters and volumes (nothing
+   * else is drawn). Bursts stay within 128 an update. */
+  export interface VoxelEffects {
+    /** Bursts at voxels the blast took out, each in its voxel's colour
+     * (also a puff for islands too small to be bodies). */
+    dust?: ParticleEmitter | null;
+    /** Particles across the dust bursts (default 48, at most 4096) and
+     * bursts an explosion (default 16, at most 64). */
+    dustPerExplosion?: number;
+    dustBursts?: number;
+    /** A burst at the centre of `radius × smokePerMetre` (default 12). */
+    smoke?: ParticleEmitter | null;
+    smokePerMetre?: number;
+    fire?: ParticleEmitter | null;
+    firePerMetre?: number;
+    /** A starhermit:volume VolumeEffects: `create(volumePreset, ...)`
+     * (default "explosion") sized to the blast, at most `maxVolumes`
+     * (default 4) alive; spent ones are disposed of. */
+    volumes?: { create(preset: any, position?: readonly [number, number, number], overrides?: any): any } | null;
+    volumePreset?: string;
+    maxVolumes?: number;
+  }
+
+  export interface VoxelWorldOptions {
+    /** Voxels a side: 1 to 1024 each, at most 16,777,216 in all (a game's
+     * worlds: 8 at once, 33,554,432 voxels together). */
+    size: VectorLike;
+    /** Metres (default 0.25). */
+    voxelSize?: number;
+    /** The corner of voxel (0, 0, 0) (default the origin). */
+    origin?: VectorLike;
+    /** Layer y = 0 holds things up and the ground below it is solid (no
+     * faces drawn down). Default true. */
+    anchorFloor?: boolean;
+    /** Entries by index (1 to 255), or an array (index 0 skipped). */
+    palette?: Record<number, VoxelMaterial> | readonly VoxelMaterial[];
+    /** Default a MeshStandardMaterial with `vertexColors`. */
+    material?: Material;
+    /** The world chunks collide in and debris falls in. */
+    physics?: PhysicsWorld | null;
+    /** Chunks meshed an update (default 16, 1 to 4096). */
+    maxChunkMeshes?: number;
+    /** Edits between two updates (default 32, 1 to 1024; a RangeError
+     * past it). Edits before the first update (building the level) are
+     * not counted. */
+    maxEditsPerUpdate?: number;
+    /** Each chunk a LOD: half detail (2 voxels a cell) from the first
+     * distance, a quarter from the second. */
+    lod?: { distances: readonly number[] } | null;
+    islands?: {
+      /** The largest island taken out (default 16,384, at most 131,072). */
+      maxVoxels?: number;
+      /** Islands an update takes out (default 8, at most 64). */
+      maxPerUpdate?: number;
+      /** Boxes a body's collider compound has at most before it is a hull
+       * (default 16, 1 to 64). */
+      maxBoxes?: number;
+      /** Smaller islands are dust, not bodies (default 4). */
+      minBodyVoxels?: number;
+    };
+    debris?: {
+      /** Default 32, at most 256 (0: islands are only dust). */
+      maxBodies?: number;
+      /** Seconds (default 10; 0 keeps them). */
+      lifetime?: number;
+      friction?: number;
+      restitution?: number;
+      /** m/s an explosion gives debris at its centre, falling to 0 at 3
+       * radii (default 6, at most 100). */
+      push?: number;
+    };
+    effects?: VoxelEffects | null;
+  }
+
+  export interface VoxelHit {
+    /** Metres along the ray (0 when it starts inside a voxel). */
+    distance: number;
+    point: { x: number; y: number; z: number };
+    voxel: [number, number, number];
+    /** The face entered, facing the ray (zero inside). */
+    normal: { x: number; y: number; z: number };
+    material: number;
+  }
+
+  export interface ExplodeOptions {
+    /** Damage at the centre (default 1, 0 to 1000): a voxel goes where
+     * power × (1 − d / radius)^falloff reaches its hardness. */
+    power?: number;
+    /** 0 to 8 (default 1, linear; 0 full power to the edge). */
+    falloff?: number;
+    /** Debris push (default `debris.push`). */
+    push?: number;
+    /** False fires no effects. */
+    effects?: boolean;
+  }
+
+  /** An island cut loose, as a body (removed when it expires). */
+  export class VoxelDebris {
+    private constructor();
+    readonly body: RigidBody;
+    readonly mesh: Mesh;
+    readonly voxels: number;
+    /** kg. */
+    readonly mass: number;
+    /** Seconds since it broke off. */
+    age: number;
+  }
+
+  export class VoxelWorld extends Group {
+    constructor(options: VoxelWorldOptions);
+    readonly isVoxelWorld: true;
+    readonly size: readonly [number, number, number];
+    readonly voxelSize: number;
+    readonly origin: readonly [number, number, number];
+    /** 16. */
+    readonly chunkSize: number;
+    readonly anchorFloor: boolean;
+    material: Material;
+    readonly physics: PhysicsWorld | null;
+    maxChunkMeshes: number;
+    maxEditsPerUpdate: number;
+    effects: VoxelEffects | null;
+    /** The debris bodies alive, oldest first. */
+    readonly debris: readonly VoxelDebris[];
+    readonly solidCount: number;
+    /** Chunks waiting to be meshed. */
+    readonly dirtyChunks: number;
+    /** Palette entry `index` (1 to 255); chunks using it mesh again. */
+    setMaterial(index: number, material: VoxelMaterial): void;
+    /** By voxel index; 0 outside. */
+    getVoxel(x: number, y: number, z: number): number;
+    /** Returns what was there. */
+    setVoxel(x: number, y: number, z: number, material: number): number;
+    /** Every voxel (x fastest, then y, then z): exactly size's product. */
+    load(voxels: Uint8Array): void;
+    /** Voxels whose centres are in the world box; returns how many
+     * changed. An edit may span at most 2,097,152 voxels of the grid: a
+     * RangeError before anything changes otherwise. */
+    fillBox(min: VectorLike, max: VectorLike, material: number, mode?: VoxelFill): number;
+    clearBox(min: VectorLike, max: VectorLike): number;
+    /** The same by voxel indices, inclusive. */
+    fillVoxels(from: VectorLike, to: VectorLike, material: number, mode?: VoxelFill): number;
+    fillSphere(center: VectorLike, radius: number, material: number, mode?: VoxelFill): number;
+    clearSphere(center: VectorLike, radius: number): number;
+    /** Takes out what the blast beats; pushes debris within 3 radii; fires
+     * `effects`. Returns how many voxels went. */
+    explode(center: VectorLike, radius: number, options?: ExplodeOptions): number;
+    /** Clears a slab `thickness` metres thick along the plane through
+     * `point` facing `normal`, within the box [min, max]. */
+    cut(point: VectorLike, normal: VectorLike, thickness: number, min: VectorLike, max: VectorLike): number;
+    /** The first solid voxel along a ray (default within 1,000,000 m). */
+    raycast(origin: VectorLike, direction: VectorLike, maxDistance?: number): VoxelHit | null;
+    /** The voxel a world point is in (perhaps outside the grid). */
+    voxelAt(point: VectorLike): [number, number, number];
+    centerOf(x: number, y: number, z: number): [number, number, number];
+    /** Once a fixed step, before the physics steps: islands out, debris
+     * aged and pushed, dirty chunks meshed (bounded). */
+    update(seconds?: number): void;
+    /** Meshes every dirty chunk now (a level's first build). */
+    rebuild(): void;
+    /** The voxels' FNV-1a (16 hex digits): equal worlds hash equal. */
+    hash(): string;
+    /** Releases the voxels, meshes, colliders and debris. */
+    dispose(): void;
+  }
+}
+
+// ===========================================================================
+declare module "starhermit:postprocessing" {
+  // three.js r185's examples/jsm/postprocessing (since API_MINOR 42,
+  // `POST_PASSES_MINOR`; for a game declaring an older `engine.minor` the
+  // import throws a TypeError as the module evaluates): `EffectComposer`,
+  // `RenderPass`, `ShaderPass` and `OutputPass`, with ready-made passes and
+  // shaders ported from three.js (MIT). The engine draws the scene itself
+  // every frame, so a composer describes the window frame's passes rather
+  // than drawing them: from when it is made (the latest made wins) until
+  // `dispose()`, each frame runs its enabled ShaderPasses in order, each
+  // over the image the one before gave (three.js's `tDiffuse`). Those
+  // before an enabled `OutputPass` run on the scene's linear light (after
+  // `renderer.post`, any temporal resolve and the screen-space lighting,
+  // at the drawing buffer's size, before `renderer.bloom`, the grade and
+  // the output's tone mapping); those after it on the output's display
+  // color (after FXAA or SMAA, before sharpening and grain). Without an
+  // OutputPass every pass is before the output (the engine always tone
+  // maps and encodes, unlike a three.js chain without one). Passes bring
+  // the post buffers along: where half floats do not render, those before
+  // the output are left out with a note in Options (those after it run);
+  // past the effect budget all passes go, last of all effects, with a
+  // note. Render-target passes (`renderer.render` into a target) never
+  // run them. A composer with any enabled pass (a RenderPass and an
+  // OutputPass alone included) draws the frame as three.js's chain does:
+  // in linear light (as an assigned `renderer.antialias`), its Color
+  // background cleared into it, fog and blending mixed there, all tone
+  // mapped and encoded by the output, where the canvas look leaves the
+  // background as given.
+  //
+  // A pass's `fragmentShader` is WGSL in the custom materials' sandbox
+  // (see `ShaderMaterial`) declaring `fn pixel(p: Pixel) -> vec4f`, as
+  // `renderer.post`'s program (see `PostShader`):
+  //   struct Pixel { uv: vec2f, coord: vec4f }  uv 0..1 from the TOP left
+  //                                             (three.js's vUv is
+  //                                             vec2f(uv.x, 1.0 - uv.y))
+  //   fn scene_color(uv: vec2f) -> vec4f   the pass before's image
+  //                                        (tDiffuse): linear light, or
+  //                                        display color after the output
+  //   fn scene_depth(uv), fn world_position(uv, depth), fn
+  //   camera_position(), fn scene_velocity(uv), fn srgb_to_linear and fn
+  //   linear_to_srgb as there; fn screen_size() -> vec2f the pass's
+  //   image's size in pixels.
+  // Uniforms: numbers and booleans (f32 0 or 1), Vector2, Vector3, Color,
+  // Vector4, Quaternion, Matrix4 and vec4/matrix arrays, each in whole
+  // vec4 slots, at most 48 floats a pass (a RangeError as the frame
+  // syncs); the `textureID` uniform (default "tDiffuse") is the input and
+  // other texture uniforms are a TypeError. At most 8 enabled
+  // ShaderPasses (RangeError). A program the engine refuses is logged once
+  // and its pass left out. three.js's other passes (UnrealBloomPass,
+  // SMAAPass, …) are `renderer`'s settings here (`bloom`, `antialias`, …).
+  import type { Camera, Object3D, Vector2 } from "starhermit:scene";
+
+  export interface PassUniform { value: unknown }
+  /** A shader as three.js's shader objects hold one, in WGSL. */
+  export interface PassShader {
+    name?: string;
+    uniforms?: Record<string, PassUniform>;
+    defines?: Record<string, number | boolean>;
+    /** WGSL declaring `fn pixel(p: Pixel) -> vec4f`. */
+    fragmentShader: string;
+    /** Accepted and unused (the engine's full-screen triangle). */
+    vertexShader?: string;
+  }
+  export class Pass {
+    readonly isPass: true;
+    /** Default true: the composer runs it. */
+    enabled: boolean;
+    needsSwap: boolean;
+    clear: boolean;
+    renderToScreen: boolean;
+    setSize(width: number, height: number): void;
+    render(...args: unknown[]): void;
+    dispose(): void;
+  }
+  /** Where the scene is drawn: the engine draws its scene graph each
+   * frame; a RenderPass's camera becomes `renderer.camera` when the
+   * composer's `render()` is called. */
+  export class RenderPass extends Pass {
+    readonly isRenderPass: true;
+    constructor(scene?: Object3D | null, camera?: Camera | null, overrideMaterial?: unknown, clearColor?: unknown, clearAlpha?: number | null);
+    scene: Object3D | null;
+    camera: Camera | null;
+    overrideMaterial: unknown;
+    clearColor: unknown;
+    clearAlpha: number | null;
+    clearDepth: boolean;
+  }
+  /** The output: `renderer.toneMapping`, `toneMappingExposure` and
+   * `outputColorSpace`. Passes after it see display color. */
+  export class OutputPass extends Pass {
+    readonly isOutputPass: true;
+    readonly uniforms: Record<string, PassUniform>;
+  }
+  /** three.js's `ShaderPass`: `shader`'s uniforms cloned (or a
+   * ShaderMaterial-like object's own), read every frame. */
+  export class ShaderPass extends Pass {
+    constructor(shader: PassShader, textureID?: string);
+    textureID: string;
+    uniforms: Record<string, PassUniform>;
+    material: { name: string; uniforms: Record<string, PassUniform>; defines: Record<string, number | boolean>; fragmentShader: string; vertexShader?: string };
+  }
+  export class EffectComposer {
+    /** `renderer` is starhermit:scene's; `renderTarget` is accepted and
+     * unused (the engine keeps the composer's images). */
+    constructor(renderer?: unknown, renderTarget?: unknown);
+    readonly renderer: unknown;
+    renderToScreen: boolean;
+    passes: Pass[];
+    addPass(pass: Pass): void;
+    insertPass(pass: Pass, index: number): void;
+    removePass(pass: Pass): void;
+    isLastEnabledPass(passIndex: number): boolean;
+    /** Makes it the frame's composer again and takes the first enabled
+     * RenderPass's camera; the passes run as the frame ends. */
+    render(deltaTime?: number): void;
+    reset(renderTarget?: unknown): void;
+    setSize(width: number, height: number): void;
+    setPixelRatio(pixelRatio: number): void;
+    /** No passes from the next frame on (until another composer is made
+     * or this one's `render()` is called). */
+    dispose(): void;
+  }
+  /** three.js's shaders, in WGSL, with its uniforms and defaults. */
+  export const CopyShader: PassShader;
+  export const DotScreenShader: PassShader;
+  export const RGBShiftShader: PassShader;
+  export const SepiaShader: PassShader;
+  export const VignetteShader: PassShader;
+  export const LuminosityShader: PassShader;
+  export const ColorifyShader: PassShader;
+  /** Its `width` and `height` are the pass's image's (`screen_size()`),
+   * whatever the uniforms say. */
+  export const HalftoneShader: PassShader;
+  /** three.js's `DotScreenPass` (`tSize` the pass's image's size). */
+  export class DotScreenPass extends ShaderPass {
+    constructor(center?: Vector2, angle?: number, scale?: number);
+  }
+  /** three.js's `HalftonePass`: `shape` (1 dot, 2 ellipse, 3 line, 4
+   * square, 5 diamond), `radius`, `rotateR`/`G`/`B`, `scatter`,
+   * `blending`, `blendingMode` (1 linear, 2 multiply, 3 add, 4 lighter,
+   * 5 darker), `greyscale`, `disable`. */
+  export class HalftonePass extends ShaderPass {
+    constructor(params?: Record<string, unknown>);
+  }
 }
