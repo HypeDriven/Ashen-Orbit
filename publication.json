@@ -1,7 +1,20 @@
 {
   "game": {
     "id": "5927108a-f5a9-4bf2-953f-e5df9e9cd87e",
+    "repoUrl": "https://github.com/HypeDriven/Ashen-Orbit",
+    "ownerLogin": "HypeDriven",
+    "repoName": "Ashen-Orbit",
     "displayName": "Righteous Republic",
+    "launchPath": "index.html",
+    "serverScriptPath": "server.js",
+    "gameSlug": "5927108a-f5a9-4bf2-953f-e5df9e9cd87e",
+    "isVerifiedOwner": true,
+    "metadataSource": "starhermit.txt",
+    "createdAt": "2026-10-26T18:08:37.047345+00:00",
+    "coverArtSource": "manifest",
+    "coverArtUpdatedAt": "2026-11-18T16:45:01.498917+00:00",
+    "submittedByUserId": "2712e04e-461b-4d23-81ae-e40b429128a8",
+    "submittedByUsername": "starhermit",
     "hosting": {
       "hostingEnabled": true,
       "hostedUrl": "https://5927108a-f5a9-4bf2-953f-e5df9e9cd87e.starhermit.com/index.html",
@@ -9,25 +22,46 @@
       "pinnedCommitSha": null,
       "deployedCommitSha": null,
       "deployError": null,
-      "deployedAt": "2026-11-13T08:35:21.037221+00:00",
+      "deployedAt": "2026-11-18T16:45:00.255604+00:00",
       "externalLaunchUrl": null,
-      "engineVersion": "1.39.0",
+      "engineVersion": "1.44.1",
       "deployWarning": null
-    }
+    },
+    "description": "Choose Republic or Rebellion in a shared persistent space frontier. Upgrade distinct hulls and roles, capture relays, lay mines, cloak, mine fragmenting asteroids and coordinate through distance-based allied voice.",
+    "releaseNotesUpdatedAt": "2026-10-31T14:51:25.489411+00:00",
+    "serverRuntime": "script",
+    "bannerArtSource": "manifest",
+    "bannerArtUpdatedAt": "2026-11-18T16:45:01.498917+00:00",
+    "tags": [
+      "Space",
+      "Action",
+      "Multiplayer",
+      "PvP",
+      "Co-op",
+      "Mining",
+      "Stealth"
+    ],
+    "links": [
+      {
+        "label": "Source",
+        "url": "https://github.com/HypeDriven/Ashen-Orbit/tree/development"
+      }
+    ],
+    "isDisabled": false
   },
-  "publishedAt": "2026-11-13T08:35:25.239Z",
-  "sourceCommit": "843083829ba62fa5b13d1a763e0a1ce2fe40b5ba",
-  "bytesReceived": 3367045,
-  "archiveSha256": "46559a3eca7b4c3c731a6771fa4aff1a6dfde18d7d965d7528b560df45f44177",
+  "publishedAt": "2026-11-18T16:45:01.515Z",
+  "sourceCommit": "b0e85996d57dc35d2b9af5604d2c9dba6c63d3c5",
+  "bytesReceived": 3826967,
+  "archiveSha256": "6c8132a4080aa1879504b254afab1b474343a058ca4c6bdde511dd8a665db438",
   "indexSha256": "c1592b31aba80f98a9133c7be0b1408b3b033d4a41150a28198be211b0b2468b",
   "result": {
     "clientPublished": true,
     "serverImageLoaded": false,
     "imageDigest": null,
-    "bytesReceived": 3367045,
+    "bytesReceived": 3826967,
     "mode": "replace",
     "filesRemoved": 0,
-    "engineVersion": "1.39.0",
+    "engineVersion": "1.44.1",
     "deployWarning": null
   },
   "liveVerification": {
