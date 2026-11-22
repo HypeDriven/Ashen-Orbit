@@ -451,6 +451,157 @@ declare module "starhermit:engine" {
    * render checks print the largest held at the peak. */
   export const IMAGE_USAGE_MINOR: number;
 
+  // -- Host API 1.46's minors (since API_MINOR 46) ----------------------------
+  // Each is 46 for games declaring engine.minor=46 or later and undefined
+  // for older games. Raising engine.minor from 45 to 46 changes nothing a
+  // game does not ask for.
+  /** `starhermit:scene`'s `VideoTexture`: WebM VP8 video (Opus or Vorbis
+   * sound) played onto a texture. */
+  export const VIDEO_TEXTURE_MINOR: number;
+
+  // -- Host API 1.45's minors (since API_MINOR 45) ----------------------------
+  // Each is 45 for games declaring engine.minor=45 or later and undefined
+  // for older games, feature-detected as 1.44's are. Raising engine.minor
+  // from 44 to 45 changes nothing a game does not ask for, except what
+  // passes write into HalfFloatType render targets
+  // (HALF_FLOAT_UNCLAMPED_MINOR: unclamped, as three.js).
+  /** `starhermit:scene`'s `LodBudget` and `renderer.lodBudget`: a
+   * scene-wide triangle budget over LODs and InstancedMesh levels. */
+  export const LOD_BUDGET_MINOR: number;
+  /** `starhermit:audio`'s `filters` on `play` and `stream` and
+   * `setFilters` on sounds and streams: clips through the audio
+   * context's nodes on their way to their bus. */
+  export const AUDIO_CLIP_FILTERS_MINOR: number;
+  /** `starhermit:audio`'s `createWaveShaper()` and `WaveShaperNode` (a
+   * curve, 2x and 4x oversampling) on the context and offline contexts. */
+  export const WAVE_SHAPER_MINOR: number;
+  /** `renderer.bloom`'s `prefilter: "urp"` and `knee` (Unity URP's
+   * soft-knee prefilter; the default stays three.js's high pass). */
+  export const BLOOM_PREFILTER_MINOR: number;
+  /** `imageUsage()` entries' `label` (where an image the game made was
+   * made: its class or the engine's maker) and names from a texture's
+   * `name`. */
+  export const IMAGE_LABELS_MINOR: number;
+  /** `starhermit:scene`'s `BakedSkinnedAnimations.fromMatrices`: baked
+   * animations from bone matrix tables the game holds. */
+  export const BAKED_MATRIX_TABLES_MINOR: number;
+  /** An InstancedSkinnedMesh uploads its baked animations' texture when
+   * the game changed its data and set `needsUpdate` (before, the bake's
+   * first upload stayed). */
+  export const BAKED_TEXTURE_UPDATE_MINOR: number;
+  /** Vertex hooks' `Vertex.bind_position`: the position before skinning. */
+  export const HOOK_BIND_POSITION_MINOR: number;
+  /** InstancedSkinnedMesh's per-instance root translation offsets
+   * (`setRootOffsets`, `setRootOffsetAt`) beside its bone overrides. */
+  export const INSTANCED_ROOT_OFFSETS_MINOR: number;
+  /** The ray-traced tier traces materials with `hooks` (see
+   * `GraphicsSetting`): their lighting reads the traced shadows, and those
+   * whose vertex hook (if any) leaves positions alone and without `discard`
+   * are traced casters. Only frames on
+   * the tier change. */
+  export const HOOKED_RAY_TRACING_MINOR: number;
+  /** `HalfFloatType` render targets are written unclamped (negative
+   * values, values past 1 and a custom material's alpha as written), as
+   * three.js's and as `FloatType` targets are since API_MINOR 34. Frames
+   * drawing such values into them change at 45. */
+  export const HALF_FLOAT_UNCLAMPED_MINOR: number;
+  /** A static (`movable = false`) InstancedMesh stays static when its
+   * instances change (`setMatrixAt`, `setColorAt`): only its own transform
+   * moving promotes it. */
+  export const STATIC_INSTANCES_MINOR: number;
+  /** `starhermit:ui`'s `rectOf`, `hitTest` and `focusedId`: questions about
+   * the last frame laid out, answered on replayed (`ui.retain`) frames too. */
+  export const UI_QUERIES_MINOR: number;
+  /** `renderer.contactShadows` no longer shadow the surface they march
+   * from: lit rounded surfaces keep their light (no hard straight-edged
+   * dark patches), surfaces facing away from the light are left alone,
+   * and real contacts still darken. Only frames with contact shadows
+   * change. */
+  export const CONTACT_SHADOW_FIX_MINOR: number;
+  /** Vendor upscalers (Windows' native runtime; Linux's, AMD FSR 3.1 and
+   * NVIDIA DLSS/DLAA on Vulkan, from 1.47) in place of the temporal
+   * anti-aliasing resolve;
+   * `stats().upscaler` and `upscalerMode`. */
+  export const UPSCALERS_MINOR: number;
+  /** Frame generation through the upscaler's vendor (Windows' native
+   * runtime on Direct3D 12; Linux's on Vulkan from 1.47): Options › Graphics › Frame generation, and
+   * `stats().frameGeneration`, `generatedFrames` and `realFrames`. */
+  export const FRAME_GENERATION_MINOR: number;
+  /** `starhermit:scene`'s shared Alembic playback: `AlembicCache.clone()`,
+   * `timeOffset`, `alembicUsage()`, a path loaded twice shared, and 256
+   * caches (32 before). */
+  export const ALEMBIC_INSTANCES_MINOR: number;
+
+  // -- Host API 1.46's minors (since API_MINOR 46) ----------------------------
+  // Each is 46 for games declaring engine.minor=46 or later and undefined
+  // for older games: feature-detect through a namespace import.
+  /** `renderer.motionBlur` (starhermit:scene): per-object, velocity-based
+   * motion blur, and Options › Graphics › Motion blur
+   * (`sh.presentation.motionBlur`). */
+  export const MOTION_BLUR_MINOR: number;
+  /** Dynamic resolution keeps the scene's buffers at the largest render
+   * scale's size and draws each frame into their top left; a post
+   * program reads the scene through `scene_color`, `scene_depth` and
+   * `scene_velocity` (its bindings are larger than the scene there). */
+  export const RENDER_EXTENT_MINOR: number;
+  /** `engine.pipelines=async` in starhermit.txt: in browsers a batch whose
+   * pipeline is still being made is left out of its frames until it is
+   * ready, rather than the page waiting (native runtimes draw as before). */
+  export const PIPELINES_ASYNC_MINOR: number;
+  /** `renderer.compileAsync(scene, camera, target?)`: a promise that
+   * settles once the pipelines a pass into a render target would draw
+   * with are made (Vulkan on a background thread, WebGPU asynchronously),
+   * drawing nothing. */
+  export const COMPILE_ASYNC_MINOR: number;
+  /** `renderer.bloom`'s `prefilter: "urp"` takes URP's threshold as a URP
+   * volume sets it (gamma, converted as Unity's `Mathf.GammaToLinearSpace`)
+   * and URP's knee, half the converted threshold. */
+  export const URP_BLOOM_GAMMA_MINOR: number;
+  /** `renderer.bloom`'s `model: "urp"`: Unity URP's whole bloom (its
+   * prefilter, mip pyramid, scatter upsampling and uber composite) with its
+   * Bloom volume's settings. */
+  export const URP_BLOOM_MODEL_MINOR: number;
+  /** `imageUsage()` labels the images the engine makes for the game's
+   * drawing (`ImageBitmap` with its file, `OffscreenCanvas`, `ui skin`,
+   * `lookup table`, `VideoTexture`, `ui style image`). */
+  export const ENGINE_IMAGE_LABELS_MINOR: number;
+  /** `renderer.contactShadows` leave a smooth but coarsely tessellated
+   * surface (a heightfield) alone under a low sun: no whole triangles
+   * darkened beside lit ones; what stands on a surface still casts them.
+   * Only frames with contact shadows change. */
+  export const CONTACT_SHADOW_FACETS_MINOR: number;
+  /** `starhermit:platform`'s `guest()`: the client-local nickname the
+   * StarHermit client gave a signed-out player (unverified, not unique;
+   * never an identity). */
+  export const GUEST_NICKNAME_MINOR: number;
+  /** `engine.stats().wasm`: each WebAssembly module the game instantiated,
+   * `"native"` (ahead-of-time compiled) or `"interpreted"`. */
+  export const WASM_STATS_MINOR: number;
+
+  // -- Host API 1.47's minors (since API_MINOR 47) ----------------------------
+  // Each is 47 for games declaring engine.minor=47 or later and undefined
+  // for older games: feature-detect through a namespace import. Raising
+  // engine.minor from 46 to 47 changes what WaterMaterial's ripples show.
+  /** `starhermit:water`'s `WaterMaterial` (and `Pond`) bends what is seen
+   * through the water with the wind's capillary ripples (its `refraction`
+   * option): the bed and what swims over it move as the ripples run.
+   * Before, the ripples' slope moved them by under a pixel. */
+  export const WATER_REFRACTION_MINOR: number;
+  /** `starhermit:scene`'s `Object3D.motionVectors` ("object", "camera" or
+   * null to inherit): an object moving with the camera alone in the
+   * motion vectors (Unity's `MotionVectorGenerationMode.Camera`). */
+  export const MOTION_VECTORS_MINOR: number;
+  /** `Object3D.motionScale` and `InstancedMesh.setMotionScaleAt`: the
+   * share of its own motion an object's (or an instance's) motion vectors
+   * take. */
+  export const MOTION_SCALE_MINOR: number;
+  /** `renderer.motionBlur`'s `camera` (false: the camera's motion does not
+   * blur; HDRP's `cameraMotionBlur`). */
+  export const MOTION_BLUR_CAMERA_MINOR: number;
+  /** `renderer.motionBlurActive` and `preferences().motionBlur`: the game
+   * is told when its motion blur draws. */
+  export const MOTION_BLUR_ACTIVE_MINOR: number;
+
   /** Removes the callback or listener it was returned for. */
   export type Unsubscribe = () => void;
   /** An sRGB color; see the conventions at the top of this file. */
@@ -700,7 +851,23 @@ declare module "starhermit:engine" {
    * or a level; since API_MINOR 42 also `"raytraced"`, the infinite level
    * with the scene's shadows traced by the GPU's ray-tracing hardware
    * (offered where the device has it and the game's `engine.ray_tracing`
-   * is not `off`; older games hear it as `"infinite"`). */
+   * is not `off`; older games hear it as `"infinite"`).
+   *
+   * What the tier traces (`engine.ray_tracing`): opaque casters drawn with
+   * the built-in materials, and since API_MINOR 45
+   * (`HOOKED_RAY_TRACING_MINOR`) materials with `hooks` too: their
+   * lighting reads the traced shadows, and they are traced casters unless
+   * their `vertex` hook may move positions or their WGSL contains
+   * `discard` (the shadow maps run the surface hook, so its discards cut
+   * holes rays cannot see). The engine's shader compiler decides the first
+   * from the hook's returned `Vertex`: a hook that only passes attributes
+   * through (`o.v0 = v.custom`) or changes normals keeps `position` as it
+   * is and is traced; any write to `position` (even conditional, or from
+   * a helper function's result) counts as moving it. Casters a vertex hook
+   * may move, discarding, skinned, alpha-tested and transparent
+   * casters, and `ShaderMaterial`s, keep casting through the shadow maps,
+   * which the traced shadows multiply in; before API_MINOR 45 any hooked
+   * material in view sent every caster back into the maps. */
   export type GraphicsSetting = "auto" | GraphicsLevel | "raytraced";
   /** The graphics levels, lowest first (since API_MINOR 14). */
   export const levels: readonly GraphicsLevel[];
@@ -887,6 +1054,61 @@ declare module "starhermit:engine" {
      * up to the shadows' edges; a game may use it to drop its own faked
      * contact shadows. */
     readonly rayTraced?: boolean;
+    /** The vendor upscaler the last frame ran in place of the engine's
+     * temporal anti-aliasing resolve (since API_MINOR 45): `"fsr"` (AMD
+     * FSR), `"dlss"` (NVIDIA DLSS, or DLAA in the `"native"` mode, on
+     * NVIDIA RTX GPUs), `"xess"` (Intel XeSS), or null under the
+     * engine's own resolve. Only Windows' native runtime runs one, for a
+     * game drawing with `renderer.antialias = "taa"`, when the player's
+     * Options › Graphics › Upscaler allows it and the vendor's DLL ships
+     * beside the runtime. The scene then renders at the mode's share of
+     * the window (`resolutionScale`), and the player's render scale does
+     * not apply. */
+    readonly upscaler?: "fsr" | "dlss" | "xess" | null;
+    /** The upscaler's mode (since API_MINOR 45; null without one):
+     * `"native"` (anti-aliasing at the window's size; DLAA under DLSS),
+     * `"quality"` (1.5× per axis), `"balanced"` (1.7×; DLSS's 1.72×),
+     * `"performance"` (2×) or `"ultraPerformance"` (3×), as FSR names
+     * them (XeSS's own: quality 1.7×, balanced 2×, performance 2.3×). */
+    readonly upscalerMode?:
+      | "native"
+      | "quality"
+      | "balanced"
+      | "performance"
+      | "ultraPerformance"
+      | null;
+    /** The vendor generating frames between the rendered ones (since
+     * API_MINOR 45; null without): `"fsr"` (AMD FSR frame generation, any
+     * GPU) or `"dlss"` (NVIDIA DLSS Frame Generation, GeForce RTX 40 and
+     * later), always the upscaler's own vendor. Only Windows' native
+     * runtime on Direct3D 12 runs it, when the player turns on Options ›
+     * Graphics › Frame generation (or `STARHERMIT_FRAME_GENERATION=1`)
+     * and the vendor's frame-generation DLLs ship beside the runtime. The
+     * game's overlay is kept out of the generated frames (the generator
+     * gets the scene without it). With `"dlss"`, NVIDIA's generator
+     * interpolates the overlay too, apart from the scene (Streamline's
+     * user-interface recomposition), so overlay text that changes between
+     * two rendered frames (a frame counter) shows both values blended on
+     * the generated frame between them; AMD's FSR shows the newer
+     * overlay as it is. The game's own frame rate and `dt` are the
+     * rendered frames'; the display shows about twice as many. */
+    readonly frameGeneration?: "fsr" | "dlss" | null;
+    /** Frames the generator presented since it started on this device
+     * (since API_MINOR 45; 0 without frame generation). */
+    readonly generatedFrames?: number;
+    /** The engine's rendered frames presented through frame generation
+     * (since API_MINOR 45; 0 without), so `generatedFrames / realFrames`
+     * is the frames generated per rendered one (about 1). */
+    readonly realFrames?: number;
+    /** Each WebAssembly module the game's script instantiated so far, by
+     * its package path (`"wasm/sim.wasm"`; `"module:<hash>"` for bytes no
+     * package file holds), and how its latest instance runs: `"native"`
+     * on the platform's ahead-of-time compiled code, `"interpreted"` on
+     * the runtime's interpreter (no artefact for this platform yet, still
+     * arriving, or refused; the runtime's log says why). Workers' modules
+     * are not listed. Since API_MINOR 46 (`WASM_STATS_MINOR`); absent
+     * before, and in browsers, which run WebAssembly themselves. */
+    readonly wasm?: Readonly<Record<string, "native" | "interpreted">>;
   }
   /** GPU pass times (`stats().gpu`, since API_MINOR 34): each kind of
    * pass's mean time a frame in milliseconds over about the latest 60
@@ -913,10 +1135,18 @@ declare module "starhermit:engine" {
       /** The composite (bloom added, the grade, the output) and the
        * game's post programs. */
       readonly post: number;
+      /** FXAA, SMAA or temporal anti-aliasing's resolve; before API_MINOR
+       * 45 also the velocity step (`velocity`). */
       readonly antiAliasing: number;
       /** 2D batches: the game's overlay and the runtime's interface. */
       readonly overlay: number;
       readonly present: number;
+      /** Since API_MINOR 45 (`VELOCITY_PASS_MINOR`; absent before, when it
+       * is counted in `antiAliasing`): the velocity step, which draws the
+       * scene's objects again for motion vectors and the reactive mask
+       * wherever `antialias: "taa"`, `ssr`, `ssgi` or
+       * `renderer.sceneVelocity` take them. */
+      readonly velocity?: number;
     };
     /** Every pass's time together. */
     readonly totalMs: number;
@@ -1151,6 +1381,23 @@ declare module "starhermit:engine" {
     /** The package file it was loaded from (`TextureLoader`, `KTX2Loader`,
      * `GLTFLoader`, ...), or null for an image the game made. */
     readonly source: string | null;
+    /** Since API_MINOR 45 (IMAGE_LABELS_MINOR; not there before): where
+     * an image the game made was made: its texture's class
+     * (`DataTexture`, `DataArrayTexture`, `Data3DTexture`,
+     * `CanvasTexture`, a subclass's own name) or the engine's maker
+     * (`bakeSkinnedAnimations`, `BakedSkinnedAnimations.fromMatrices`,
+     * `skin attributes`); null for loaded images, render targets and the
+     * engine's own. From 45 `name` is, without a source, the texture's
+     * `name` where the game gave one (a render target's texture's too),
+     * else the label and the id ("DataTexture #12"). Since API_MINOR 46
+     * (ENGINE_IMAGE_LABELS_MINOR) the images the engine makes for the
+     * game's drawing are labelled too: `ImageBitmap` (a bitmap drawn by
+     * `starhermit:draw` or the UI; its source the file `createImageBitmap`
+     * read, where it read one), `OffscreenCanvas` (a canvas the overlay
+     * draws), `ui skin` (the UI's baked shadows, glows and gradient text),
+     * `lookup table` (a look's table) and `VideoTexture` (a video's
+     * frames) and `ui style image` (its file the source). */
+    readonly label?: string | null;
     /** `texture` (an image the game made or loaded, canvases' and
      * bitmaps' among them), `renderTarget` (a texture of a render target,
      * the game's or an engine module's: the sky, weather, water, volumes,
@@ -2003,6 +2250,12 @@ declare module "starhermit:engine" {
      * (since API_MINOR 39, `VOLUME_OPENVDB_MINOR`; older games' preferences
      * have only the four fields above, and hear no change of these). */
     readonly volume: VolumeGraphicsPreferences;
+    /** Since API_MINOR 47 (`MOTION_BLUR_ACTIVE_MINOR`; absent before): the
+     * player lets games blur motion: Options › Graphics › Motion blur on
+     * and Reduce motion off (a check's `--no-motion-blur` turns it off).
+     * A change is a `preferences` event. `starhermit:scene`'s
+     * `renderer.motionBlurActive` says whether the game's blur draws. */
+    readonly motionBlur?: boolean;
   }
   export interface VolumeGraphicsPreferences {
     readonly lighting: "volume" | "frame";
@@ -4156,6 +4409,96 @@ declare module "starhermit:scene" {
   export const LENS_EFFECTS_MINOR: number;
   /** 44 from host API 1.44 (undefined before): `renderer.underwater`. */
   export const UNDERWATER_MINOR: number;
+  // -- Host API 1.46's scene minors (undefined before 46) ---------------------
+  /** `VideoTexture`. */
+  export const VIDEO_TEXTURE_MINOR: number;
+  // -- Host API 1.45's scene minors (undefined before 45) ---------------------
+  /** `BloomSettings.prefilter` and `knee`. */
+  export const BLOOM_PREFILTER_MINOR: number;
+  /** `imageUsage()`'s labels and texture names. */
+  export const IMAGE_LABELS_MINOR: number;
+  /** `BakedSkinnedAnimations.fromMatrices` and `matrixTable`. */
+  export const BAKED_MATRIX_TABLES_MINOR: number;
+  /** InstancedSkinnedMesh's root offsets. */
+  export const INSTANCED_ROOT_OFFSETS_MINOR: number;
+  // -- Host API 1.46's scene minors (undefined before 46) ---------------------
+  /** `renderer.motionBlur`. */
+  export const MOTION_BLUR_MINOR: number;
+  /** `renderer.compileAsync`. */
+  export const COMPILE_ASYNC_MINOR: number;
+  // -- Host API 1.47's scene minors (undefined before 47) ---------------------
+  /** `Object3D.motionVectors`. */
+  export const MOTION_VECTORS_MINOR: number;
+  /** `Object3D.motionScale`, `InstancedMesh.setMotionScaleAt`. */
+  export const MOTION_SCALE_MINOR: number;
+  /** `renderer.motionBlur`'s `camera`. */
+  export const MOTION_BLUR_CAMERA_MINOR: number;
+  /** `renderer.motionBlurActive`. */
+  export const MOTION_BLUR_ACTIVE_MINOR: number;
+  /** `renderer.motionBlur`'s value (since API_MINOR 46,
+   * `MOTION_BLUR_MINOR`; an engine extension): per-object, velocity-based
+   * motion blur. Each pixel is blurred along its motion: the motion its
+   * object drew in the velocity step (meshes, skins and instances that
+   * moved since the last frame), or the camera's where nothing drew (the
+   * background). The blur is the motion over the shutter, centred on where
+   * the pixel is now, in the window's pixels.
+   *
+   * It is a reconstruction filter (McGuire et al., "A Reconstruction
+   * Filter for Plausible Motion Blur", I3D 2012): the largest blur in each
+   * tile and its neighbours bounds the search, and a depth-aware gather lets
+   * a moving object smear over what is behind it, but not what is in front
+   * of it over the object. It runs on the linear light after temporal
+   * anti-aliasing (or the render scale's resampling), the post passes
+   * before the output and the depth of field, before automatic exposure,
+   * bloom and tone mapping, in window frames only; the game's 2D overlay
+   * (its HUD: `starhermit:draw`, `starhermit:ui`) is drawn after it and is
+   * never blurred. Under the reactive mask (transparent surfaces and
+   * particles) the blur fades by their coverage. A still scene is left
+   * exactly as it was. A camera cut (a new `renderer.camera`, or
+   * `renderer.resetHistory()`) blurs nothing that frame.
+   *
+   * It brings the velocity step along whatever `renderer.antialias` is,
+   * and needs half-float post buffers (a device without them leaves it out,
+   * with a note). Over the effect budget it is left out after bloom. The
+   * player's Options › Graphics › Motion blur (on by default) and Reduce
+   * motion turn it off, as a check's `--no-motion-blur` does; since
+   * API_MINOR 47 `renderer.motionBlurActive` tells the game (before, it
+   * was not told).
+   *
+   * What blurs follows the motion vectors: since API_MINOR 47 an object's
+   * `motionVectors` ("camera": it moves with the camera alone) and
+   * `motionScale` (a share of its own motion), and the blur's `camera`
+   * (false: the camera's motion does not blur).
+   *
+   * GPU time: `stats().gpu.passes.post`. */
+  export interface MotionBlurSettings {
+    /** The shutter, as a share of a frame, 0..1 (default 0.5: half a
+     * frame's motion, a 180° shutter); 0 turns the blur off. */
+    intensity?: number;
+    /** The gather's samples per pixel, a whole number 1..32 (default 8).
+     * More is smoother and slower. */
+    samples?: number;
+    /** The longest blur in the window's pixels, 1..128 (default 32);
+     * longer motion is shortened to it. */
+    maxPixels?: number;
+    /** 0 (the default): the shutter is this frame's, so at a higher frame
+     * rate a moving object blurs over a shorter distance (a real camera's
+     * shutter angle, as Unity URP's motion blur). 1..1000: the shutter is a
+     * frame at this rate instead, the motion scaled by `1 / (targetFps ×
+     * frame().delta)` (within 1/8..8), so the blur keeps its length at any
+     * frame rate. */
+    targetFps?: number;
+    /** Since API_MINOR 47 (`MOTION_BLUR_CAMERA_MINOR`; ignored before):
+     * whether the camera's motion blurs (default true). false takes it out
+     * of each pixel's motion, as HDRP's `cameraMotionBlur` off does: the
+     * camera's pans, turns and shakes leave the frame sharp (the background
+     * and what stands still never blur) and what moves of itself blurs by
+     * its own motion alone, as seen from the moving camera. Unity URP's
+     * motion blur has no such mode (its modes are the camera's motion alone,
+     * or the camera's and the objects'). Anything but true, false or
+     * undefined is a TypeError. */
+    camera?: boolean;
+  }
   /** `renderer.bokeh`'s value (since API_MINOR 44, `LENS_EFFECTS_MINOR`):
    * three.js r185 `BokehPass`'s `focus`, `aperture` and `maxblur`, as
    * engine disc bokeh. A pixel's circle of confusion has a radius of
@@ -4425,6 +4768,10 @@ declare module "starhermit:scene" {
    * `import * as scene from "starhermit:scene"` and
    * `scene.ALEMBIC_MINOR !== undefined`). */
   export const ALEMBIC_MINOR: number;
+  /** 45 from host API 1.45 (undefined before): shared playback
+   * (`AlembicCache.clone()`, `timeOffset`, a path loaded twice shared),
+   * `alembicUsage()` and 256 caches (32 before). */
+  export const ALEMBIC_INSTANCES_MINOR: number;
   /** Loads a package Alembic cache: a `.wabc` (tools/wabc.py bakes one
    * from Blender or an OBJ sequence), or an `.abc` as Blender, Houdini and
    * Maya export it (Ogawa, or classic HDF5 with superblock 0/1 and
@@ -4435,8 +4782,42 @@ declare module "starhermit:scene" {
    * most 32 caches and 256 MiB of them at once (`dispose()` frees one).
    * Rejects with a `NotFoundError` for a missing file, a `SyntaxError` for
    * an invalid or unsupported one and a `RangeError` past the limits. The
-   * cache starts at time 0, playing and looping. */
+   * cache starts at time 0, playing and looping.
+   *
+   * Since API_MINOR 45 (`ALEMBIC_INSTANCES_MINOR`) a game holds 256 caches
+   * (loaded files) and loading a path that is already loaded (and not yet
+   * disposed by all its caches) does not read it again: it gives a new
+   * cache over the same samples, as `clone()` does but at time 0 with its
+   * own materials, taking no slot and no file bytes. The 256 MiB of files
+   * stands; besides, a game holds at most 1,024 AlembicCaches (loads and
+   * clones) and 256 MiB of their decoders' state (`alembicUsage()`). */
   export function loadAlembic(path: string): Promise<AlembicCache>;
+  /** What the game's Alembic caches hold against their limits (since
+   * API_MINOR 45). */
+  export interface AlembicUsage {
+    /** Loaded files, each one however many caches play it, and their
+     * most (256). */
+    readonly caches: number;
+    readonly maxCaches: number;
+    /** AlembicCaches (loads and clones) and their most (1,024). */
+    readonly players: number;
+    readonly maxPlayers: number;
+    /** The loaded files' bytes (each file once) and their most (256 MiB). */
+    readonly fileBytes: number;
+    readonly maxFileBytes: number;
+    /** What the caches' decoders hold (a vertex-animated track's base
+     * mesh, a surface track's last state; a whole-mesh track holds none)
+     * and its most (256 MiB; past it a sample still to decode throws a
+     * RangeError). */
+    readonly decoderBytes: number;
+    readonly maxDecoderBytes: number;
+    /** Sample geometries shown now, each shared by every cache of its
+     * file showing that sample (each counts against the mesh budget once). */
+    readonly geometries: number;
+  }
+  /** Since API_MINOR 45 (`ALEMBIC_INSTANCES_MINOR`): what the game's
+   * Alembic caches hold. */
+  export function alembicUsage(): AlembicUsage;
   /** A mesh or points node of a cache. `name` and `path` are the
    * archive's (`/Pond/Liquid`); transform-only nodes are folded into their
    * children's transforms. */
@@ -4448,7 +4829,11 @@ declare module "starhermit:scene" {
      * meshes at first) or Points (a PointsMaterial as wide as the cache's
      * first point width). Assign any material (ShaderMaterial, hooks such
      * as `light`); geometry, position, quaternion and scale are the
-     * cache's and replaced as samples change (move the cache instead). */
+     * cache's and replaced as samples change (move the cache instead).
+     * Since API_MINOR 45 `geometry` is the sample's own BufferGeometry,
+     * shared by every cache of the file showing that sample and swapped
+     * for the next sample's as the sample changes: read it, do not change
+     * it. */
     readonly object: Mesh | Points;
   }
   /** A playing Alembic cache: a Group of its nodes' objects. Each sample
@@ -4461,7 +4846,39 @@ declare module "starhermit:scene" {
    * (3 numbers a vertex, units a second, in the node's space; custom
    * materials read `Vertex.custom.xyz`). A sample without vertices keeps
    * the last arrays and draws none of them (`drawRange` count 0). Only a
-   * node whose sample changed is touched. */
+   * node whose sample changed is touched.
+   *
+   * Since API_MINOR 45 (`ALEMBIC_INSTANCES_MINOR`) caches share: `clone()`
+   * gives another cache over the same loaded file (one of the game's 256
+   * caches however many play it), with its own `time`, `timeOffset`,
+   * `speed`, `loop`, `playing` and transform. A sample is decoded and
+   * uploaded once while any cache of the file shows it: the caches showing
+   * it draw one BufferGeometry (a sample without vertices is an empty one
+   * drawing nothing), so ten waterfalls on the same frame cost one mesh.
+   * Each cache keeps its own decoder (a surface track decodes in order
+   * from its last sample), so caches far out of phase each decode the
+   * samples none of the others shows. Disposing a cache leaves the others
+   * playing; the file and its samples go with the last of them.
+   *
+   * ```ts
+   * import { loadAlembic, scene } from "starhermit:scene";
+   * // One curtain, splash and droplet cache each, played by every fall.
+   * const [curtain, splash, drops] = await Promise.all(
+   *   ["fx/curtain.wabc", "fx/splash-low.wabc", "fx/drops.wabc"].map(loadAlembic));
+   * const falls = [];
+   * for (let i = 0; i < 10; i++) {
+   *   for (const layer of [curtain, splash, drops]) {
+   *     const fall = i === 0 ? layer : layer.clone();
+   *     fall.position.set(i * 12, 0, 0);
+   *     fall.timeOffset = i * 0.37; // out of phase: each its own sample
+   *     fall.speed = 0.9 + 0.02 * i;
+   *     scene.add(fall);
+   *     falls.push(fall);
+   *   }
+   * }
+   * // Later: each fall disposes on its own; the files go with the last.
+   * ```
+   */
   export class AlembicCache extends Group {
     /** `"AlembicCache"`. */
     readonly type: string;
@@ -4487,14 +4904,114 @@ declare module "starhermit:scene" {
      * to 0..duration). A RangeError for a non-finite time; a TypeError
      * once disposed. */
     setTime(seconds: number): void;
+    /** Since API_MINOR 45: seconds added to `time` to choose the sample
+     * shown (wrapped when `loop`, else clamped; default 0), so caches of
+     * one file play out of phase. `time` stays the playback clock. */
+    timeOffset: number;
+    /** Since API_MINOR 45: another cache over this one's loaded file
+     * (three.js's `clone`, which shares a mesh's geometry and material):
+     * at this cache's time, `timeOffset`, `speed`, `loop` and `playing`,
+     * with its transform and Object3D settings, its nodes' objects'
+     * settings and materials (shared), and clones of the game's own
+     * children unless `recursive` is false. It plays on its own from
+     * then. No file is read, no cache slot taken; a RangeError past 1,024
+     * caches, a TypeError once disposed. Below API_MINOR 45 a cache cannot
+     * be cloned (TypeError). */
+    clone(recursive?: boolean): this;
     readonly nodes: readonly AlembicNode[];
     /** The node of this name, or of this path. */
     getNode(name: string): AlembicNode | undefined;
     /** Frees the cache's samples and its nodes' geometries; it stops
-     * playing (call it when done: a cache is kept until then). */
+     * playing (call it when done: a cache is kept until then). Since
+     * API_MINOR 45 the samples other caches of the file show stay theirs,
+     * and the file goes with its last cache. */
     dispose(): void;
   }
   /** A canvas's pixels; set `needsUpdate` after drawing to show changes. */
+  /** `VideoTexture`'s options (all optional). */
+  export interface VideoTextureOptions {
+    /** Start again at the end (default false). */
+    loop?: boolean;
+    /** Play as soon as it can (default true); otherwise at `play()`. */
+    autoplay?: boolean;
+    /** Leave the sound out (default false). */
+    muted?: boolean;
+    /** The sound's gain, 0 to 16 (default 1). */
+    volume?: number;
+    /** The bus the sound plays on (default "effects"). */
+    bus?: "music" | "effects" | "interface";
+    /** 0.0625 to 16 (default 1). The sound plays only at 1: at any other
+     * rate the picture plays alone. */
+    playbackRate?: number;
+  }
+  /** Since API_MINOR 46 (VIDEO_TEXTURE_MINOR; undefined before): three.js
+   * r185's `VideoTexture`, playing a video file itself rather than an
+   * HTMLVideoElement, with that element's controls. Usable as any
+   * material's `map` (or any texture slot), and in hooks and custom
+   * materials as any texture.
+   *
+   * `src` is a package file or one of the game's remote files
+   * (`engine.remote.files`; it plays once its bytes are all on the
+   * device, `files.fetch` makes them so ahead of time): a **WebM file of
+   * VP8 video** with Opus or Vorbis sound, or none. MP4, H.264, AAC, VP9
+   * and AV1 are not played (patent-encumbered or not yet decoded;
+   * `cargo starhermit package` refuses them in a game at 46). Convert a
+   * clip with `ffmpeg -i in.mp4 -c:v libvpx -b:v 2M -c:a libopus out.webm`
+   * (add `-auto-alt-ref 0` for live-encoded clips; 1080p30 at 2 to 4 Mbit/s
+   * plays everywhere). Up to 4096 pixels a side, 4 videos at once, files
+   * up to 512 MiB.
+   *
+   * Natively the engine's own VP8 decoder plays it off the game's thread
+   * (bit-exact with libvpx; a 1080p30 frame takes a few milliseconds on a
+   * desktop core); in browsers the browser's decoder (WebCodecs, in the
+   * game's worker; the engine's own where the browser has none). The
+   * texture shows nothing until the first frame is decoded, then, as each
+   * frame begins, the newest frame due by the video's clock: the frame
+   * time scaled by `playbackRate` while it plays, held to its sound's
+   * position while that plays (picture and sound within a frame of each
+   * other). The sound is a stream on `bus` (one of the game's 4 streams:
+   * with none left the video plays silently).
+   *
+   * Colours: Y'CbCr to R'G'B' by the file's colour description (Matroska
+   * `MatrixCoefficients`: 1 BT.709, 9 BT.2020, else BT.601, VP8's own;
+   * `Range` 2 full range, else limited 16 to 235), chroma upsampled
+   * bilinearly; the texture is RGBA8 holding those gamma-encoded values,
+   * `colorSpace` SRGBColorSpace (as browsers show video), linearly
+   * filtered without mipmaps (`generateMipmaps` false). */
+  export class VideoTexture extends Texture {
+    constructor(src: string, options?: VideoTextureOptions);
+    readonly isVideoTexture: true;
+    readonly src: string;
+    /** Plays from where it is (from the start once it ended). */
+    play(): Promise<void>;
+    pause(): void;
+    /** Seconds into the video; setting it seeks (0 to `duration`; the
+     * frame showing there shows once decoded, from the key frame before
+     * it). */
+    currentTime: number;
+    /** Seconds; NaN until the file was read. */
+    readonly duration: number;
+    readonly paused: boolean;
+    /** It played to its end (not looping). */
+    readonly ended: boolean;
+    loop: boolean;
+    playbackRate: number;
+    muted: boolean;
+    volume: number;
+    /** The video's size in pixels (0 until the file was read). */
+    readonly videoWidth: number;
+    readonly videoHeight: number;
+    /** Whether the file has a sound track. */
+    readonly hasAudio: boolean;
+    /** Why it cannot play (not WebM VP8, damaged, missing), else null. */
+    readonly error: string | null;
+    /** 4 (HAVE_ENOUGH_DATA) once a frame shows, else 0. */
+    readonly readyState: number;
+    /** three.js's; frames upload on their own. */
+    update(): void;
+    /** Stops the video and lets its image go. */
+    dispose(): void;
+  }
   export class CanvasTexture extends Texture {
     /** Makes the canvas's image (an empty canvas's once it has a size),
      * counted against the image budget at once: past it the constructor
@@ -5043,11 +5560,24 @@ declare module "starhermit:scene" {
     /** `UnsignedByteType` (default): RGBA8 holding what the window would
      * show (tone mapped, sRGB-encoded). `HalfFloatType` (or `FloatType`,
      * taken as half floats before API_MINOR 34): linear light, not tone
-     * mapped, past 1 where it is (clamped to 0–65504, alpha 1 unless
-     * blended); where the device cannot render half floats it holds RGBA8
-     * (a warning says so) and, since API_MINOR 10, counts RGBA8's 4 bytes a
-     * pixel against the image budget (8 before). Built-in maps read either
-     * as sRGB-encoded images;
+     * mapped, past 1 where it is. Before API_MINOR 45 its passes clamp what
+     * they write to 0–65504 (negative and non-finite values 0, alpha 1
+     * unless blended), a custom material's fragment too, so a signed value
+     * such as a distance field loses its negative half. Since API_MINOR 45
+     * (`HALF_FLOAT_UNCLAMPED_MINOR`) passes write it as three.js does, as
+     * they write a `FloatType` target: a custom material's fragment as it
+     * is (negative values, values past 1 and alpha included, without fog),
+     * built-in materials' light unclamped, blended as before, on every
+     * backend and with or without `generateMipmaps`; RGBA16F holds it to
+     * half-float precision (past ±65504 is ±infinity). This is the game's
+     * own targets: those the engine's modules make for themselves (the
+     * sky, weather, water and volumes) keep the clamped output, so they
+     * draw as at 44. Where the device
+     * cannot render half floats it holds RGBA8 at every minor (a warning
+     * says so), written as an `UnsignedByteType` target is (tone mapped,
+     * sRGB-encoded, clamped to 0–1: negative values are 0 there too) and,
+     * since API_MINOR 10, counts RGBA8's 4 bytes a pixel against the image
+     * budget (8 before). Built-in maps read either as sRGB-encoded images;
      * custom materials' programs read the values as they are.
      *
      * Since API_MINOR 34 (`FLOAT_TARGETS_MINOR`) `FloatType` holds 32-bit
@@ -6571,7 +7101,7 @@ declare module "starhermit:scene" {
   //     v0: vec4f, v1: vec4f, v2: vec4f, v3: vec4f,
   //     instance_color: vec4f, vertex_color: vec4f,
   //     instance1: vec4f, instance2: vec4f, instance3: vec4f,
-  //     skin_index: vec4u, skin_weight: vec4f }
+  //     skin_index: vec4u, skin_weight: vec4f, bind_position: vec3f }
   //     position and normal in object space (skinned already on a
   //     skinned mesh); color the instance color times
   //     the vertex color (when the material has vertexColors; white
@@ -6585,7 +7115,12 @@ declare module "starhermit:scene" {
   //     skin_index and skin_weight the geometry's `skinIndex` (whole
   //     numbers 0..65535) and `skinWeight` (0..1, in 1/65535 steps) on a
   //     SkinnedMesh or an InstancedSkinnedMesh (since API_MINOR 43,
-  //     SKIN_ATTRIBUTES_MINOR; zeros on other meshes); clip zero, or
+  //     SKIN_ATTRIBUTES_MINOR; zeros on other meshes); bind_position
+  //     (since API_MINOR 45, HOOK_BIND_POSITION_MINOR; before it the
+  //     member is the game's error) the geometry's position before
+  //     skinning and morph targets on a SkinnedMesh or an
+  //     InstancedSkinnedMesh (`position` itself elsewhere): a hook may
+  //     mix the rest pose in, or key effects to it; clip zero, or
   //     set by the hook (w not 0) to place the vertex in clip space itself
   //     (depth -1..1 as view_projection() gives; the shadow pass ignores
   //     it); v0..v3 four varyings for the fragment stage.
@@ -7749,7 +8284,13 @@ declare module "starhermit:scene" {
     /** Leaves the object and its descendants out of `renderer.ao` (default
      * false; since API_MINOR 4): they cast no ambient occlusion, and where
      * they are drawn the occlusion of what lies behind them applies (sky
-     * domes, light cones, nets). Sprites and points never take part. */
+     * domes, light cones, nets). Sprites and points never take part.
+     * Since API_MINOR 45 (`VELOCITY_PASS_MINOR`) neither do blended
+     * (transparent) objects nor ones whose material writes no depth: the
+     * occlusion prepass that `renderer.ao`, `ssr` and `ssgi` read draws a
+     * mesh's whole triangles (a game fragment's `discard` aside), so before
+     * 45 a transparent quad darkened, and reflected, its whole square
+     * there (set `noAO` on it to leave it out). */
     noAO: boolean;
     /** **Engine extension** (host API 1.42, `engine.minor=42`; UE's
      * Mobility, ThreeRT's `Object3D.movable`; three.js has none): whether
@@ -7775,6 +8316,31 @@ declare module "starhermit:scene" {
      * `true`, `false`, `null` or `undefined` throws a TypeError. `copy` and
      * `clone` take it. Older games' objects have no such property. */
     movable: boolean | null;
+    /** Since API_MINOR 47 (`MOTION_VECTORS_MINOR`; an engine extension,
+     * Unity's `Renderer.motionVectorGenerationMode`; absent before): what
+     * its motion vectors (and so motion blur, temporal anti-aliasing,
+     * upscalers and `renderer.sceneVelocity`) take of its motion.
+     * "object": its own motion and the camera's (what every object does by
+     * default). "camera": the camera's motion alone (Unity's `Camera`
+     * mode): it is drawn as if it had not moved since the last frame, its
+     * skin's bones and an `InstancedSkinnedMesh`'s baked animation
+     * included, so a running unit stays crisp under motion blur while the
+     * camera's pans still blur it with the rest. null (the default): its
+     * parent's, so setting it on a glTF scene's root (or a unit's `Group`)
+     * sets it for every mesh under it that sets none of its own; the
+     * scene's objects are "object". Anything else is a TypeError. `copy`
+     * and `clone` take it. */
+    motionVectors: "object" | "camera" | null;
+    /** Since API_MINOR 47 (`MOTION_SCALE_MINOR`; an engine extension;
+     * absent before): the share of its own motion its motion vectors take,
+     * 0..1 (its placement and skin the frame before taken that share of the
+     * way back from where they are now: 0.33 blurs a third as long), or
+     * null (the default) for its parent's, as `motionVectors` inherits;
+     * the scene's objects take 1. "camera" stands for 0 whatever this is.
+     * An `InstancedMesh` instance's own share (`setMotionScaleAt`)
+     * multiplies it. Outside 0..1 is a RangeError, a non-number a
+     * TypeError. `copy` and `clone` take it. */
+    motionScale: number | null;
     readonly parent: Object3D | null;
     readonly children: readonly Object3D[];
     /** The game's own data (never read by the runtime). */
@@ -8580,6 +9146,20 @@ declare module "starhermit:scene" {
     /** Multiplies the material color (default white). */
     setColorAt(index: number, color: Color): void;
     getColorAt(index: number, target: Color): void;
+    /** Since API_MINOR 47 (`MOTION_SCALE_MINOR`; an engine extension;
+     * absent before): an instance's own share of its motion in the motion
+     * vectors, 0..1 (default 1), times the mesh's (`motionScale`, 0 for
+     * `motionVectors = "camera"`): 0 moves it with the camera alone (a
+     * baked skin's animation too), between 0 and 1 takes its placement the
+     * frame before that share of the way back (a baked skin's animation as
+     * it is). So the units sharing a batch stay crisp while wrecks and
+     * debris in it blur. Sent with the frame; an index outside the
+     * capacity is a RangeError. An InstancedMesh with levels of detail
+     * (`setLevels`) draws its levels with the mesh's share alone. Returns
+     * this. */
+    setMotionScaleAt(index: number, scale: number): this;
+    /** The instance's own share (`setMotionScaleAt`; 1 by default). */
+    getMotionScaleAt(index: number): number;
     /** Custom vec4 `slot` (0 to 3, default 0) of an instance (since
      * API_MINOR 7). */
     setCustomAt(index: number, value: Vector4, slot?: number): void;
@@ -8688,6 +9268,46 @@ declare module "starhermit:scene" {
      * skeleton's bone names by index (what `setBoneOverrideJoints` takes);
      * empty for animations baked by an older game. */
     readonly boneNames: readonly string[];
+    /** Since API_MINOR 45 (BAKED_MATRIX_TABLES_MINOR): the bone matrix
+     * table, a copy: frames × bones matrices of 12 numbers (the layout
+     * above without the header and the rows: frame after frame, clip
+     * after clip, bone after bone), what `fromMatrices` takes. A TypeError
+     * once the texture is disposed or its data released. */
+    matrixTable(): Float32Array;
+    /** Since API_MINOR 45 (BAKED_MATRIX_TABLES_MINOR): baked animations
+     * from a bone matrix table the game holds (`matrixTable()`'s layout,
+     * say a bake kept from an earlier run, or matrices worked out by the
+     * game), without sampling clips on a SkinnedMesh. `clips` gives each
+     * clip's frames in order (and its name, its duration, default the
+     * AnimationClip's or (frames − 1) / fps, and the AnimationClip, made
+     * empty when left out); `fps` (default 30) is kept in the header.
+     * `boundingSphere` is the sphere every pose lies in (copied); without
+     * it one is made from `geometry` (or the mesh's) moved by every
+     * matrix, as the bake makes it, else it is empty (no culling).
+     * `mesh`, the SkinnedMesh the table was baked from (its skeleton of
+     * `bones` bones), keeps the skeleton for bone overrides and
+     * `boneNames`; without it `setBoneOverrideJoints` is a TypeError. The
+     * numbers are not checked one by one (a NaN draws nothing). A
+     * TypeError for a table that is not a Float32Array; a RangeError for
+     * `bones` outside 1–65,536, a clip's frames that are not a whole
+     * number of at least 1, a table of another length than frames ×
+     * bones × 12 or past bakeSkinnedAnimations' limits. */
+    static fromMatrices(
+      matrices: Float32Array,
+      options: {
+        bones: number;
+        clips: readonly {
+          name?: string;
+          frames: number;
+          duration?: number;
+          clip?: AnimationClip;
+        }[];
+        fps?: number;
+        boundingSphere?: Sphere;
+        geometry?: BufferGeometry;
+        mesh?: SkinnedMesh;
+      },
+    ): BakedSkinnedAnimations;
     dispose(): void;
   }
   /** ENGINE EXTENSION (since API_MINOR 43, INSTANCED_SKINNING_MINOR):
@@ -8808,6 +9428,7 @@ declare module "starhermit:scene" {
     setBoneOverrideJoints(
       joints: readonly (number | string)[] | null,
       mode?: "replace" | "multiply",
+      options?: { root?: number | string | boolean | null },
     ): this;
     /** Writes overrides from instance `first` (default 0): for each
      * instance in turn, for each declared joint in order, a quaternion's x,
@@ -8828,6 +9449,30 @@ declare module "starhermit:scene" {
     ): this;
     /** Every instance's overrides cleared (the joints kept). */
     clearBoneOverrides(): this;
+    // -- Root offsets (since API_MINOR 45, INSTANCED_ROOT_OFFSETS_MINOR) --
+    // ENGINE EXTENSION: a per-instance translation of a root joint beside
+    // the rotation overrides (a crouch, a stagger, a hip bob, root motion
+    // taken out of a clip), named by `setBoneOverrideJoints(joints, mode,
+    // { root })`: `true` for the baked skeleton's first bone without a
+    // parent bone, or a bone index or name; the joints may then be `[]`.
+    // Each instance's offset is added to that joint's local translation
+    // (in its parent bone's space; the mesh's own for a root bone) after
+    // the clip's sample and its rotation override, so everything below it
+    // follows, in every pass on every backend. A root that is not among
+    // the joints takes a correction slot of its own (the texture and the
+    // cost above count it as a joint). Offsets are cleared with the
+    // joints; `setBoneOverrides(null)` and `clearBoneOverrides` leave them.
+    /** The root joint (bone index) `setRootOffsets` moves; -1 without. */
+    readonly rootOffsetJoint: number;
+    /** Writes root offsets from instance `first` (default 0): x, y, z an
+     * instance (`data.length` a multiple of 3, at most (capacity − first)
+     * × 3; zeros: none); `null` clears them. 1 fuel unit a number. A
+     * RangeError for numbers past the capacity, a length not whole vectors
+     * or a NaN or infinite number (nothing written); a TypeError without a
+     * root joint or for anything but a Float32Array. */
+    setRootOffsets(data: Float32Array | null, first?: number): this;
+    /** One instance's root offset; null for none. */
+    setRootOffsetAt(index: number, offset: Vector3 | null): this;
   }
   // -- Levels of detail generation (since API_MINOR 40) --
   /** three.js r185's addon `SimplifyModifier`
@@ -8904,6 +9549,106 @@ declare module "starhermit:scene" {
    * 1,048,576 vertices and triangles (RangeError). */
   export function generateLods(mesh: InstancedMesh, options?: GenerateLodsOptions): InstancedMesh;
   export function generateLods(target: Mesh | BufferGeometry, options?: GenerateLodsOptions): LOD;
+
+  // -- The levels of detail's triangle budget (since API_MINOR 45) ----------
+  /** 45 from host API 1.45 (undefined before: feature-detect with
+   * `import * as scene from "starhermit:scene"` and
+   * `scene.LOD_BUDGET_MINOR !== undefined`): `LodBudget` and
+   * `renderer.lodBudget`. */
+  export const LOD_BUDGET_MINOR: number;
+  /** `new LodBudget(options)`'s options (since API_MINOR 45). */
+  export interface LodBudgetOptions {
+    /** The most triangles the members draw a frame: 0 or more, `Infinity`
+     * for no limit (default 1,000,000). Every visible instance draws at
+     * least its coarsest level, whose triangles count even past it. */
+    triangles?: number;
+    /** The floor in pixels: no instance refines past a level whose
+     * projected error is at most this (finite, 0 or more; default 1). */
+    errorPx?: number;
+    /** How far, as a fraction, an instance's error must fall below what
+     * won it a finer level before it gives the level back (finite, 0 or
+     * more; default 0.1). */
+    hysteresis?: number;
+    /** The viewport height errors are measured on, in pixels (default
+     * null: the renderer's drawing buffer's). */
+    screenHeight?: number | null;
+  }
+  /** ENGINE EXTENSION (since API_MINOR 45; absent before): a scene-wide
+   * triangle budget over levels of detail. Its members are three.js `LOD`s
+   * whose levels are meshes and `InstancedMesh`es with levels
+   * (`setLevels`), each level's geometry carrying its error in world units
+   * as `userData.lodError` (as `generateLods` makes them; level 0's may be
+   * left out and counts as 0). A level's triangles are its geometry's
+   * index count (or position count) over 3.
+   *
+   * While it is `renderer.lodBudget`, each frame (in the scene's sync,
+   * once the camera is known, before shadows and drawing) it chooses its
+   * members' levels for `renderer.camera` in place of their distances:
+   * every visible instance starts at its coarsest level, and the instance
+   * whose level shows the largest projected error is refined to its next
+   * finer level first, until the next refinement would pass `triangles` or
+   * every error is at most `errorPx`. The projected error of a level is
+   * `lodError × scale × screenHeight × zoom / (2 tan(fov / 2) × distance)`
+   * pixels for a PerspectiveCamera (`scale` the instance's largest world
+   * axis scale, `distance` from the camera to its geometry's bounding
+   * sphere's center) and `lodError × scale × screenHeight × zoom / (top -
+   * bottom)` for an OrthographicCamera; ties go to the member added first,
+   * then the lower instance index. Instances out of the camera's frustum
+   * (their geometry's bounding sphere, for a `frustumCulled` member) cost
+   * nothing and draw their coarsest level (and cast its shadow).
+   *
+   * Hysteresis: an instance that drew finer than a level last frame counts
+   * that level's error `1 + hysteresis` times, for the floor and for the
+   * order, so a refinement is kept until its error falls that fraction
+   * below what won it and two instances near the same error do not trade
+   * levels frame after frame. With `hysteresis` 0 each frame is chosen
+   * afresh.
+   *
+   * The choice runs natively (the same Rust in browsers, so the same
+   * levels), in O(n log n) for n member instances, its buffers kept from
+   * frame to frame; it is charged to the frame's fuel by its instances and
+   * refinements. Render-target passes draw the levels the frame chose. A
+   * member that is not drawn (invisible or under an invisible parent, not
+   * in the scene, not on the camera's layers, or an LOD whose `autoUpdate`
+   * is false) is left out and keeps its own levels; so is one whose levels
+   * lose their `lodError` after it was added (with a console warning). An
+   * LOD in the budget shows its chosen level as `getCurrentLevel()` and
+   * its levels' `visible`; its `update(camera)` called by the game is
+   * three.js's as ever. Out of a budget, or with `renderer.lodBudget`
+   * null, LODs and InstancedMeshes choose by distance as before. */
+  export class LodBudget {
+    constructor(options?: LodBudgetOptions);
+    readonly isLodBudget: true;
+    /** See `LodBudgetOptions` (RangeError outside its range). */
+    triangles: number;
+    errorPx: number;
+    hysteresis: number;
+    screenHeight: number | null;
+    /** Adds members (an LOD whose levels are not all meshes with known
+     * errors, or anything else, is a TypeError); a member of another
+     * budget moves to this one. */
+    add(...objects: (LOD | InstancedMesh)[]): this;
+    /** Takes members out: they go back to their own levels. */
+    remove(...objects: (LOD | InstancedMesh)[]): this;
+    has(object: unknown): boolean;
+    /** The members in the order they were added (a frozen copy). */
+    readonly members: readonly (LOD | InstancedMesh)[];
+    /** Last frame's triangles drawn by the members. */
+    readonly trianglesUsed: number;
+    /** Last frame's effective threshold: the largest projected error, in
+     * pixels, of any drawn instance's level (at most `errorPx` when the
+     * floor stopped the refining, above it when the budget did). */
+    readonly thresholdPx: number;
+    /** Last frame's member instances drawn (in view) and culled. */
+    readonly drawn: number;
+    readonly culled: number;
+    /** Last frame's refinements. */
+    readonly refinements: number;
+    /** What stopped last frame's refining: `"budget"` (the next refinement
+     * would pass `triangles`), `"floor"` (every error within `errorPx`) or
+     * `"none"` (every instance at its finest, or no frame yet). */
+    readonly limitedBy: "none" | "floor" | "budget";
+  }
   /** Points (three.js `Points`): a square per vertex of the geometry's
    * `position` in its draw range, colored by its `color` attribute when the
    * material has `vertexColors`. Each point counts as a mesh instance (a
@@ -10129,7 +10874,76 @@ declare module "starhermit:scene" {
      * where r176 and r185 take Rec. 709's. A port of a page on three.js
      * r160 sets "r160" and keeps the page's strength as it is (not
      * squared). */
-    model?: "r185" | "r176" | "r160";
+    model?: "r185" | "r176" | "r160" | "urp";
+    // ENGINE EXTENSION (since API_MINOR 46, URP_BLOOM_MODEL_MINOR; a
+    // TypeError before): `model: "urp"` is Unity URP's whole bloom as URP
+    // 2022.3 draws it, for ports of URP looks, set as a URP Bloom volume
+    // is: `threshold` (gamma, default 0.9; converted and kneed as
+    // `prefilter: "urp"` does), `intensity` (default 0, URP's: no bloom
+    // until set; `strength` is read as its other name), `scatter`, `clamp`,
+    // `tint`, `highQualityFiltering`, `downscale` and `maxIterations`
+    // below. URP's prefilter (High Quality Filtering's 13-tap, or one
+    // bilinear tap; the colour at most `clamp`; the soft knee) runs at the
+    // frame's size halved (`downscale` "half") or quartered, into
+    // floor(log2(max(w, h))) − 1 levels within 1..maxIterations, each half
+    // the one before (rounded down), each blurred by a 9-tap Gaussian
+    // across and a 5-tap linear-sampled one down; the levels are upsampled
+    // from the lowest as lerp(level, below, lerp(0.05, 0.95, scatter)) (the
+    // level below bicubic with High Quality Filtering) and the result is
+    // added to the light before the grade and tone mapping as bloom ×
+    // intensity × tint (the tint divided by its luminance, as URP's uber
+    // pass does; bicubic with High Quality Filtering). `radius` and
+    // `resolution` are not used; `prefilter` may only be "urp". URP's
+    // lens dirt is not drawn. The tiers do not scale it: its downscale is
+    // the game's. Every backend draws it.
+    /** Since API_MINOR 46, with `model: "urp"`: URP's Scatter, 0–1,
+     * default 0.7 (lerped to 0.05–0.95 as URP's `SetupBloom` does). */
+    scatter?: number;
+    /** Since API_MINOR 46, with `model: "urp"`: URP's Clamp, the most
+     * light a pixel brings to the bloom, 0–65504, default 65472. */
+    clamp?: number;
+    /** Since API_MINOR 46, with `model: "urp"`: URP's Tint, default white:
+     * a Color (linear light), a 0xRRGGBB number or CSS color (sRGB,
+     * converted as three.js converts it: URP's `tint.linear`) or [r, g, b]
+     * (linear), each 0–65504; divided by its luminance as URP does, so it
+     * colours the bloom without brightening it (black is white). */
+    tint?: ColorInput;
+    /** Since API_MINOR 46, with `model: "urp"`: URP's High Quality
+     * Filtering, default false: the 13-tap prefilter and bicubic
+     * upsampling and composite. */
+    highQualityFiltering?: boolean;
+    /** Since API_MINOR 46, with `model: "urp"`: URP's Downscale, the first
+     * level's size, "half" (the default) or "quarter" of the frame. */
+    downscale?: "half" | "quarter";
+    /** Since API_MINOR 46, with `model: "urp"`: URP's Max Iterations, the
+     * most levels, a whole number 1–16, default 6. */
+    maxIterations?: number;
+    /** ENGINE EXTENSION (since API_MINOR 45, BLOOM_PREFILTER_MINOR; not
+     * read before): the bright pass. "three" (the default) is three.js's
+     * luminosity high pass (luma past `threshold`, a 0.01 smooth step).
+     * "urp" is Unity URP's soft-knee prefilter, for ports of URP looks:
+     * brightness b = max(r, g, b), soft = clamp(b − threshold + knee, 0,
+     * 2·knee)² / (4·knee + 1e-5), and the colour times max(soft, b −
+     * threshold) / max(b, 1e-4) (light just under the threshold glows a
+     * little, and hue is kept). The blurs and the sum are the `model`'s.
+     * Every backend draws it. Another string is a TypeError.
+     *
+     * Since API_MINOR 46 (URP_BLOOM_GAMMA_MINOR) "urp" takes `threshold`
+     * as a URP Bloom volume sets it: URP converts it with Unity's
+     * `Mathf.GammaToLinearSpace` (x/12.92 up to 0.04045, the sRGB curve
+     * below 1, x^2.2 from 1; 1.2 is 1.4937 linear) and hard-codes the knee
+     * at half the converted threshold, and its soft knee divides by
+     * 4·knee + 1e-4; the engine does the same, so a URP volume's threshold
+     * is copied as it is. Before 46 the threshold and knee are linear
+     * light (multiply a URP threshold by about 1.25–1.5 there). */
+    prefilter?: "three" | "urp";
+    /** Since API_MINOR 45: "urp"'s knee, 0–65504, default threshold × 0.5
+     * (0: a hard threshold). Checked with "three" too, and unused there.
+     * URP has no such setting (its knee is always half the threshold);
+     * since API_MINOR 46 a knee given here is in the threshold's units and
+     * converted with it (scaled by linear threshold / threshold, or 1/12.92
+     * at 0), so threshold × 0.5 stays URP's knee. */
+    knee?: number;
   }
   /** Ground-truth ambient occlusion, three.js r176's `GTAOPass` with
    * `OUTPUT.Default` (its `updateGtaoMaterial` and `updatePdMaterial`
@@ -10503,7 +11317,22 @@ declare module "starhermit:scene" {
      * miss. Before API_MINOR 43 it is the post program and draws only
      * while `renderer.post` is null; from API_MINOR 43 it runs just before
      * `renderer.post` (which then reads the contact-shadowed light), so
-     * both draw. Other values are a RangeError as the frame syncs. */
+     * both draw. From API_MINOR 45 (`CONTACT_SHADOW_FIX_MINOR`) the march
+     * starts a pixel's footprint off the surface along its normal (from
+     * the depth), pixels facing away from the light are left alone (those
+     * nearly edge-on to it fade in), `thickness` and `bias` are measured
+     * along the view ray, and a surface counts only where it stands above
+     * the pixel's tangent plane by more than its footprint and `bias`, so
+     * a lit rounded surface never shadows itself; before, it could darken
+     * in hard straight-edged patches. From API_MINOR 46
+     * (`CONTACT_SHADOW_FACETS_MINOR`) normals come from the depth across
+     * half `length` (following a surface's folds and ledges, not the crease
+     * where something stands on it), so they turn smoothly from triangle to
+     * triangle, and a surface found in the march's way counts in
+     * proportion to how far it turns from the pixel's: none within 20°,
+     * fully past 30°. A smooth but coarsely tessellated surface (a
+     * heightfield) under a low sun no longer darkens triangle by triangle,
+     * while walls, rocks and other things standing on it still cast them. Other values are a RangeError as the frame syncs. */
     contactShadows?: {
       enabled?: boolean;
       light?: DirectionalLight;
@@ -10726,8 +11555,8 @@ declare module "starhermit:scene" {
      * reflected rays, default true) are three.js's; `maxRoughness` (the
      * roughest surface that reflects, 0..1, default 0.5; reflections fade
      * out toward it) and `steps` (1..128, default 48) the engine's.
-     * Objects with `aoEnabled` false take no part (they neither reflect nor
-     * are reflected). It needs half-float color: off otherwise, noted in
+     * Objects with `noAO` true take no part (they neither reflect nor are
+     * reflected). It needs half-float color: off otherwise, noted in
      * Options, and over the effect budget it goes after `ssgi`. */
     ssr: SSRSettings | null;
     /** Since API_MINOR 40 (`SCREEN_EFFECTS_MINOR`; undefined before):
@@ -10842,6 +11671,25 @@ declare module "starhermit:scene" {
      * level without a heightfield) the camera well above the surface sends
      * nothing: off costs nothing. Its fields are read each frame. */
     underwater?: UnderwaterSettings | null;
+    /** Since API_MINOR 45 (`LOD_BUDGET_MINOR`; undefined before; an engine
+     * extension): the `LodBudget` choosing its members' levels each frame
+     * for `renderer.camera`, or null (the default: every LOD and
+     * InstancedMesh by its distances). Anything else is a TypeError;
+     * replacing it gives the old budget's members back their own levels. */
+    lodBudget?: LodBudget | null;
+    /** Since API_MINOR 46 (`MOTION_BLUR_MINOR`; undefined before; an engine
+     * extension): per-object, velocity-based motion blur
+     * (`MotionBlurSettings`), or null (the default). Its fields are read
+     * each frame. */
+    motionBlur?: MotionBlurSettings | null;
+    /** Since API_MINOR 47 (`MOTION_BLUR_ACTIVE_MINOR`; undefined before):
+     * whether `motionBlur` draws: it is set with an intensity above 0, the
+     * player lets games blur motion (`engine.preferences().motionBlur`:
+     * Options › Graphics › Motion blur on, Reduce motion off, and no
+     * check's `--no-motion-blur`) and the device renders half-float color.
+     * Read it each frame (it changes when the player's choices do, a
+     * `preferences` event) to make up for a blur the player turned off. */
+    readonly motionBlurActive?: boolean;
     /** Since API_MINOR 40 (`SCREEN_EFFECTS_MINOR`; undefined before):
      * specular anti-aliasing in the lit materials (default false, so their
      * look stays three.js's): each pixel's squared roughness widened by the
@@ -10922,6 +11770,26 @@ declare module "starhermit:scene" {
       activeCubeFaceIndex?: number,
       textureIndex?: number,
     ): Promise<Uint8Array | Uint16Array | Float32Array>;
+    /** Since API_MINOR 46 (`COMPILE_ASYNC_MINOR`; undefined before):
+     * three.js r185's `compileAsync`, for render-target passes. The graph
+     * under `scene` is synced as `render` syncs it, and the pipelines a
+     * pass of it through `camera` into `target` (a RenderTarget; else the
+     * renderer's current render target, a third argument that is an
+     * Object3D being three.js's target scene) would draw with are made,
+     * for every object in it whether the camera sees it or not, cleared
+     * or not as `autoClear` says; nothing is drawn. The promise resolves
+     * with `scene` once they are made: Vulkan makes them on a background
+     * thread and WebGPU with `createRenderPipelineAsync` (frames keep
+     * coming meanwhile, and the first `render` into the target then makes
+     * none); Direct3D 12, Metal and OpenGL ES make them as the pass draws,
+     * as before, and it resolves within two frames, as it does without a
+     * GPU. It settles in a frame at least two after the call, so when
+     * depends on how long the GPU's driver takes, not on the frames alone.
+     * Without a render target (the window's passes, made by the frames as
+     * before) it resolves at once. A TypeError for an object that is not
+     * an Object3D or a camera that is not a Camera; a RangeError past 16
+     * compiles waiting at once. */
+    compileAsync?(scene: Object3D, camera: Camera, target?: RenderTarget | Object3D | null): Promise<Object3D>;
   }
   export const renderer: Renderer;
 
@@ -13467,6 +14335,69 @@ declare module "starhermit:ui" {
    * nothing had focus); the same all through a frame (since API_MINOR 12:
    * before, it was null once the frame's first widget was built). */
   export function focused(): string | null;
+
+  // -- Questions about the last frame laid out (since API_MINOR 45) ----------
+  // UI_QUERIES_MINOR: undefined for games declaring an older engine.minor
+  // (their natives throw a TypeError). Each answers for the last frame the
+  // UI laid out, whether its game built it or `retain` replayed it (the
+  // same calls lay out the same elements, so the answers are the same);
+  // during a frame's build that is the frame before. They read what the UI
+  // already keeps of a frame: no build code runs, and a call costs about
+  // one instruction (`hitTest` one more an element it returns). Only
+  // elements built with an `id(…)` are known to them: an element without
+  // one is never in `hitTest`'s list, and its id is no `focusedId`.
+  // Coordinates and rectangles are window pixels, as `lastRect()` and the
+  // pointer give them.
+  //
+  //   // Each frame: the smallest element under the pointer with a tooltip,
+  //   // and whether a click there is the UI's.
+  //   const p = input.pointer();
+  //   const hits = p ? ui.hitTest(p.x, p.y) : [];
+  //   const tip = hits.find((h) => h.tooltip);   // innermost first
+  //   const clickable = hits.some((h) => h.interactive && !h.disabled);
+  //   const box = ui.rectOf("inventory");          // { x, y, width, height } | null
+  //   if (ui.focusedId() === "chat") showChatHints();
+
+  /** The rectangle (window pixels, as the call returned it and `lastRect()`
+   * gave it after the call: a container's once its children were built)
+   * of the first widget or container the last frame laid out with
+   * `id(id)`; null when it built none, or placed none (a `target`, which
+   * has no layout, is not placed). Unclipped: a widget scrolled out of
+   * view keeps its rectangle (`hitTest` respects clips). */
+  export function rectOf(id: string): Rect | null;
+  /** One element `hitTest` found under a point. */
+  export interface UiHit extends Rect {
+    /** Its `id(…)`. */
+    readonly id: string;
+    /** It takes clicks: a button, checkbox, toggle, slider, select, cycle,
+     * text field, tab or key capture, or a custom `widget` of such a kind
+     * or a region; not a label, heading, paragraph, image, meter, progress
+     * bar or container, and never a `target` (which takes nothing). True
+     * for a disabled control too (see `disabled`), which still covers what
+     * is under it. */
+    readonly interactive: boolean;
+    /** Built disabled (`disabled: true`, or inside a disabled container): it
+     * never activates. */
+    readonly disabled: boolean;
+    /** It reports the secondary button and the context-menu key: a custom
+     * `widget` (its result's `secondary`). The built-in controls ignore
+     * the secondary button, and the UI has no context menus of its own. */
+    readonly secondary: boolean;
+    /** It has a tooltip (`tooltip(…)`, a text or a builder). */
+    readonly tooltip: boolean;
+  }
+  /** The elements built with an id that the last frame laid out under the
+   * point (`x`, `y` window pixels) and showing there, innermost first: the
+   * deepest in containers first and, of those as deep, the one drawn last
+   * (over the others) first. What is clipped away there (scrolled out of a
+   * scroll area, outside a clipped container or an `area`) is not under
+   * it. Elements without an id are left out (their containers still come,
+   * if they have one). A new frozen array of frozen objects each call. */
+  export function hitTest(x: number, y: number): readonly UiHit[];
+  /** The `id(…)` of the widget focused as the last frame ended, beside
+   * `focused()`'s label; null when nothing had focus or the focused widget
+   * was built without an id. */
+  export function focusedId(): string | null;
   /** Names an area the game draws itself (since API_MINOR 17): a Canvas 2D
    * game's button shown with `draw.image`, a board's tile. It is a node of
    * the UI's accessibility tree named `text` over `rect` (window pixels,
@@ -14788,6 +15719,42 @@ declare module "starhermit:audio" {
      * inverse distance, refDistance 1, maxDistance 10,000, rolloffFactor
      * 1, no cone); RangeError or `InvalidStateError` as there. */
     panner?: PannerAttributes;
+    /** Since API_MINOR 45 (`AUDIO_CLIP_FILTERS_MINOR`; ignored before):
+     * nodes of `context` (biquad, IIR, gain, stereo panner, panner,
+     * delay: any that takes an input) the sound passes through, in order,
+     * on its way to its bus, where the player's volumes and mute and the
+     * game's mute (`setMuted`) still apply after them. The nodes stay
+     * the game's and stay live: set or automate their parameters while it
+     * plays. `play` connects them to one another in order and the last to
+     * the bus (ordinary connections, which stay when the sound ends, so a
+     * chain shared by several sounds is one chain that sums them, and a
+     * node also connected elsewhere fans out as in Web Audio); the
+     * sound's own way into the first goes when it ends. An empty list
+     * plays through the graph straight to the bus, so `setFilters` can add
+     * some later. A node of an `OfflineAudioContext` is an
+     * `InvalidAccessError`; anything else that is not such a node (a
+     * source, a released node, one listed twice, more than 64) a
+     * TypeError (RangeError past 64), and a chain closing a cycle without
+     * a delay `NotSupportedError`, all before the sound plays. Each
+     * filtered sound takes one node of the graph's node bound while it
+     * plays (render cost 5), and starts on the mixer's next render
+     * quantum (at most 128 frames, 2.7 ms at 48 kHz, later than an
+     * unfiltered one; a `when` keeps its exact frame). Example:
+     *
+     *     const muffle = context.createBiquadFilter();
+     *     muffle.type = "lowpass";
+     *     muffle.frequency.value = 20000;
+     *     const music = stream("music/theme.ogg", { loop: true, filters: [muffle] });
+     *     // On pause, and back on resume: a 50 ms glide, no restart.
+     *     const setPaused = (paused: boolean) =>
+     *       muffle.frequency.setTargetAtTime(paused ? 900 : 20000, context.currentTime, 0.05);
+     *     const radio = context.createBiquadFilter();
+     *     radio.type = "bandpass";
+     *     radio.frequency.value = 1800;
+     *     radio.Q.value = 2;
+     *     play(voiceLine, { bus: "effects", filters: [radio] });
+     */
+    filters?: readonly AudioNode[];
   }
   /** A `PannerNode`'s attributes (Web Audio's `PannerOptions` but the
    * position and orientation). */
@@ -14838,6 +15805,14 @@ declare module "starhermit:audio" {
     /** Since API_MINOR 37: turns it (for its cone). */
     setOrientation(x: number, y: number, z: number): void;
     setOrientation(orientation: { readonly x: number; readonly y: number; readonly z: number }): void;
+    /** Since API_MINOR 45 (`AUDIO_CLIP_FILTERS_MINOR`; absent before):
+     * the chain it plays through from now on, as `filters` takes it
+     * (`null` or `[]`: straight to its bus). The change takes effect on
+     * one render quantum, without a gap; the old chain's nodes keep their
+     * connections and ring out their tails. Only for one played with
+     * `filters` (`[]` for none yet): another is a TypeError. Nothing once
+     * it ended. */
+    setFilters(filters: readonly AudioNode[] | null): void;
   }
   /** At most min(`engine.limits.voices`, 256) sounds at once and 1,024 audio
    * operations a frame (plays, a stream's opening, play and pause, and
@@ -15148,6 +16123,11 @@ declare module "starhermit:audio" {
     start?: number;
     /** Wait for `play()` (default false: it plays as soon as it can). */
     paused?: boolean;
+    /** Since API_MINOR 45 (`AUDIO_CLIP_FILTERS_MINOR`; ignored before):
+     * as `PlayOptions.filters` (see the example there): the stream's
+     * sound passes through these nodes, in order, to its bus. Its way
+     * into them lasts until `stop()`. */
+    filters?: readonly AudioNode[];
   }
   /** Music decoded as it plays (`stream`). */
   export class AudioStream {
@@ -15183,6 +16163,9 @@ declare module "starhermit:audio" {
      * never count against its audio operations. */
     fade(gain: number, seconds: number): void;
     setPan(pan: number | null): void;
+    /** Since API_MINOR 45: as `Sound.setFilters`, for a stream opened
+     * with `filters`; nothing once stopped. */
+    setFilters(filters: readonly AudioNode[] | null): void;
     /** Each change of `state`, heard as a frame begins. */
     onStateChange(listener: (state: StreamState) => void): Unsubscribe;
   }
@@ -15214,7 +16197,8 @@ declare module "starhermit:audio" {
   // the clock stands still (a browser's audio before the page's first
   // press), but events at different future times still fill the budget
   // meanwhile. Not supported: channel count settings (buffers are mono or
-  // stereo), wave shapers, convolvers, compressors, analysers, 3D panners
+  // stereo), wave shapers before API_MINOR 45 (`WaveShaperNode`),
+  // convolvers, compressors, analysers, 3D panners
   // and listeners before API_MINOR 37 (`PannerNode`, `context.listener`;
   // HRTF renders as equal-power), IIR filters, channel splitters and mergers, worklets
   // and media nodes; offline contexts before API_MINOR 37
@@ -15327,6 +16311,41 @@ declare module "starhermit:audio" {
   export abstract class IIRFilterNode extends AudioNode {
     /** Equal lengths, else `InvalidAccessError`; NaN outside 0..Nyquist. */
     getFrequencyResponse(frequencyHz: Float32Array, magResponse: Float32Array, phaseResponse: Float32Array): void;
+  }
+  /** Since API_MINOR 45 (`WAVE_SHAPER_MINOR`; contexts have no
+   * `createWaveShaper` before): Web Audio's WaveShaperNode, a distortion
+   * mapping each sample x through `curve`: x in −1..1 spread across the
+   * curve's N points (v = (N − 1)(x + 1)/2), linearly between the two
+   * around v, the first or last value beyond the ends. Without a curve
+   * (null, the default) its input passes unchanged. A radio's crunch:
+   *
+   *     const crunch = context.createWaveShaper();
+   *     crunch.curve = Float32Array.from({ length: 1025 }, (_, i) => Math.tanh(4 * (i / 512 - 1)));
+   *     crunch.oversample = "2x";
+   *     play(voiceLine, { filters: [radioBand, crunch] });
+   *
+   * Charged a biquad's rendering cost less a little (12) until it first
+   * oversamples, then 1,200 for good (four times oversampled, its worst).
+   */
+  export abstract class WaveShaperNode extends AudioNode {
+    /** A copy of the curve set (the array given is copied: changing it
+     * later changes nothing), or null. 2 to 65,536 values
+     * (`InvalidStateError` below, RangeError above), finite (TypeError);
+     * a curve can be set again at any time (as Chromium; the written Web
+     * Audio specification allows one). Its values count toward the
+     * context's 32 MiB of buffers while it is the curve. */
+    curve: Float32Array | null;
+    /** `"none"` (default), `"2x"` or `"4x"`: the curve applied at twice or
+     * four times the rate, so its harmonics above the rate's Nyquist do
+     * not fold back as aliases. Each 2x stage upsamples (each sample
+     * doubled, then a zero) and downsamples (every other output) through
+     * a 63-tap halfband lowpass (a windowed sinc, 64-point Blackman
+     * window: flat to 0.2% below 0.2 of the doubled rate, −79 dB from 0.3
+     * on), the same binary64 sums natively, offline and in browsers; it
+     * delays the sound by 31 samples of the doubled rate a stage. Another
+     * value is ignored, as Web Audio ignores an enumeration's unknown
+     * values. */
+    oversample: "none" | "2x" | "4x";
   }
   export abstract class StereoPannerNode extends AudioNode {
     /** −1..1, default 0. */
@@ -15467,6 +16486,8 @@ declare module "starhermit:audio" {
     createBiquadFilter(): BiquadFilterNode;
     /** Since API_MINOR 41 (see `IIRFilterNode`). */
     createIIRFilter(feedforward: Iterable<number>, feedback: Iterable<number>): IIRFilterNode;
+    /** Since API_MINOR 45 (see `WaveShaperNode`). */
+    createWaveShaper(): WaveShaperNode;
     createStereoPanner(): StereoPannerNode;
     /** Since API_MINOR 37 (`SPATIAL_AUDIO_MINOR`; a TypeError before). */
     createPanner(): PannerNode;
@@ -15563,6 +16584,8 @@ declare module "starhermit:audio" {
     createBiquadFilter(): BiquadFilterNode;
     /** Since API_MINOR 41 (see `IIRFilterNode`). */
     createIIRFilter(feedforward: Iterable<number>, feedback: Iterable<number>): IIRFilterNode;
+    /** Since API_MINOR 45 (see `WaveShaperNode`). */
+    createWaveShaper(): WaveShaperNode;
     createStereoPanner(): StereoPannerNode;
     /** Since API_MINOR 37 (`SPATIAL_AUDIO_MINOR`). */
     createPanner(): PannerNode;
@@ -15665,6 +16688,30 @@ declare module "starhermit:platform" {
   /** The signed-in player, or null for a local guest. */
   export function player(): Player | null;
   export function onPlayerChange(listener: (player: Player | null) => void): Unsubscribe;
+  /** A guest as the StarHermit client names them (since API_MINOR 46). */
+  export interface Guest {
+    /** 1 to 32 characters, trimmed, in Unicode NFC, without control,
+     * bidirectional formatting or line separator characters. */
+    readonly nickname: string;
+  }
+  /** Since API_MINOR 46 (`GUEST_NICKNAME_MINOR`; undefined before): the
+   * nickname the StarHermit client gave a signed-out player, as
+   * `{ nickname }` (frozen; the same object while it stays the same), or
+   * null: while a player is signed in (`player()` answers instead), for a
+   * guest the client named none (older clients, a run without the client,
+   * browsers, `--guest`), and without the `platform` capability. The
+   * runtime's own UI shows it too ("Guest: SwiftComet42" in Options).
+   * `player()` stays null for every guest.
+   *
+   * The client makes the nickname up and keeps it only on the player's
+   * machine: no account stands behind it, nothing verifies it, and other
+   * players may use the same one. Show it, but never use it as an identity:
+   * not to key saves or progress, not on leaderboards or in results (which
+   * are server-authoritative and take the signed-in player only), and not
+   * for authorization of any kind. */
+  export function guest(): Guest | null;
+  /** Since API_MINOR 46: as `starhermit:engine`'s. */
+  export const GUEST_NICKNAME_MINOR: number;
   /** What the platform launched the game for (since API_MINOR 9). */
   export interface LaunchContext {
     /** A game session to open at once: an invite the player accepted on
@@ -18583,9 +19630,28 @@ declare module "starhermit:water" {
     roughness?: number;
     /** Foam from the vertex colors' red (a simulation's), default false. */
     vertexFoam?: boolean;
+    /** Since API_MINOR 47 (`WATER_REFRACTION_MINOR`; ignored before): how
+     * strongly the wind's capillary ripples bend what is seen through the
+     * water, the `refraction` uniform (default 1: as the wind raises them;
+     * 0 none; negative is 0). They are ripples of 9.5 to 28 cm, too fine
+     * for the reflection's trains, with Cox and Munk's mean square slope
+     * for the wind (0.00512 per m/s), seen only through the refraction,
+     * each held to a slope that warps the bed below smoothly (never
+     * folding it into fringes; past 1 the knob can): the eye's
+     * ray refracted with and without their slope down to the depth
+     * `renderer.sceneDepth` gives, the window into `renderer.sceneColor`
+     * moved by the difference, so a deeper bed moves more. Each train
+     * fades out where a wave spans under six pixels (a far surface shows
+     * none); `ripples: false` or no wind leaves the surface flat. Before
+     * 47 the ripples' slope (a few thousandths) moved the scene behind by
+     * under a pixel. */
+    refraction?: number;
   }
   /** The ocean's water shading for a mesh whose geometry (with normals) is
-   * the water's surface: a flowing-water heightfield, a pool. */
+   * the water's surface: a flowing-water heightfield, a pool. It reads
+   * `renderer.sceneColor` and `renderer.sceneDepth` itself through its
+   * `sceneColor` and `sceneDepth` uniforms (set when made; a game need not
+   * set them). */
   export class WaterMaterial extends ShaderMaterial {
     constructor(options?: WaterMaterialOptions);
     readonly isWaterMaterial: true;

@@ -40,10 +40,10 @@
     "assets/station.png": {"sha256": "53e63b668c3e35e65c6875da233705fdcf89844c5a16404fc74b9a27e0de418a", "size": 78908},
     "assets/station.png.ktx2": {"sha256": "9caff0f9f058c8cd44bf20e64870dd71d9e249028f4cded6d438e49251c61c82", "size": 481472},
     "assets/strings.json": {"sha256": "67f9c84d78d7a689855fa37b97cf58e911b5bc9250c4c0f04169e348c0183170", "size": 1674771},
-    "index.html": {"sha256": "1558822dba13900d271b40a242eade14a283ade2d6a1edab7ccc98a8724c665f", "size": 1809},
-    "publication.json": {"sha256": "07ebad33d27464632995a19af1b0052387e7db77766355d6b55f85ff53c39ae9", "size": 3230},
+    "index.html": {"sha256": "cf1faa3328daac62db90ef78c2f2ec842672faa4a26ffe507d5a630152c1ec25", "size": 1809},
+    "publication.json": {"sha256": "ec4bc2432ae0d8ef9cd3b8e0726d5a205fa24648b3c6455e7502c7154ef8b049", "size": 4530},
     "server.js": {"sha256": "86deb5336f67ad7a8ba39ab2d0474e60dd813af3d151058ae87a1bd1e1c64a7f", "size": 109261},
-    "spec.md": {"sha256": "b640283168d8ab526f59144a2293fb12aaa00200783a3dad6b5312f7fe29b3db", "size": 2517},
+    "spec.md": {"sha256": "6ed42b6d2eaaae3153d8e491d86e0fb57839b8b781cfe846aaf1af86493d3613", "size": 2703},
     "src/arsenal.js": {"sha256": "f19dbf4e454ba34689c2821c9c92df8179cde1f06568fe4f9dd4d21552bb089b", "size": 9962},
     "src/ballistics.js": {"sha256": "2734e367be13e5727608a2ed4ca48d900e265bdad998e039dd4908b822287c36", "size": 2271},
     "src/campaign.js": {"sha256": "b5fb26ce80d5e012b2b7cd044183e6da2752b2759c304a867918926db870fd10", "size": 772},
@@ -70,7 +70,7 @@
     "src/sim.js": {"sha256": "88035faf3ee192cd99cd0e4e46ed5798b26f52330e28e18847dd0b07bc045cdf", "size": 33826},
     "src/universe-rules.js": {"sha256": "d0fa11cbc834f87c7008fd25acd89bcfbacbdab7cbbd1be3232a2c7400c25d5d", "size": 6965},
     "src/wire.js": {"sha256": "24dbb83b18a75ece26abb04a1a4ca19cc96e437b91e0a0c74825b68dff8a5fdc", "size": 1220},
-    "starhermit.txt": {"sha256": "6803c4004240d2ad171893dfb9ec72cb6fb7a1515515653d7463703e2e7e350e", "size": 2300}
+    "starhermit.txt": {"sha256": "8b81001bfbfafe33e384348f129bea7ff420bf75608d692c1803643677a348b7", "size": 2323}
   },
   "excluded": ["README.md", "package.json", "scripts/", "src/universe-ai.js", "src/universe-combat.js", "src/universe-server.js", "tests/"],
   "format": 1
