@@ -1,0 +1,5 @@
+# Runtime-synthesized audio | event id | description | context
+shot (synthesized) | shot | Short bright descending energy snap | Player weapon fire
+boom (synthesized) | boom | Filtered noise impact with a soft decay | Explosions and destructive impacts
+pulse (synthesized) | pulse | Longer descending energy pulse | Pulse ability activation
+buy (synthesized) | buy | Bright ascending confirmation tone | Equipment purchase

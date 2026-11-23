@@ -1,3 +1,4 @@
+import { showCursor } from "./cursor.js";
 import { localizedDrawOptions as __l10nDrawOptions } from "./l10n/font.js";
 import { withLanguageRender as __l10nRender } from "./l10n/menu.js";
 // localization-runtime:attached
@@ -105,7 +106,8 @@ function touchLabel(value:string):string{return Array.from(__displayText(value))
 let touchControlsReady=false;
 function refreshTouchControls(){input.setTouchControls([{kind:'stick',up:'up',down:'down',left:'left',right:'right',anchor:'bottom-left',offset:[100,215],radius:66},{kind:'button',action:'fire',label:touchLabel('FIRE'),anchor:'bottom-right',offset:[90,215],radius:42},{kind:'button',action:'boost',label:touchLabel('BOOST'),anchor:'bottom-right',offset:[190,185],radius:30},{kind:'button',action:'cloak',label:touchLabel('CLOAK'),anchor:'bottom-right',offset:[265,215],radius:26},{kind:'button',action:'mine',label:touchLabel('MINE'),anchor:'bottom-right',offset:[265,145],radius:26},{kind:'button',action:'talk',label:touchLabel('PTT'),anchor:'bottom-right',offset:[190,275],radius:24}]);}
 strings.onChange(()=>{if(touchControlsReady)refreshTouchControls();});
-onStart(async()=>{setFixedRate(60);starTile=new OffscreenCanvas(512,512);const sky=starTile.getContext('2d');if(sky)for(const st of stars){sky.fillStyle=st.a>.65?'#aaa99b':'#424944';sky.fillRect((st.x%512+512)%512,(st.y%512+512)%512,st.s,st.s);}resumeLaunch();images=await Promise.all(Array.from({length:10},(_,i)=>createImageBitmap('assets/rock'+i+'.png')));station=await createImageBitmap('assets/station.png');void bakeSounds();input.setCursor('crosshair');touchControlsReady=true;refreshTouchControls();});
+onStart(async()=>{
+  showCursor();setFixedRate(60);starTile=new OffscreenCanvas(512,512);const sky=starTile.getContext('2d');if(sky)for(const st of stars){sky.fillStyle=st.a>.65?'#aaa99b':'#424944';sky.fillRect((st.x%512+512)%512,(st.y%512+512)%512,st.s,st.s);}resumeLaunch();images=await Promise.all(Array.from({length:10},(_,i)=>createImageBitmap('assets/rock'+i+'.png')));station=await createImageBitmap('assets/station.png');void bakeSounds();showCursor();touchControlsReady=true;refreshTouchControls();});
 input.onPointerMove((x,y)=>{ptx=(x-ox)/K;pty=(y-oy)/K;if(input.primaryPointer()==='fine'){hasMouse=true;flightSource='pointer';}});
 input.onPointerButton(e=>{if(!e.pressed||e.button!==0)return;ptx=(e.x-ox)/K;pty=(e.y-oy)/K;if((mode==='play'||mode==='coop_play')&&pty>105&&pty<H-110)selectTarget(state,(ptx-W/2)/zoom+cx,(pty-H/2)/zoom+cy);for(let i=buttons.length-1;i>=0;i--){let b=buttons[i];if(ptx>=b.x&&ptx<=b.x+b.w&&pty>=b.y&&pty<=b.y+b.h){act(b.id);break;}}});
 input.onWheel((_,y)=>{zoom=Math.max(.55,Math.min(3.6,zoom*Math.exp(-y*.075)));});
