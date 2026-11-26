@@ -401,9 +401,11 @@ declare module "starhermit:engine" {
   //   exposure baked into the table out of it, or set the exposure to 1.
   // - Unchanged: an untagged (NoColorSpace) texture uniform reads as stored
   //   at every minor; a hook's own srgb_to_linear decodes it once.
-  // - Web: engine 1.44 draws in browsers with WebGPU alone, at every minor
-  //   (no WebGL 2 fallback); without WebGPU the game shows its cannot-draw
-  //   page. Native builds are unchanged.
+  // - Web: engines 1.44 to 1.48 draw in browsers with WebGPU alone, at every
+  //   minor (no WebGL 2 fallback); without WebGPU the game shows its
+  //   cannot-draw page. The 1.49 runtime falls back to WebGL 2 again at
+  //   every minor (nothing changes where WebGPU works). Native builds are
+  //   unchanged.
   /** Actions sharing a key, and actions with no default key
    * (`starhermit:input`'s Actions). */
   export const BINDINGS_MINOR: number;
@@ -587,6 +589,162 @@ declare module "starhermit:engine" {
    * option): the bed and what swims over it move as the ripples run.
    * Before, the ripples' slope moved them by under a pixel. */
   export const WATER_REFRACTION_MINOR: number;
+
+  // -- Host API 1.48's minors (since API_MINOR 48) ----------------------------
+  // Each is 48 for games declaring engine.minor=48 or later and undefined
+  // for older games: feature-detect through a namespace import. Raising
+  // engine.minor from 47 to 48 changes nothing a game does not ask for.
+  /** `MeshPhysicalMaterial`'s subsurface scattering (an engine extension:
+   * `subsurface`, `subsurfaceColor`, `subsurfaceRadius`,
+   * `subsurfaceRadiusScale`, `subsurfacePostScatter`,
+   * `subsurfaceTransmission`, `subsurfaceMethod`) and `renderer.subsurface`. */
+  export const SUBSURFACE_MINOR: number;
+  /** The ray-traced graphics level traces skinned meshes (their traced
+   * shadows, and the subsurface thickness's rays see them) and lets the
+   * thickness rays see subsurface materials with transmission that cast no
+   * shadow; before it skinned meshes cast through the shadow maps there. */
+  export const RAY_TRACED_SKIN_MINOR: number;
+  /** `stats().deviceResets`: the times the graphics backend was made
+   * again, each giving render targets back cleared. */
+  export const DEVICE_RESETS_MINOR: number;
+  /** `starhermit:weather`'s 2D cloud dome lit as the volumetric march
+   * lights the clouds (no brightness jump as the march takes over). */
+  export const CLOUD_DOME_LIGHT_MINOR: number;
+  /** `generateLods`' `lockBorders: false`. */
+  export const LOD_OPEN_BORDERS_MINOR: number;
+  /** `generateLods`' `impostor`. */
+  export const LOD_IMPOSTOR_MINOR: number;
+  /** `stats().gpu` without GPU timestamps, and `gpu.approximate`. */
+  export const GPU_APPROX_MINOR: number;
+  /** `starhermit:water`'s `WaterMaterial.refractTransparents`: the
+   * transparent objects beyond the water's surface (below it seen from
+   * above) draw before the water, which refracts and absorbs them as it
+   * does the bed. */
+  export const WATER_TRANSPARENTS_MINOR: number;
+  /** Screen-space reflections, illumination and ambient occlusion leave
+   * out the pixels a water surface covers (`WaterMaterial`, or a blended
+   * or depth-write-free `distortion` ShaderMaterial): the bed's
+   * reflections of what stands over it no longer lie over the water as a
+   * second, sharp copy. */
+  export const WATER_SCREEN_COVER_MINOR: number;
+  /** `starhermit:water`'s `WaterMaterial.ior` and `physicalRefraction`:
+   * the eye's ray refracted by Snell's law about the surface's normal and
+   * followed to what lies beyond, absorbed along that path. */
+  export const WATER_PHYSICAL_REFRACTION_MINOR: number;
+  /** Cached shadow cascades (`shadow.cascades.cached`) tell one node's
+   * several casters apart (a material array's parts, an `InstancedMesh`'s
+   * levels of detail), so such a node standing still keeps the cached
+   * layer (older games' cascades fit and draw again every frame). */
+  export const SHADOW_CASTER_PARTS_MINOR: number;
+  /** `starhermit:volume` follows mjurczyk/openvdb 0.29's render side:
+   * frame lighting's froxel slices fit the visible volumes, its temporal
+   * history is reprojected between slices, its world grid has mips (neural
+   * scattering's inputs read in the network's order, `"multi-scale"`
+   * scattering), points and spots scatter more than once; `mipmapFilter`,
+   * `volumeMediumPresets`/`volumeMediumOptions`; and a game at 48 gets the
+   * dual-lobe phase, spectral media, no jitter and 8³ emission probes as
+   * Graphics defaults. */
+  export const VOLUME_OPENVDB_48_MINOR: number;
+  /** Direct3D 12 compiles the game's programs (custom materials', the
+   * prelude's, post programs) with DXC as shader model 6.0 rather than
+   * with fxc: a cold start compiles them in seconds instead of minutes;
+   * a few hash-based patterns round as Vulkan's drivers do more often. */
+  export const DXC_PROGRAMS_MINOR: number;
+  /** A `ShaderMaterial` fragment returning a struct of outputs may add a
+   * member `world: vec3f` (no attribute): the world point it shows, whose
+   * depth (the depth buffer, the depth prepass, `renderer.sceneDepth`) and
+   * fog the fragment then has, e.g. a surface ray-traced inside a box. */
+  export const FRAGMENT_DEPTH_MINOR: number;
+  /** `starhermit:volume`'s `LevelSetMesh`, `LevelSetSurface`,
+   * `VolumePoints` and `VolumeWvdbGeometryLoader`: level sets and point
+   * grids (`.vdb` and WebVDB version 2) as geometry. */
+  export const VOLUME_GEOMETRY_48_MINOR: number;
+  /** Metal (macOS) clears a half-float render target to the colour the
+   * pass gives, as every other backend does: an `unclamped` target
+   * cleared to 0.5 holds 0.5 (older games' Metal clears stay
+   * sRGB-decoded, 0.214). */
+  export const METAL_TARGET_CLEAR_MINOR: number;
+  /** A render target (or 3D texture) disposed in the frame that drew
+   * into it keeps that frame's passes, slice copies and updates, so a
+   * pass later in the frame that samples it reads what was drawn, as in
+   * three.js (older games' passes went with the target). */
+  export const DISPOSE_AFTER_PASSES_MINOR: number;
+  /** `starhermit:sky`'s stars as crisp points found per pixel at the
+   * pixel's footprint (steady under temporal anti-aliasing, a smooth glow
+   * where the resolution is too coarse), the dome drawn over a
+   * `background: true` sky's map too, and `SkyAtmosphereOptions.twinkle`. */
+  export const PROCEDURAL_STARS_MINOR: number;
+
+  // -- Host API 1.49's minors (since API_MINOR 49) ----------------------------
+  // Each is 49 for games declaring engine.minor=49 or later and undefined
+  // for older games: feature-detect through a namespace import. Raising
+  // engine.minor from 48 to 49 changes nothing a game does not ask for.
+  /** `starhermit:water`'s physical refraction keeps what stands in front
+   * of the refracted ray out of it: a point of the ray hidden behind
+   * something nearer (a fish, a stalk) is not taken as what the ray finds,
+   * and where none of the steps is in sight the ray is followed back to
+   * where it went out of sight, so the bed beside a fish shows there, not
+   * the fish's edge stretched over it (1.48's dark crescents). */
+  export const WATER_REFRACTION_EDGES_MINOR: number;
+  /** `starhermit:volume` closes host API 1.48's gaps: `LevelSetSurface`
+   * casts shadows, takes the environment's light and gives the normal
+   * prepass its traced normals; `.vdb` vec3 grids are read and baked;
+   * "multi-scale" multiple scattering lights point and spot lights too. */
+  export const VOLUME_49_MINOR: number;
+  /** A hooked material whose `defines` hold `shSurfaceDepth: true` draws
+   * the point its surface hook gives (`Surface.world` and `normal`: a
+   * surface traced inside its mesh) with that point's depth in every pass:
+   * lit as its material is, in the depth prepass, the shadow maps and the
+   * normal prepass; hooks have `fn pass_eye() -> vec4f`, the point (w 1)
+   * or direction (w 0) the pass looks from, the light's in a shadow pass.
+   * Such a material's motion, and a `ShaderMaterial` `world` output's
+   * (`FRAGMENT_DEPTH_MINOR`), is the camera's at its depth. */
+  export const FRAGMENT_DEPTH_PASSES_MINOR: number;
+  /** Material hooks read the game's clock: `fn frame_time() -> f32`, the
+   * seconds of game time since the first frame (`frame().time` in the
+   * frame drawn, not wrapped), and `fn frame_delta() -> f32`
+   * (`frame().delta`), in every hook (a `ShaderMaterial`'s too), both
+   * stages and every pass (lit, shadow maps, depth and normal prepasses);
+   * see `starhermit:scene`'s hooks. */
+  export const HOOK_TIME_MINOR: number;
+  /** A scene's sync reads a geometry that several objects share once a
+   * sync, as it reads a shared material or texture: the first object to
+   * use it in the walk gives its mesh to the others. Script that runs
+   * during the walk (a getter, an `onUpload` callback) and changes a
+   * geometry an object already used is seen at the next sync, not by the
+   * objects after it in that walk. */
+  export const GEOMETRY_ONCE_MINOR: number;
+  /** A scene's sync reads a still object's (`movable = false`) transform
+   * only once the game says it moved: `matrixWorldNeedsUpdate = true`,
+   * `updateMatrix()`, `updateMatrixWorld()`, being added to a parent (see
+   * `starhermit:scene`'s `Object3D.movable`). */
+  export const STATIC_SYNC_MINOR: number;
+  /** A game declares its own settings for the runtime's Options menu in
+   * starhermit.txt (`engine.option.*`), shown beside the engine's as a
+   * Rust game's own are; `starhermit:storage`'s {@link options} reads
+   * them (see there). */
+  export const GAME_OPTIONS_MINOR: number;
+  /** A game caps its own frame rate: {@link setTargetFps} (a phone level
+   * holding a steady 30 rather than frames straddling 33 and 50 ms). */
+  export const FRAME_CAP_MINOR: number;
+  /** `renderer.contactShadows.faceAngle: [min, max]` (degrees; [20, 30]
+   * by default, as at 46): how far a surface in the march's way must turn
+   * from the pixel's before it starts (`min`) and fully (`max`) casts. */
+  export const CONTACT_SHADOW_FACE_ANGLE_MINOR: number;
+  /** OpenGL ES and Metal blend a baked skin's joints once a pass, as
+   * Vulkan and Direct3D 12 do; older games keep 1.48's vertex stages
+   * there, blending per vertex. */
+  export const SKIN_PREBLEND_GLES_METAL_MINOR: number;
+
+  // -- Host API 1.50's minors (since API_MINOR 50) ----------------------------
+  // Each is 50 for games declaring engine.minor=50 or later and undefined
+  // for older games: feature-detect through a namespace import.
+  /** A custom program's mesh whose sixth texture on is a 3D texture (a
+   * `VolumeEffects` grid) draws no motion vectors of its own under
+   * temporal anti-aliasing, motion blur or an upscaler: the camera's
+   * motion stands in, on every backend (OpenGL ES and browsers did so
+   * already; Vulkan, Direct3D 12 and Metal read the 3D texture as 2D). */
+  export const VELOCITY_VOLUME_SKIP_MINOR: number;
   /** `starhermit:scene`'s `Object3D.motionVectors` ("object", "camera" or
    * null to inherit): an object moving with the camera alone in the
    * motion vectors (Unity's `MotionVectorGenerationMode.Camera`). */
@@ -742,6 +900,28 @@ declare module "starhermit:engine" {
    * A change takes effect from the next frame. */
   export function setFixedRate(hz: number): void;
   export function fixedRate(): number;
+  /** Since API_MINOR 49 (`FRAME_CAP_MINOR`; undefined before): caps the
+   * game's frame rate at `fps` frames a second (a whole 1 to 1000), or
+   * removes the cap (null or 0, the default). The cap is the game's own:
+   * the frames come at the lowest of it, the player's frame limit
+   * (Options › Frame rate limit) and the engine's ceiling, so the player's
+   * limit is never exceeded, and nothing the player chose is changed. It
+   * also lowers what Auto holds the graphics level to (`levelSettings().
+   * targetFps` is the level's own; Auto measures against the lower of the
+   * two). Natively, with VSync on and a cap within 3% of the display's
+   * rate divided by a whole number (30 on a 60 Hz or 120 Hz display), each
+   * frame is shown for that many refreshes by the backend (the swap
+   * interval on GLES and Direct3D 12, a minimum duration on Metal,
+   * `VK_GOOGLE_display_timing`'s present times on Vulkan where the device
+   * has it, as Android's do), so a frame that takes 20 to 33 ms shows for
+   * 33 ms every time; elsewhere (VSync off, another rate, a device without
+   * them) the runtime paces the frames to the cap. In browsers the page
+   * skips animation frames down to the cap. Not persisted: a restarted
+   * game starts without one. A RangeError for other values. Phone levels
+   * opt in from the game's code; the engine never caps on its own. */
+  export function setTargetFps(fps: number | null): void;
+  /** Since API_MINOR 49: the cap {@link setTargetFps} set, 0 for none. */
+  export function targetFps(): number;
   /** The fuel the running call has left, in milliseconds of the reference
    * machine's instructions (0 when spent: the call is then paused at its
    * next check); at module scope, natively, the time module evaluation
@@ -1028,7 +1208,8 @@ declare module "starhermit:engine" {
     /** Each kind of pass's GPU time, for benchmarking (since API_MINOR
      * 34; absent before). Null where the device times nothing: OpenGL ES
      * without GL_EXT_disjoint_timer_query, WebGPU without
-     * `timestamp-query` (browsers often leave it out). The first read starts the runtime's
+     * `timestamp-query` (browsers often leave it out; since API_MINOR 48
+     * those are timed approximately instead, `gpu.approximate`). The first read starts the runtime's
      * timer where passes are not timed already (OpenGL ES and browsers;
      * Vulkan, Direct3D 12 and Metal always time them), so a game that
      * never reads it adds no GPU work; it reads null, then
@@ -1100,6 +1281,18 @@ declare module "starhermit:engine" {
      * (since API_MINOR 45; 0 without), so `generatedFrames / realFrames`
      * is the frames generated per rendered one (about 1). */
     readonly realFrames?: number;
+    /** Times the graphics backend was made again since the game started
+     * (since API_MINOR 48, `DEVICE_RESETS_MINOR`; 0 until it happens): the
+     * GPU device lost and recovered (a driver reset or crash, a removed
+     * external GPU, a browser's new WebGPU device), or the Ray traced
+     * tier moving the game to another graphics API. Textures, meshes and
+     * programs carry over, but render targets come back cleared, as
+     * three.js's do after a lost context: when it grows, draw again what
+     * you drew into a target once (a baked map, a lookup table, a
+     * simulation's state). The engine's own modules (`starhermit:sky`,
+     * `starhermit:volume`, `starhermit:weather`, `starhermit:water`) do so
+     * themselves at every minor. */
+    readonly deviceResets?: number;
     /** Each WebAssembly module the game's script instantiated so far, by
      * its package path (`"wasm/sim.wasm"`; `"module:<hash>"` for bytes no
      * package file holds), and how its latest instance runs: `"native"`
@@ -1151,6 +1344,17 @@ declare module "starhermit:engine" {
     /** Every pass's time together. */
     readonly totalMs: number;
     readonly frames: number;
+    /** Since API_MINOR 48 (`GPU_APPROX_MINOR`; absent before): true where
+     * the device has no GPU timestamps (browsers without WebGPU's
+     * `timestamp-query`) and the times were measured on the page's clock
+     * instead: every fourth frame its work is submitted in groups (the work
+     * before the scene, its shadow passes, the rest of the scene's passes,
+     * the overlay and the copy to the canvas: `uploads`, `shadows`,
+     * `scene` and `overlay`; the other kinds read 0), each timed from its
+     * submission to the queue's report that it is done. Upper bounds,
+     * about a millisecond coarse: compare them with each other, not with
+     * timestamps. Before 48 such devices read `gpu` null. */
+    readonly approximate?: boolean;
   }
   export function stats(): FrameStats;
 
@@ -2259,7 +2463,8 @@ declare module "starhermit:engine" {
   }
   export interface VolumeGraphicsPreferences {
     readonly lighting: "volume" | "frame";
-    readonly multipleScattering: "off" | "diffusion" | "two-sided" | "octaves" | "neural";
+    /** `"multi-scale"` since API_MINOR 48 (`VOLUME_OPENVDB_48_MINOR`). */
+    readonly multipleScattering: "off" | "diffusion" | "two-sided" | "octaves" | "neural" | "multi-scale";
     readonly quality: number;
     readonly shadowQuality: number;
     readonly froxelWidth: number;
@@ -2945,6 +3150,77 @@ declare module "starhermit:storage" {
     onLegacy(listener: () => void): Unsubscribe;
   }
   export const settings: GameSettings;
+
+  /** One of the game's options as starhermit.txt declares it (since
+   * API_MINOR 49, `GAME_OPTIONS_MINOR`), frozen. */
+  export interface GameOptionInfo {
+    /** Its id: the key of its value in {@link settings}. */
+    readonly id: string;
+    readonly kind: "toggle" | "choice" | "multi" | "slider" | "integer" | "text";
+    readonly label: string;
+    readonly default: JsonValue;
+    /** The menu tab it shows on (`Game` unless declared). */
+    readonly category: string;
+    /** Only the menu's Advanced view shows it. */
+    readonly advanced: boolean;
+    /** A change applies once the game restarts (the menu says so). */
+    readonly restart: boolean;
+    readonly tip?: string;
+    /** `choice` and `multi`: each value and its label, in order. */
+    readonly choices?: readonly { readonly value: string; readonly label: string }[];
+    /** `slider` and `integer`. */
+    readonly min?: number;
+    readonly max?: number;
+    readonly suggestions?: readonly number[];
+    /** `text`: bytes at most. */
+    readonly maxLength?: number;
+  }
+  /** The game's own settings in the runtime's Options menu (since
+   * API_MINOR 49, `GAME_OPTIONS_MINOR`; older games' module has no such
+   * export),
+   * declared in starhermit.txt so the menu shows them from the game's
+   * start (even while it loads) and `starhermit check` and `starhermit
+   * package` refuse a bad one. Each needs `engine.capabilities=storage`:
+   *
+   * ```text
+   * engine.option.<id>=<kind> | <label>       # toggle, choice, multi, slider, integer, text
+   * engine.option.<id>.choice.<value>=<label> # choice, multi: 2 (1) to 32, in order
+   * engine.option.<id>.range=<min>..<max>     # slider, integer (required)
+   * engine.option.<id>.suggestions=<n>,<n>    # slider, integer: a dropdown of these, at most 16
+   * engine.option.<id>.max_length=<bytes>     # text: 1 to 256 (64)
+   * engine.option.<id>.default=<value>        # on/off, a choice, choices a,b, a number, text
+   * engine.option.<id>.tip=<text>             # its tooltip, up to 300 characters
+   * engine.option.<id>.category=<tab>         # Game by default; never an engine tab
+   * engine.option.<id>.advanced=true          # the Advanced view's alone
+   * engine.option.<id>.restart=true           # applies after a restart
+   * ```
+   *
+   * At most 64 options in 4 tabs; ids are 1–32 ASCII letters, digits and
+   * `_` (a letter first), labels up to 64 characters. A slider's value
+   * shows as a percentage (0.5 is 50 %), as the engine's sliders of
+   * fractions do. The values are the game's {@link settings} under the
+   * options' ids, so they persist and follow the player's account as
+   * every setting does; `settings.set` of an option's id throws a
+   * RangeError for a value its declaration refuses. The player's edits
+   * in the menu arrive as settings from elsewhere do: `settings.onChange`
+   * and {@link GameOptions.onChange} hear them. */
+  export interface GameOptions {
+    /** The declarations, in starhermit.txt's order. */
+    declared(): readonly GameOptionInfo[];
+    /** The option's value: the game's setting where the option takes it,
+     * else its default. A TypeError for an undeclared id. */
+    get(id: string): JsonValue;
+    /** Sets it (the menu shows it): a RangeError for a value the option
+     * does not take, a TypeError for an undeclared id. */
+    set(id: string, value: JsonValue): void;
+    /** Sets it to its default. */
+    reset(id: string): void;
+    /** The player changed an option in the menu (or the account's value
+     * arrived): its id and value, as `get` reads it. Not called for the
+     * game's own `set`. */
+    onChange(listener: (id: string, value: JsonValue) => void): Unsubscribe;
+  }
+  export const options: GameOptions;
 
   /** Where the save is now. */
   export type SaveStatus = "saved-to-account" | "saved-on-device" | "pending" | "unavailable" | "session-only";
@@ -4435,6 +4711,27 @@ declare module "starhermit:scene" {
   export const MOTION_BLUR_CAMERA_MINOR: number;
   /** `renderer.motionBlurActive`. */
   export const MOTION_BLUR_ACTIVE_MINOR: number;
+  // -- Host API 1.48's scene minors (undefined before 48) ---------------------
+  /** `MeshPhysicalMaterial`'s subsurface settings and `renderer.subsurface`. */
+  export const SUBSURFACE_MINOR: number;
+  /** `MeshPhysicalMaterial.subsurfaceMethod`'s values (since API_MINOR 48). */
+  export type SubsurfaceMethod = "auto" | "screen" | "preintegrated";
+  /** `renderer.subsurface`'s value (since API_MINOR 48, `SUBSURFACE_MINOR`;
+   * an engine extension): subsurface scattering's screen-space pass. By
+   * default (null) materials of the "auto" method take it on the High and
+   * Ultra graphics levels (16 and 32 samples) and the pre-integrated
+   * profile on Low and Balanced; "screen" materials take it at every
+   * level. */
+  export interface SubsurfaceSettings {
+    /** false turns the pass off: every material takes the pre-integrated
+     * profile (default true). Anything but a boolean is a TypeError. */
+    enabled?: boolean;
+    /** The gather's taps per pixel, a whole number 4..48 (default the
+     * level's). More is smoother and slower; under temporal
+     * anti-aliasing (or an upscaler) the taps turn each frame, so fewer
+     * settle as well. */
+    samples?: number;
+  }
   /** `renderer.motionBlur`'s value (since API_MINOR 46,
    * `MOTION_BLUR_MINOR`; an engine extension): per-object, velocity-based
    * motion blur. Each pixel is blurred along its motion: the motion its
@@ -7217,6 +7514,37 @@ declare module "starhermit:scene" {
   //                                      depth)²) of the view depth (an
   //                                      engine function every minor has;
   //                                      a fog hook's changes are not in it)
+  // The game's clock, since API_MINOR 49 (`HOOK_TIME_MINOR`; older games'
+  // programs neither have nor reserve these names: a hook calling one is
+  // refused as for any unknown name):
+  //   fn frame_time() -> f32             seconds of game time since the
+  //                                      first frame: frame().time in the
+  //                                      frame drawn (what onUpdate and
+  //                                      onRender read; paused while the
+  //                                      game is suspended), as an f32, so
+  //                                      a hook animated by it draws as one
+  //                                      reading a uniform the game set to
+  //                                      frame().time each frame, with no
+  //                                      uniform to set. Not wrapped: an
+  //                                      f32 holds it to about 1 ms after
+  //                                      2.3 hours and 8 ms after a day; a
+  //                                      game that needs finer steps in long
+  //                                      sessions keeps a wrapped uniform
+  //   fn frame_delta() -> f32            seconds since the frame before
+  //                                      (frame().delta; 0 on the first)
+  //                                      Both the same in every hook (vertex,
+  //                                      surface, light, fog and a
+  //                                      ShaderMaterial's), both stages and
+  //                                      every pass a hook runs in: the lit
+  //                                      pass, shadow maps, the depth and
+  //                                      normal prepasses, render targets.
+  //                                      Motion vectors draw the mesh's own
+  //                                      placement there (no hook runs), so a
+  //                                      vertex hook's motion by time is not
+  //                                      in them, as with any vertex hook.
+  //                                      A caster marked static keeps its
+  //                                      cached shadow (its hook's time is
+  //                                      not watched, as uniforms are not)
   // The lights, since API_MINOR 43 (`HOOK_ACCESS_MINOR`; older games'
   // programs neither have nor reserve these names):
   //   struct PunctualLight { direction: vec3f, radiance: vec3f }
@@ -7695,6 +8023,13 @@ declare module "starhermit:scene" {
     translucencyAmbient?: number;
     translucencyWrap?: number;
     translucencyShadow?: number;
+    subsurface?: number;
+    subsurfaceColor?: ColorInput;
+    subsurfaceRadius?: Vector3 | Color;
+    subsurfaceRadiusScale?: number;
+    subsurfacePostScatter?: number;
+    subsurfaceTransmission?: number;
+    subsurfaceMethod?: SubsurfaceMethod;
     sheen?: number;
     sheenColor?: ColorInput;
     sheenColorMap?: Texture | null;
@@ -7873,6 +8208,62 @@ declare module "starhermit:scene" {
     translucencyWrap: number;
     /** Since API_MINOR 44 (engine extension): default 1. */
     translucencyShadow: number;
+    /** ENGINE EXTENSION (three.js r185 has none), since API_MINOR 48
+     * (`SUBSURFACE_MINOR`; absent before): subsurface scattering's weight,
+     * 0..1 (default 0: none, the material draws exactly as before). Light
+     * diffuses under the surface through Christensen and Burley's
+     * normalized diffusion profile (skin, wax, marble, jade, milk): each
+     * channel's shape distance is its mean free path (`subsurfaceRadius ×
+     * subsurfaceRadiusScale`, at most 64 world units) over the profile's
+     * shape factor for its scatter albedo (`subsurfaceColor`). Where the
+     * frame runs the screen-space pass (`renderer.subsurface`; Vulkan,
+     * Direct3D 12, Metal and the browser's WebGPU on the High and Ultra
+     * graphics levels by default) the material's diffuse
+     * light (its direct, ambient, hemisphere, probe, light-map and
+     * environment light) is blurred across the surface by the profile in
+     * world units, its specular, sheen, clearcoat and emission sharp;
+     * elsewhere each light's diffuse n·l takes the pre-integrated profile
+     * (Penner's lookup of the same profile by the surface's curvature,
+     * from screen derivatives), so light wraps past the terminator and
+     * reddens there. The weight mixes between Lambert's and the scattered
+     * light. Anything but a number reads as 0. */
+    subsurface: number;
+    /** Since API_MINOR 48 (engine extension): the profile's scatter albedo
+     * (default white), its shape per channel, and the transmitted light's
+     * tint. One for each material. */
+    subsurfaceColor: Color;
+    /** Since API_MINOR 48 (engine extension): each channel's mean free
+     * path in radius units, as a Vector3 (x red, y green, z blue) or a
+     * Color (its linear r, g, b); default (1, 0.37, 0.3) (a skin-like
+     * falloff). Negative and non-finite values read as 0. One for each
+     * material. */
+    subsurfaceRadius: Vector3 | Color;
+    /** Since API_MINOR 48 (engine extension): world units per radius unit,
+     * default 0.01 (centimetres in a scene of metres); 0..64. */
+    subsurfaceRadiusScale: number;
+    /** Since API_MINOR 48 (engine extension): the share of the base colour
+     * applied after the scattering, 0..1 (default 0.5: half before, half
+     * after, as a square root each side). 1 keeps the colour map's detail
+     * sharp under the scattered light; 0 blurs it with the light. Only the
+     * screen-space pass tells them apart. */
+    subsurfacePostScatter: number;
+    /** Since API_MINOR 48 (engine extension): the light passing through
+     * thin parts toward the camera (ears, nostrils, fingers, leaves of
+     * wax), 0..1 (default 0: none): each light adds the profile's slab
+     * transmittance `(e^(−t/d) + 3e^(−t/3d)) / 4` per channel through the
+     * thickness t toward it, times the scatter albedo, the diffuse colour
+     * and `saturate(0.3 − n·l)`, after Jimenez et al.'s skin translucency.
+     * The thickness comes from the light's shadow map (how far toward the
+     * light points stay in its shadow) where the surface receives that
+     * light's shadows; elsewhere, and for clustered lights, it is the
+     * material's `thickness` (times `thicknessMap`'s green). */
+    subsurfaceTransmission: number;
+    /** Since API_MINOR 48 (engine extension): "auto" (the default: the
+     * screen-space pass where the graphics level and backend run it, else
+     * pre-integrated), "screen" (the pass wherever the backend runs it,
+     * whatever the level; pre-integrated where it does not) or
+     * "preintegrated" (never the pass). Anything else is a TypeError. */
+    subsurfaceMethod: SubsurfaceMethod;
     /** Since API_MINOR 44: the sheen layer's strength (default 0: none),
      * three.js r185's (Estevez and Kulla's Charlie sheen: D_Charlie and
      * V_Neubelt for each light, IBLSheenBRDF of the environment's
@@ -8314,7 +8705,19 @@ declare module "starhermit:scene" {
      * counting any others promoted with it). Edits (geometry,
      * material) and removal redraw the cache once. Anything other than
      * `true`, `false`, `null` or `undefined` throws a TypeError. `copy` and
-     * `clone` take it. Older games' objects have no such property. */
+     * `clone` take it. Older games' objects have no such property.
+     *
+     * Since API_MINOR 49 (`STATIC_SYNC_MINOR`) a still object is taken at
+     * its word: the scene's sync reads its position, rotation, scale and
+     * own matrix (`matrixAutoUpdate = false`) once it is added to a parent
+     * and then only once the game says it moved, by setting
+     * `matrixWorldNeedsUpdate = true` or calling `updateMatrix()`,
+     * `updateMatrixWorld()` or `updateWorldMatrix()` on it or on an object
+     * above it, or by setting `movable` again; a move without a word is not
+     * drawn (nor promoted). Its visibility, shadows, layers, render order,
+     * geometry and material are read every frame as before, and a movable
+     * object under it moves as ever. A large still scene's sync then reads
+     * a few fields an object instead of all of them. */
     movable: boolean | null;
     /** Since API_MINOR 47 (`MOTION_VECTORS_MINOR`; an engine extension,
      * Unity's `Renderer.motionVectorGenerationMode`; absent before): what
@@ -8402,6 +8805,14 @@ declare module "starhermit:scene" {
     copy(source: Object3D, recursive?: boolean): this;
     readonly up: Vector3;
     matrixAutoUpdate: boolean;
+    /** Since API_MINOR 49 (`STATIC_SYNC_MINOR`; older games' objects have
+     * no such property): three.js's flag, which tells the engine a still
+     * object (`movable = false`) moved. `updateMatrix()`,
+     * `updateMatrixWorld()`, `updateWorldMatrix()`, `add` (on the object
+     * added) and setting `movable` set it; the scene's sync reads the
+     * object's transform, and what is under it, and sets it false again
+     * (as three.js's `updateMatrixWorld` does). See `movable`. */
+    matrixWorldNeedsUpdate: boolean;
     getObjectById(id: number): Object3D | undefined;
     getObjectByProperty(name: string, value: unknown): Object3D | undefined;
     getObjectsByProperty(name: string, value: unknown, result?: Object3D[]): Object3D[];
@@ -9107,7 +9518,11 @@ declare module "starhermit:scene" {
    * capacity did, and the bound was 65,536 for everything). */
   export class InstancedMesh extends Mesh<Material> {
     constructor(geometry: BufferGeometry, material: Material, count: number);
-    /** Instances drawn, at most the constructor's count. */
+    /** Instances drawn, at most the constructor's count. From host API 1.49
+     * (`INSTANCE_COUNT_SENDS_MINOR`) an attribute sent whole (`needsUpdate`
+     * without update ranges) sends these instances alone, and those `count`
+     * grows over are sent as it grows: an instance beyond `count` shows as
+     * its attribute holds it then. */
     count: number;
     /** 16 floats an instance (column-major matrices), as three.js: write
      * the array and set `needsUpdate` (optionally with an update range) to
@@ -9522,6 +9937,31 @@ declare module "starhermit:scene" {
     screenHeight?: number;
     /** Each level's hysteresis, as `LOD.addLevel` takes it (default 0). */
     hysteresis?: number;
+    /** Since API_MINOR 48 (`LOD_OPEN_BORDERS_MINOR`; older games' is not
+     * read): false lets open borders, and seams where three or more
+     * triangles meet, move along themselves, their movement counted as
+     * error, so a mesh of open pieces (leaf cards, open shells, sheets
+     * meeting at seams) simplifies past the floor its locked borders set,
+     * each piece down to one triangle (default true: they stay where they
+     * are). A crown of separate small pieces thins better with `thin`. */
+    lockBorders?: boolean;
+    /** Since API_MINOR 48 (`LOD_IMPOSTOR_MINOR`; older games' is not read):
+     * a last level of three crossed cards through the centre of the mesh's
+     * bounds (two upright at right angles and one level), textured with the
+     * mesh as seen straight at each, baked on the CPU into one atlas of
+     * `size`-texel square tiles (8 to 256, default 64), drawn alpha tested
+     * by a `MeshStandardMaterial` of its own (the level's `material`, its
+     * `shadowSide` `BackSide`: each upright card is a pair of triangles a
+     * side and the level card faces up, casting nothing onto them; its
+     * geometry's `userData.impostor` true; 10 triangles). A texel takes
+     * the nearest surface's colour: vertex colours times the material's
+     * `color`, times its `map` where that is a `DataTexture` of RGBA8 data
+     * (other maps are not read: the colour alone). Its `lodError` is the
+     * farthest the mesh lies from the cards (at least the level before's),
+     * so in a `LodBudget` it draws where that is within `errorPx`, or where
+     * the budget runs out. For foliage seen from afar; an InstancedMesh's
+     * impostor counts among its 7 levels. */
+    impostor?: boolean | { size?: number };
   }
   /** ENGINE EXTENSION (since API_MINOR 40; before it a TypeError): levels
    * of detail from a mesh's simplified geometries, made by quadric
@@ -11341,6 +11781,17 @@ declare module "starhermit:scene" {
       bias?: number;
       intensity?: number;
       steps?: number;
+      /** Since API_MINOR 49 (`CONTACT_SHADOW_FACE_ANGLE_MINOR`; ignored
+       * before): `[min, max]` in degrees, 0 <= min < max <= 90, default
+       * [20, 30]: a surface in the march's way casts in proportion to how
+       * far it turns from the pixel's, not within `min`, fully past `max`.
+       * A brush-raised heightfield whose small triangles turn more than
+       * 30° from their neighbours darkens them in dotted, straight-edged
+       * patches at the default; wider angles (e.g. [35, 50]) spare them
+       * at the default `bias`, while walls and rocks steeper than `max`
+       * still cast. The default (unset or [20, 30]) draws exactly as at
+       * API_MINOR 46. */
+      faceAngle?: [number, number];
     } | null;
     /** Null (the default) for none. */
     bloom: BloomSettings | null;
@@ -11682,6 +12133,23 @@ declare module "starhermit:scene" {
      * (`MotionBlurSettings`), or null (the default). Its fields are read
      * each frame. */
     motionBlur?: MotionBlurSettings | null;
+    /** Since API_MINOR 48 (`SUBSURFACE_MINOR`; undefined before; an engine
+     * extension): subsurface scattering's screen-space pass
+     * (`SubsurfaceSettings`), or null (the default: the graphics level's
+     * choice). The pass draws the subsurface materials in view again after
+     * the scene-depth prepass (their diffuse light alone, and their base
+     * colour's share after the scattering), then gathers each pixel's
+     * light over a disc of its profile's importance samples, weighed by
+     * the profile at their world distance (depth included), into the
+     * scene before ambient occlusion, bloom, temporal anti-aliasing and
+     * the upscalers (motion vectors are unchanged). It runs in window
+     * frames with half-float post buffers on Vulkan, Direct3D 12, Metal
+     * and the browser's WebGPU (OpenGL ES takes the pre-integrated profile),
+     * on the ray-traced tier too (its draws reading the traced shadows,
+     * transmission's thickness from rays through the mesh), and within the
+     * effect budget and the game's image budget (else left out with a
+     * note). Its fields are read each frame. */
+    subsurface?: SubsurfaceSettings | null;
     /** Since API_MINOR 47 (`MOTION_BLUR_ACTIVE_MINOR`; undefined before):
      * whether `motionBlur` draws: it is set with an intensity above 0, the
      * player lets games blur motion (`engine.preferences().motionBlur`:
@@ -11871,11 +12339,19 @@ declare module "starhermit:scene" {
 // (`fromBytes`, `fromVdb`) and `volumePresets` as 1.38 documented them, the
 // same values, errors, GPU work and fuel.
 declare module "starhermit:volume" {
-  import type { Camera, ColorInput, Color, Data3DTexture, Fog, FogExp2, Group, Mesh, Object3D, RenderTarget, ShaderMaterial, Vector3, Vector4, VolumeLayer, WebGL3DRenderTarget } from "starhermit:scene";
+  import type { BufferGeometry, Camera, ColorInput, Color, Data3DTexture, Fog, FogExp2, Group, Material, Mesh, MeshStandardMaterial, Object3D, RenderTarget, ShaderMaterial, Vector2, Vector3, Vector4, VolumeLayer, WebGL3DRenderTarget } from "starhermit:scene";
 
   export type VolumeShape = "plume" | "fireball" | "billow" | "flame" | "cumulus" | "slab" | "grid";
   export type VolumePresetName = "smoke" | "explosion" | "dust" | "fire" | "cloud" | "fogBank";
-  export type VolumeMultipleScattering = "off" | "diffusion" | "two-sided" | "octaves" | "neural";
+  /** `"multi-scale"` since API_MINOR 48 (`VOLUME_OPENVDB_48_MINOR`): with frame lighting, the scattered light of
+   * the sun from the world grid's mips toward it (points and spots: the diffusion approximation; since API_MINOR 49,
+   * `VOLUME_49_MINOR`, theirs too, toward each light as far as it, for grey media) (Kallweit et al. 2017, "Deep
+   * Scattering", 4.2), the direct light still the shadow march; elsewhere the diffusion approximation. From 48
+   * `"neural"` too is frame lighting's alone (its inputs from the world grid's mips); 'volume' lighting gives both
+   * the diffusion approximation. */
+  export type VolumeMultipleScattering = "off" | "diffusion" | "two-sided" | "octaves" | "neural" | "multi-scale";
+  /** Since API_MINOR 48: how distant mip levels are filtered. */
+  export type VolumeMipmapFilter = "box" | "gaussian";
   export type VolumePhase = "isotropic" | "henyey-greenstein" | "dual-lobe" | "lorenz-mie" | "lorenz-mie-rgb";
   export type VolumeEmissionSpectrum = "approximate" | "planck" | "soot";
   export type VolumeAngstromExponent = "cloud" | "dust" | "smoke" | "air";
@@ -11887,6 +12363,8 @@ declare module "starhermit:volume" {
     /** Bitmask from volumeLights (default all). */
     lights?: number;
     neuralStrength?: number;
+    /** Since API_MINOR 48: mip levels `"multi-scale"` reads toward a light, 1..6 (default 6). */
+    multiScaleLevels?: number;
     scatteringOctaves?: number;
     scatteringOctaveExtinction?: number;
     scatteringOctaveContribution?: number;
@@ -11924,6 +12402,10 @@ declare module "starhermit:volume" {
     volumeShadowResolution?: number;
     /** CPU mipmaps for distant grids; undefined follows Graphics. */
     mipmaps?: boolean;
+    /** Since API_MINOR 48: `"box"` (default, the 2 x 2 x 2 mean) or `"gaussian"` (sigma 2^i voxels at level i:
+     * less shimmer far away), the Gaussian levels made on the GPU a level a frame (at most three; box levels until
+     * each is made, and past them). */
+    mipmapFilter?: VolumeMipmapFilter;
   }
 
   export interface VolumeEffectOptions extends VolumeAdvancedOptions {
@@ -11969,6 +12451,23 @@ declare module "starhermit:volume" {
   }
   /** The presets, frozen: `{ ...volumePresets.smoke, density: 3 }`. */
   export const volumePresets: Readonly<Record<VolumePresetName, Readonly<Required<Omit<VolumeEffectOptions, "grid" | keyof VolumeAdvancedOptions>>>>>;
+  /** Since API_MINOR 48: measured media (mjurczyk/openvdb's frameMediumPresets: Pope & Fry, OPAC, Baran, Bond &
+   * Bergstrom, Dubovik et al., Kim et al.). */
+  export type VolumeMediumName = "cloud" | "fog" | "ice" | "soot" | "white-smoke" | "dark-smoke" | "haze" | "dust";
+  export interface VolumeMedium {
+    /** Linear albedo at 650, 550 and 450 nm. */
+    readonly albedo: readonly [number, number, number];
+    readonly angstromExponent: number;
+    readonly phase: VolumePhase;
+    /** g at 550 nm, and the exponent of g at 450 and 650 nm. */
+    readonly phaseG: number;
+    readonly phaseGExponent: number;
+  }
+  /** Since API_MINOR 48. Extinction depends on the scene's scale, so it is not here. */
+  export const volumeMediumPresets: Readonly<Record<VolumeMediumName, VolumeMedium>>;
+  /** Since API_MINOR 48: a medium as effect options (albedo, extinctionScale [1, 1, 1], angstromExponent, phase,
+   * anisotropy, phaseGExponent, spectral: true) to spread into an effect's options; null for an unknown name. */
+  export function volumeMediumOptions(name: VolumeMediumName): VolumeEffectOptions | null;
 
   /** The exports of starhermit-volume-kernel's .wasm (`new WebAssembly.Instance(new WebAssembly.Module(files.readBytes("starhermit_volume_kernel.wasm")), {}).exports`). */
   export interface VolumeKernel {
@@ -11986,6 +12485,25 @@ declare module "starhermit:volume" {
     wvdb_color_brick(file: number, grid: number, lod: number): number;
     brick_data(brick: number): number; brick_data_len(brick: number): number; brick_info(brick: number): number; brick_destroy(brick: number): void;
     vdb_error(): number; vdb_error_len(): number;
+    /** Since API_MINOR 49, in starhermit_volume_kernel.wasm from engine 1.49: a `.vdb`'s vector grids (`vec3s`,
+     * `vec3d`, half-stored `vec3s`; a `staggered` grid's components read on their faces). 1 for a scalar grid, 3 for
+     * a vector grid, 0 otherwise. */
+    vdb_grid_channels?(file: number, grid: number): number;
+    /** The colour grid (`Cd`, `color`, `colour`, `albedo`, `basecolor`, else the first vector grid that is not a
+     * velocity) and the velocity grid (`vel`, `v`, `velocity`, else the first staggered grid); -1 for none. */
+    vdb_pick_color?(file: number): number; vdb_pick_velocity?(file: number): number;
+    /** A vector grid (an index, -1 the colour grid) as RGBA8 base-color texels (clamped to 0..1) sampled at
+     * `width × height × depth` texels on the box `vdb_brick(file, density, heat, ...)` covers; `brick_info` as
+     * `vdb_brick`'s (format 3). */
+    vdb_color_brick?(file: number, grid: number, density: number, heat: number, width: number, height: number, depth: number): number;
+    /** A vector grid (an index, -1 the colour grid, -2 the velocity grid) on that box as a vector field. */
+    vdb_vectors?(file: number, grid: number, density: number, heat: number, width: number, height: number, depth: number): number;
+    /** A three-channel WebVDB grid (an index, -1 the first) at a LOD (-1 the finest) as a vector field over its box. */
+    wvdb_vectors?(file: number, grid: number, lod: number): number;
+    /** A vector field: `vectors_info` 20 f64 (width, height, depth, the largest magnitude, the column-major unit box
+     * to world matrix), `vectors_values` f32 x, y, z a texel, `vectors_half` half-float x, y, z, 1 (an RGBA16F
+     * Data3DTexture); texel `i` at `(i + 0.5) / n` of the box, x fastest. */
+    vectors_info?(vectors: number): number; vectors_values?(vectors: number): number; vectors_half?(vectors: number): number; vectors_destroy?(vectors: number): void;
   }
   /** A dense (density, heat) volume as a linear RG16F Data3DTexture. */
   export class VolumeGrid {
@@ -11999,6 +12517,10 @@ declare module "starhermit:volume" {
     static fromWvdb(kernel: VolumeKernel, bytes: Uint8Array, lod?: number, density?: number, heat?: number, densityScale?: number): VolumeGrid;
     /** Shares the exact texture with this grid; disposing the instance does not dispose the source. */
     instance(): VolumeGrid;
+    /** Since API_MINOR 48: the mip levels filtered with a Gaussian (sigma 2^i voxels at level i), finest first,
+     * made on the GPU a level a call (at most three; box levels until each is made, and past them; box levels
+     * too when the game's render targets are full). */
+    gaussianMipLevels(): readonly VolumeGrid[];
     readonly texture: Data3DTexture;
     readonly width: number;
     readonly height: number;
@@ -12022,6 +12544,12 @@ declare module "starhermit:volume" {
   export class VolumeColorGrid {
     constructor(data: Uint8Array, width: number, height: number, depth: number, voxelSize?: readonly [number, number, number]);
     static fromWvdb(kernel: VolumeKernel, bytes: Uint8Array, grid?: number, lod?: number): VolumeColorGrid;
+    /** Since API_MINOR 49: a `.vdb`'s vector grid (`grid`: an index, or -1 its colour grid, `Cd` by name) as base
+     * colour (clamped to 0..1) on the box and at the size `VolumeGrid.fromVdb(kernel, bytes, maxSide)` gives its
+     * density (`maxSide` default 128), so the two line up: `{ shape: "grid", grid, baseColorGrid }` colours the fog
+     * by `Cd`. Needs starhermit_volume_kernel.wasm from engine 1.49 (an older kernel is a TypeError naming the
+     * rebuild); an Error with the kernel's message for a file without one. */
+    static fromVdb(kernel: VolumeKernel, bytes: Uint8Array, maxSide?: number, grid?: number): VolumeColorGrid;
     instance(): VolumeColorGrid;
     readonly texture: Data3DTexture;
     readonly width: number;
@@ -12146,6 +12674,10 @@ declare module "starhermit:volume" {
     life: number; loop: boolean; opacity: number; seed: number;
     multipleScattering: VolumeMultipleScattering | null;
     neuralStrength: number | null;
+    /** Since API_MINOR 48 (null: 6). */
+    multiScaleLevels: number | null;
+    /** Since API_MINOR 48. */
+    mipmapFilter: VolumeMipmapFilter;
     scatteringOctaves: number | null;
     scatteringOctaveExtinction: number | null;
     scatteringOctaveContribution: number | null;
@@ -12257,6 +12789,9 @@ declare module "starhermit:volume" {
     fadeRadius: number;
     /** Follows Graphics unless followGraphics is false. */
     jitter: boolean;
+    /** Since API_MINOR 48: mip levels `"multi-scale"` reads toward a light (1..6, default 6; an effect's
+     * `multiScaleLevels` wins). */
+    multiScaleLevels: number;
   }
   export interface VolumeShadowMapState {
     readonly atlas: RenderTarget;
@@ -12287,6 +12822,11 @@ declare module "starhermit:volume" {
     readonly shadowMaps: VolumeShadowMapState;
     readonly emissionGrid: VolumeEmissionGridState;
     readonly depth: number;
+    /** Since API_MINOR 48: the froxel slices' view depths this frame (the visible part of the volumes, within
+     * near and far). */
+    readonly froxelRange: Vector2;
+    /** Since API_MINOR 48: world-grid slices stamped by the last render (0 when nothing it holds changed). */
+    readonly gridSlicesLast: number;
     /** Follow Options → Graphics each frame (default true); false keeps custom settings. */
     followGraphics: boolean;
     /** Null follows Options → Graphics. */
@@ -12328,6 +12868,184 @@ declare module "starhermit:volume" {
     /** A temporal layer following this group's overrides and Options → Graphics, or null when disabled. */
     createLayer(width: number, height: number): VolumeLayer | null;
     update(dt: number): void;
+    dispose(): void;
+  }
+
+  // -- Level sets and points as geometry (since API_MINOR 48, `VOLUME_GEOMETRY_48_MINOR`; absent before) ---------
+  // A level set grid's surface as a mesh (LevelSetMesh) or ray-traced in its box (LevelSetSurface), and point grids
+  // as round points (VolumePoints), from `.vdb` files (level set grids; point data grids, positions `P` and colors
+  // `Cd` in the `null`, `trnc`, `fxpt8/16` and `ufxpt8/16` codecs) and WebVDB files (level set grids; version 2's
+  // points grids). They need starhermit_volume_kernel.wasm built from engine 1.48 or later (an older kernel is a
+  // TypeError naming the rebuild). starhermit-volume's `vdb_brick bake` writes WebVDB version 2 from a `.vdb`.
+
+  /** The kernel exports the geometry calls (starhermit-volume-kernel from engine 1.48; a superset of
+   * VolumeKernel's). */
+  export interface VolumeGeometryKernel {
+    readonly memory: { readonly buffer: ArrayBuffer };
+    vdb_input(len: number): number; vdb_open(len: number): number; vdb_close(file: number): void;
+    wvdb_open(len: number): number; wvdb_open_lods(len: number, lods: number): number; wvdb_close(file: number): void;
+    wvdb_lod_count(file: number): number; wvdb_total_lod_count(file: number): number;
+    wvdb_lod_start(file: number, lod: number): number; wvdb_lod_end(file: number, lod: number): number;
+    wvdb_grid_count(file: number): number; wvdb_grid_name(file: number, grid: number): number; wvdb_grid_name_len(file: number, grid: number): number;
+    /** 0 fog volume, 1 level set, 2 unknown. */
+    wvdb_grid_class(file: number, grid: number): number;
+    wvdb_level_set(file: number, grid: number, lod: number): number;
+    wvdb_points_count(file: number): number; wvdb_points_name(file: number, grid: number): number; wvdb_points_name_len(file: number, grid: number): number;
+    wvdb_points(file: number, grid: number, lod: number): number;
+    vdb_level_set(file: number, grid: number, resolution: number): number;
+    vdb_points(file: number, grid: number, maxPoints: number): number;
+    field_create(width: number, height: number, depth: number, minX: number, minY: number, minZ: number, sizeX: number, sizeY: number, sizeZ: number, background: number): number;
+    field_info(field: number): number; field_values(field: number): number; field_half(field: number): number; field_destroy(field: number): void;
+    field_mesh(field: number, iso: number): number;
+    mesh_vertex_count(mesh: number): number; mesh_index_count(mesh: number): number;
+    mesh_positions(mesh: number): number; mesh_normals(mesh: number): number; mesh_indices(mesh: number): number; mesh_destroy(mesh: number): void;
+    points_count(points: number): number; points_positions(points: number): number; points_colors(points: number): number;
+    points_spacing(points: number): number; points_source_count(points: number): number; points_destroy(points: number): void;
+    vdb_error(): number; vdb_error_len(): number;
+  }
+  /** A level set's signed distance (world units, negative inside, ±`background` past its narrow band) on
+   * `width × height × depth` texels over the box `min`..`min + size` (texel centres at `min + (i + 0.5) / n × size`,
+   * WebVDB's placement). Since API_MINOR 48. */
+  export class VolumeLevelSet {
+    constructor(distances: Float32Array, width: number, height: number, depth: number, min: Vector3, size: Vector3, background: number, half?: Uint16Array | null);
+    readonly distances: Float32Array;
+    readonly width: number; readonly height: number; readonly depth: number;
+    readonly min: Vector3; readonly size: Vector3;
+    /** The narrow band's half width. */
+    readonly background: number;
+    /** A WebVDB level set grid (index, name, or -1 the first) at a LOD (-1 the finest the bytes hold; a prefix of
+     * the file holding the first LODs is enough). */
+    static fromWvdb(kernel: VolumeGeometryKernel, bytes: Uint8Array, grid?: number | string, lod?: number): VolumeLevelSet;
+    /** A `.vdb` level set grid (index, or -1 the first) sampled with `resolution` texels (2 to 2048, default 200) on
+     * its box's longest side; where the band is thinner than a texel, texels the surface crosses take the mean of
+     * 4³ samples, so the surface has no steps. */
+    static fromVdb(kernel: VolumeGeometryKernel, bytes: Uint8Array, grid?: number, resolution?: number): VolumeLevelSet;
+    /** The distances as a linear R16F Data3DTexture, made once (`dispose` frees it). */
+    readonly texture: Data3DTexture;
+    /** The `iso` surface (default 0) as an indexed geometry with outward normals, closed where the box cuts it
+     * (surface nets; at most 1,048,576 vertices, an Error past them: sample coarser). */
+    toGeometry(kernel: VolumeGeometryKernel, iso?: number): BufferGeometry;
+    dispose(): void;
+  }
+  /** A level set's surface as a mesh with any material (a grey MeshStandardMaterial by default): lit, shadowed and
+   * casting shadows as meshes are. Since API_MINOR 48. */
+  export class LevelSetMesh extends Mesh {
+    constructor(kernel: VolumeGeometryKernel, levelSet: VolumeLevelSet, material?: Material, iso?: number);
+    readonly kernel: VolumeGeometryKernel;
+    iso: number;
+    levelSet: VolumeLevelSet;
+    /** Builds the mesh again from another level set (a finer LOD). */
+    setLevelSet(levelSet: VolumeLevelSet): void;
+    dispose(): void;
+  }
+  export interface LevelSetSurfaceOptions {
+    /** Base color (default #cccccc). */
+    color?: ColorInput;
+    /** 0..1 (default 0.6). */
+    roughness?: number;
+    /** 0..1 (default 0). */
+    metalness?: number;
+    /** Light from every side, linear. Before API_MINOR 49 (default #404040) the surface had the scene's main and
+     * punctual lights and their shadows alone, not its ambient, hemisphere or environment light; from 49
+     * (`VOLUME_49_MINOR`) it is lit as a MeshStandardMaterial and this light is added to the scene's (default none). */
+    ambient?: ColorInput;
+    emissive?: ColorInput;
+    /** Sphere-tracing steps, 1 to 512 (default 160). */
+    steps?: number;
+  }
+  /** A level set's surface sphere-traced on the GPU inside its box (experimental): its R16F distance texture is the
+   * whole cost, a finer LOD swaps in with `setLevelSet`. It writes the depth and fog of the point it shows (its
+   * ShaderMaterial's `world` output, `FRAGMENT_DEPTH_MINOR`), so it occludes and is occluded where the surface is and
+   * volumes' marches (frame lighting included) end at it; drawn from the box's back faces, the camera may be inside
+   * the box. Since API_MINOR 48, when it casts no shadow (`castShadow` is false: the box would cast; LevelSetMesh
+   * does) and is lit by the main and punctual lights and `ambient` alone.
+   *
+   * From API_MINOR 49 (`VOLUME_49_MINOR`) `surfaceMaterial` is a MeshStandardMaterial whose hooks trace the surface
+   * (`shSurfaceDepth`, `FRAGMENT_DEPTH_PASSES_MINOR`): lit as that material is (every light and its shadows,
+   * ambient, hemisphere, light probes and the environment's image-based light), it casts its traced shadow (traced
+   * from the light to where the light leaves the solid, as three.js's maps draw a front-sided mesh's back faces: its
+   * lit side never shades itself; `castShadow` and `receiveShadow` true), draws its traced normals and depth in the normal prepass
+   * (ambient occlusion, screen-space reflections) and takes the camera's motion at its depth in motion vectors (a
+   * moving or deforming surface shows the camera's motion alone: no history rejection of its own). Each pass traces
+   * once a pixel of the box's faces, the shadow maps included. */
+  export class LevelSetSurface extends Mesh {
+    constructor(levelSet: VolumeLevelSet, options?: LevelSetSurfaceOptions);
+    levelSet: VolumeLevelSet;
+    /** A ShaderMaterial before API_MINOR 49, a MeshStandardMaterial from 49. */
+    readonly surfaceMaterial: ShaderMaterial | MeshStandardMaterial;
+    readonly color: Color;
+    roughness: number;
+    metalness: number;
+    readonly ambient: Color;
+    readonly emissive: Color;
+    /** Shows another level set (its texture is not disposed with the old one's). */
+    setLevelSet(levelSet: VolumeLevelSet): void;
+    dispose(): void;
+  }
+  /** Points in world space (3 numbers each) with optional colors (0..1). Since API_MINOR 48. */
+  export class VolumePointData {
+    constructor(positions: Float32Array, colors?: Float32Array | null, spacing?: number, sourceCount?: number);
+    readonly positions: Float32Array;
+    readonly colors: Float32Array | null;
+    /** The mean distance between these points (0 unknown). */
+    readonly spacing: number;
+    /** The source grid's points (more than `count` when thinned). */
+    readonly sourceCount: number;
+    readonly count: number;
+    /** A WebVDB version 2 points grid (index, name, or -1 the first): the points of LODs 0 to `lod` (-1 all the bytes
+     * hold); each LOD adds about 8 times the points before it. */
+    static fromWvdb(kernel: VolumeGeometryKernel, bytes: Uint8Array, grid?: number | string, lod?: number): VolumePointData;
+    /** A `.vdb` point data grid (index, or -1 the first), every n-th point past `maxPoints` (1 to 16,000,000,
+     * default 1,000,000). */
+    static fromVdb(kernel: VolumeGeometryKernel, bytes: Uint8Array, grid?: number, maxPoints?: number): VolumePointData;
+  }
+  export interface VolumePointsOptions {
+    /** World diameter of a point (default the points' spacing; 0.01 when unknown). */
+    size?: number;
+    /** The smallest diameter in pixels (default 1). */
+    minPixels?: number;
+    /** Multiplies the points' colors (default white). */
+    color?: ColorInput;
+  }
+  /** Points as round discs facing the view (unlit, as three.js points; no shadows), in meshes of at most 262,144
+   * points each (three vertices a point). Since API_MINOR 48. */
+  export class VolumePoints extends Group {
+    constructor(points: VolumePointData, options?: VolumePointsOptions);
+    readonly pointsMaterial: ShaderMaterial;
+    points: VolumePointData;
+    size: number;
+    minPixels: number;
+    readonly color: Color;
+    /** Shows other points (a finer LOD); with `keepSize` false the size becomes their spacing. */
+    setPoints(points: VolumePointData, keepSize?: boolean): void;
+    dispose(): void;
+  }
+  export interface VolumeWvdbGeometryOptions {
+    /** Level set grids as "surface" (LevelSetSurface, default), "mesh" (LevelSetMesh) or "fog" (none here: load
+     * them as density with VolumeWvdbLoader). In "surface" and "mesh" no fog is made for them. */
+    levelSets?: "surface" | "mesh" | "fog";
+    /** Points grids as "points" (default) or "none". */
+    points?: "points" | "none";
+    material?: Material;
+    surface?: LevelSetSurfaceOptions;
+    pointOptions?: VolumePointsOptions;
+    /** The finest LOD loaded (-1, the default, every LOD). */
+    maxLod?: number;
+  }
+  export interface VolumeWvdbGeometryProgress { lod: number; lods: number; done: boolean; bytesLoaded: number; bytesTotal: number }
+  /** A WebVDB file's level sets and points streamed coarse to fine into `group` (reading only the bytes each LOD
+   * needs): the coarse LOD shows first and each finer one replaces it. Fog grids are VolumeWvdbLoader's. Since
+   * API_MINOR 48. */
+  export class VolumeWvdbGeometryLoader {
+    constructor(kernel: VolumeGeometryKernel, options?: VolumeWvdbGeometryOptions);
+    readonly group: Group;
+    /** By grid name. */
+    readonly levelSets: ReadonlyMap<string, LevelSetMesh | LevelSetSurface>;
+    readonly points: ReadonlyMap<string, VolumePoints>;
+    readonly done: boolean;
+    /** Rejects with an AbortError after `cancel()`. */
+    load(path: string, onProgress?: (progress: VolumeWvdbGeometryProgress) => void): Promise<this>;
+    cancel(): void;
     dispose(): void;
   }
 }
@@ -12515,6 +13233,12 @@ declare module "starhermit:sky" {
     /** The stars and Milky Way (default 8) and the night's glow (default 1). */
     starBrightness?: number;
     nightBrightness?: number;
+    /** Since API_MINOR 48 (`PROCEDURAL_STARS_MINOR`; not read before): how
+     * much the stars twinkle, most low down (default 1, 0 to 2; 0 holds them
+     * still). From 1.48 the stars are points found per pixel, one to two
+     * pixels wide at any resolution, steady under temporal anti-aliasing,
+     * easing into a smooth glow where the resolution is too coarse for them. */
+    twinkle?: number;
     /** Default true each. */
     sunDisc?: boolean;
     moon?: boolean;
@@ -12524,7 +13248,10 @@ declare module "starhermit:sky" {
     /** How far from its target the driven light stands (default 100). */
     lightDistance?: number;
     /** Draw into `scene.background` instead of as the dome (default false;
-     * `backgroundSize` 1024, 64 to 2048). */
+     * `backgroundSize` 1024, 64 to 2048). Since API_MINOR 48
+     * (`PROCEDURAL_STARS_MINOR`) the dome still draws the view over it, so
+     * the sun, moon and stars stay crisp; the map, as coarse as its size,
+     * serves what reads `scene.background`. */
     background?: boolean;
     backgroundSize?: number;
     /** Keep `scene.environment` up to date (default true), at most every
@@ -12561,6 +13288,9 @@ declare module "starhermit:sky" {
     moonlight: number;
     starBrightness: number;
     nightBrightness: number;
+    /** Since API_MINOR 48 (`PROCEDURAL_STARS_MINOR`): the stars' twinkle
+     * (0 to 2); undefined before. */
+    twinkle: number;
     sunDisc: boolean;
     moon: boolean;
     readonly milkyWay: boolean;
@@ -19646,6 +20376,39 @@ declare module "starhermit:water" {
      * 47 the ripples' slope (a few thousandths) moved the scene behind by
      * under a pixel. */
     refraction?: number;
+    /** Since API_MINOR 48 (`WATER_TRANSPARENTS_MINOR`; default true): the
+     * material's `refractTransparents`. */
+    refractTransparents?: boolean;
+    /** Since API_MINOR 48 (`WATER_PHYSICAL_REFRACTION_MINOR`; default
+     * 1.333, clamped to 1..3; ignored before): the water's index of
+     * refraction, the `ior` uniform. The eye's ray is refracted by Snell's
+     * law about the surface's normal (the waves and, with `refraction`, the
+     * capillary ripples' slope) and followed to what lies beyond the
+     * surface by a depth-based planar approximation (from the depth
+     * `renderer.sceneDepth` gives straight behind, three fixed-point
+     * steps: the ray carried that far beyond the surface's plane,
+     * projected, the depth read there; the same on every graphics level), so calm water shows the bed and fish shallower than
+     * they are (about depth / 1.33 straight down, more at grazing angles)
+     * and the far bed drawn toward the waterline; absorption and
+     * scattering act along the refracted path. Only what lies beyond the
+     * surface there is taken (a lily pad on the surface, a bank above it,
+     * never bends into the water); where the refracted point leaves the
+     * screen the window fades to the straight sample over the screen's
+     * outer 8 %. From API_MINOR 49 (`WATER_REFRACTION_EDGES_MINOR`) a step
+     * whose point the scene's depth shows hidden behind something nearer
+     * (a fish or a stalk in front of where the ray goes on) is not taken,
+     * and with no step in sight the ray is followed back to where it went
+     * out of sight (three halvings): the bed beside the fish shows there.
+     * At 48 such a step was taken, and a band beside a fish or stalk near
+     * the camera showed the fish's or stalk's edge stretched over the bed
+     * (dark crescents several pixels wide). Seen from below (`renderer.underwater`), Snell's window
+     * and total internal reflection at the index, and what stands over the
+     * surface seen along the refracted ray. */
+    ior?: number;
+    /** Since API_MINOR 48 (`WATER_PHYSICAL_REFRACTION_MINOR`; default
+     * true): false keeps 1.47's refraction (the scene behind moved by the
+     * ripples' slope alone; the `ior` uniform 0). */
+    physicalRefraction?: boolean;
   }
   /** The ocean's water shading for a mesh whose geometry (with normals) is
    * the water's surface: a flowing-water heightfield, a pool. It reads
@@ -19655,6 +20418,22 @@ declare module "starhermit:water" {
   export class WaterMaterial extends ShaderMaterial {
     constructor(options?: WaterMaterialOptions);
     readonly isWaterMaterial: true;
+    /** Since API_MINOR 48 (`WATER_TRANSPARENTS_MINOR`; default true;
+     * undefined before): the transparent meshes, sprites, points and
+     * particles across the surface from the eye (their bounds' centre below
+     * the surface's level seen from above, above it seen from below, within
+     * its bounds across) draw before the water, into the `sceneColor` it
+     * reads, so they are bent by its ripples and dimmed by its absorption as
+     * the bed behind them is (the absorption is the bed's depth's: the
+     * scene depth holds the opaque scene alone); the water draws next and
+     * the other transparent objects after it, each part in the usual
+     * order (render order, then farthest first). An object across the
+     * surface is placed by its centre; one writing depth keeps its part
+     * out of the water sharp, as the water does not draw over it there.
+     * Materials with `depthTest` false draw after the water. Before 48 the
+     * scene colour held the opaque scene alone, so transparent objects
+     * under the water were not seen bent. */
+    refractTransparents: boolean;
     /** Advances the ripples' clock. */
     update(dt: number): void;
     setWind(speed: number, directionDegrees: number): void;
