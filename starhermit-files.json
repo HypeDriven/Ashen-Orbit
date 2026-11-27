@@ -42,11 +42,11 @@
     "assets/strings.json": {"sha256": "67f9c84d78d7a689855fa37b97cf58e911b5bc9250c4c0f04169e348c0183170", "size": 1674771},
     "favicon.png": {"sha256": "0d2fbe986bbe1ceb7740e8adaf26a9027eb2b83334196c21d4414457e395787a", "size": 142501},
     "favicon.png.ktx2": {"sha256": "f97ef023603dd1f5ad08d99a43c0d3aaede8a3ab3be3a020429fa7e1fde8ddc6", "size": 87776},
-    "index.html": {"sha256": "7ea0484520683178d907203242f22b40ce6560812f7392926dd9a34f4a87dd8f", "size": 1795},
-    "publication.json": {"sha256": "51db41dc84844494c0609ddebd437e60eb7cb2f6c157093c61cd4fe2974fea86", "size": 4530},
+    "index.html": {"sha256": "cbd3c7845ff3bd94dcb58f780d84b2489db164fa48333dd2cce614a0af911300", "size": 1795},
+    "publication.json": {"sha256": "fe4740f965ed997ffcdb0b4259f0580683288110720e97a609043699852e5642", "size": 4530},
     "server.js": {"sha256": "86deb5336f67ad7a8ba39ab2d0474e60dd813af3d151058ae87a1bd1e1c64a7f", "size": 109261},
     "sfx/manifest.txt": {"sha256": "75dc6b7d4c26767a88b60fb88e172cf047c8dc2f3cafdfdd04852678c3fa8d03", "size": 423},
-    "spec.md": {"sha256": "82f1112efd6298c0748af81140bd808a2f0f4335e6017c088af173f4a900effd", "size": 2703},
+    "spec.md": {"sha256": "f3accb377f5035e6c902da143942ebb505f602cc4dbd4dcc1fbe4472bcb1eddb", "size": 2977},
     "src/arsenal.js": {"sha256": "f19dbf4e454ba34689c2821c9c92df8179cde1f06568fe4f9dd4d21552bb089b", "size": 9962},
     "src/ballistics.js": {"sha256": "2734e367be13e5727608a2ed4ca48d900e265bdad998e039dd4908b822287c36", "size": 2271},
     "src/campaign.js": {"sha256": "b5fb26ce80d5e012b2b7cd044183e6da2752b2759c304a867918926db870fd10", "size": 772},
@@ -74,7 +74,7 @@
     "src/sim.js": {"sha256": "88035faf3ee192cd99cd0e4e46ed5798b26f52330e28e18847dd0b07bc045cdf", "size": 33826},
     "src/universe-rules.js": {"sha256": "d0fa11cbc834f87c7008fd25acd89bcfbacbdab7cbbd1be3232a2c7400c25d5d", "size": 6965},
     "src/wire.js": {"sha256": "24dbb83b18a75ece26abb04a1a4ca19cc96e437b91e0a0c74825b68dff8a5fdc", "size": 1220},
-    "starhermit.txt": {"sha256": "a2af706e90680d2e50293df1c0a9047c0037868cec7646f98b0d59ba84830ae0", "size": 2323}
+    "starhermit.txt": {"sha256": "fd186f39fe0d1d3525fbabfd2958bb77d2906d6d7801866b2048546782abdeb2", "size": 2323}
   },
   "excluded": ["README.md", "package.json", "scripts/", "src/universe-ai.js", "src/universe-combat.js", "src/universe-server.js", "tests/"],
   "format": 1
